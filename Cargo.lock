@@ -3,3 +3,7 @@
 [[package]]
 name = "sirena"
 version = "0.0.1"
+
+[[package]]
+name = "sirena-modules"
+version = "0.0.1"

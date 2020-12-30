@@ -1,4 +1,5 @@
 [workspace]
 members = [
     "sirena",
+    "sirena-modules",
 ]
