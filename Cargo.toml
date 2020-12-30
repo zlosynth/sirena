@@ -1,10 +1,4 @@
-[package]
-name = "sirena"
-version = "0.0.1"
-authors = ["Petr Horáček <hrck@protonmail.com>"]
-edition = "2018"
-license = "GPL-3.0-or-later"
-description = "Sounds!"
-repository = "https://github.com/zlosynth/sirena"
-documentation = "https://docs.rs/sirena"
-readme = "README.md"
+[workspace]
+members = [
+    "sirena",
+]
