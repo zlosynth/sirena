@@ -1,5 +1,5 @@
 [package]
-name = "sirena"
+name = "sirena-modules"
 version = "0.0.1"
 authors = ["Petr Horáček <hrck@protonmail.com>"]
 edition = "2018"
@@ -10,8 +10,8 @@ documentation = "https://docs.rs/sirena"
 readme = "README.md"
 
 [dependencies]
+sirena = { path = "../sirena" }
 graphity = "1.0"
 
 [dev-dependencies]
-sirena = { path = "." }
-sirena-modules = { path = "../sirena-modules" }
+approx = "0.4.0"
