@@ -1,5 +1,5 @@
-use sirena::Buffer;
 use graphity::Node;
+use sirena::Buffer;
 
 #[derive(Default)]
 pub struct Sink(Buffer);

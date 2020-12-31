@@ -1,5 +1,5 @@
-use sirena::{Buffer, BUFFER_SIZE};
 use graphity::Node;
+use sirena::{Buffer, BUFFER_SIZE};
 
 pub struct Generator(Buffer);
 

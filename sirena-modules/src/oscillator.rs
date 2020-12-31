@@ -1,7 +1,7 @@
 use core::f32::consts::PI;
 
-use sirena::{Buffer, BUFFER_SIZE, SAMPLE_RATE};
 use graphity::Node;
+use sirena::{Buffer, BUFFER_SIZE, SAMPLE_RATE};
 
 #[derive(Default)]
 pub struct Oscillator {
