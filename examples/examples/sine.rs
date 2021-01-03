@@ -3,114 +3,17 @@ extern crate graphity;
 
 use cpal::traits::{DeviceTrait, HostTrait, StreamTrait};
 use graphity::{NodeIndex, NodeWrapper};
+use sirena::Buffer;
+use sirena_modules::{oscillator, generator, sink};
 use std::sync::mpsc;
 use std::thread;
 
-mod oscillator {
-    use core::f32::consts::PI;
-
-    use graphity::Node;
-    use sirena::{Buffer, SAMPLE_RATE};
-
-    #[derive(Default)]
-    pub struct Oscillator {
-        phase: f32,
-        frequency: Buffer,
-        result: Buffer,
-    }
-
-    #[derive(PartialEq, Eq, Hash, Clone, Copy, Debug)]
-    pub struct Input;
-
-    #[derive(PartialEq, Eq, Hash, Clone, Copy, Debug)]
-    pub struct Output;
-
-    impl Node<Buffer> for Oscillator {
-        type Consumer = Input;
-        type Producer = Output;
-
-        fn write(&mut self, _input: Input, data: Buffer) {
-            self.frequency = data;
-        }
-
-        fn read(&self, _output: Output) -> Buffer {
-            self.result
-        }
-
-        fn tick(&mut self) {
-            for (i, result) in self.result.iter_mut().enumerate() {
-                *result = (self.phase * self.frequency[i] * 2.0 * PI / SAMPLE_RATE).sin();
-                self.phase = (self.phase + 1.0) % SAMPLE_RATE;
-            }
-        }
-    }
-}
-
-mod generator {
-    use graphity::Node;
-    use sirena::{Buffer, BUFFER_SIZE};
-
-    pub struct Generator(Buffer);
-
-    impl Generator {
-        pub fn new(value: f32) -> Self {
-            Self([value; BUFFER_SIZE])
-        }
-    }
-
-    #[derive(PartialEq, Eq, Hash, Clone, Copy, Debug)]
-    pub struct Input;
-
-    #[derive(PartialEq, Eq, Hash, Clone, Copy, Debug)]
-    pub struct Output;
-
-    impl Node<Buffer> for Generator {
-        type Consumer = Input;
-        type Producer = Output;
-
-        fn write(&mut self, _input: Input, data: Buffer) {
-            self.0 = data;
-        }
-
-        fn read(&self, _output: Output) -> Buffer {
-            self.0
-        }
-    }
-}
-
-mod sink {
-    use graphity::Node;
-    use sirena::Buffer;
-
-    #[derive(Default)]
-    pub struct Sink(Buffer);
-
-    #[derive(PartialEq, Eq, Hash, Clone, Copy, Debug)]
-    pub struct Input;
-
-    #[derive(PartialEq, Eq, Hash, Clone, Copy, Debug)]
-    pub struct Output;
-
-    impl Node<Buffer> for Sink {
-        type Consumer = Input;
-        type Producer = Output;
-
-        fn write(&mut self, _input: Input, data: Buffer) {
-            self.0 = data;
-        }
-
-        fn read(&self, _output: Output) -> Buffer {
-            self.0
-        }
-    }
-}
-
-mod instrument {
-    use super::{generator::Generator, oscillator::Oscillator, sink::Sink};
-    use sirena::Buffer;
-    graphity!(Instrument<Buffer>; Generator, Oscillator, Sink);
-}
-use instrument::Instrument;
+graphity!(
+    Instrument<Buffer>;
+    Generator = {generator::Generator, generator::Input, generator::Output},
+    Oscillator = {oscillator::Oscillator, oscillator::Input, oscillator::Output},
+    Sink = {sink::Sink, sink::Input, sink::Output},
+);
 
 fn main() {
     struct Buffer {

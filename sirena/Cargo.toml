@@ -10,7 +10,7 @@ documentation = "https://docs.rs/sirena"
 readme = "README.md"
 
 [dependencies]
-graphity = "1.0"
+graphity = "2.0"
 
 [dev-dependencies]
 sirena = { path = "." }

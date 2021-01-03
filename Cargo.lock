@@ -377,7 +377,7 @@ name = "examples"
 version = "0.0.0"
 dependencies = [
  "cpal",
- "graphity 1.0.0",
+ "graphity",
  "sirena",
  "sirena-modules",
 ]
@@ -435,16 +435,9 @@ checksum = "9b919933a397b79c37e33b77bb2aa3dc8eb6e165ad809e58ff75bc7db2e34574"
 
 [[package]]
 name = "graphity"
-version = "1.0.0"
-dependencies = [
- "hashbrown",
-]
-
-[[package]]
-name = "graphity"
-version = "1.0.0"
+version = "2.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2c48c91273087862850eb48d90fa2f4976adf59241715eadc7949532f00fee38"
+checksum = "361ec62f02cc5cd4691c4935dbf562f2a65f13b4f94720ce9938ddb19afb1588"
 dependencies = [
  "hashbrown",
 ]
@@ -1040,7 +1033,7 @@ checksum = "7fdf1b9db47230893d76faad238fd6097fd6d6a9245cd7a4d90dbd639536bbd2"
 name = "sirena"
 version = "0.0.1"
 dependencies = [
- "graphity 1.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "graphity",
  "sirena",
  "sirena-modules",
 ]
@@ -1050,7 +1043,7 @@ name = "sirena-modules"
 version = "0.0.1"
 dependencies = [
  "approx",
- "graphity 1.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "graphity",
  "sirena",
 ]
 

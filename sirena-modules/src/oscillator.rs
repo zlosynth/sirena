@@ -1,7 +1,7 @@
 use core::f32::consts::PI;
 
 use graphity::Node;
-use sirena::{Buffer, BUFFER_SIZE, SAMPLE_RATE};
+use sirena::{Buffer, SAMPLE_RATE};
 
 #[derive(Default)]
 pub struct Oscillator {
@@ -31,14 +31,13 @@ impl Node<Buffer> for Oscillator {
     fn tick(&mut self) {
         for (i, result) in self.result.iter_mut().enumerate() {
             *result = sin(self.phase, self.frequency[i]);
-            // TODO: Reset when over 1
-            self.phase += (1.0 / SAMPLE_RATE) % 1.0;
+            self.phase = self.phase + 1.0;
         }
     }
 }
 
 fn sin(phase: f32, frequency: f32) -> f32 {
-    (phase * 2.0 * PI).sin()
+    (phase * frequency * 2.0 * PI / SAMPLE_RATE).sin()
 }
 
 #[cfg(test)]

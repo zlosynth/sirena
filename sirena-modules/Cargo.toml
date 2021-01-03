@@ -11,7 +11,7 @@ readme = "README.md"
 
 [dependencies]
 sirena = { path = "../sirena" }
-graphity = "1.0"
+graphity = "2.0"
 
 [dev-dependencies]
 approx = "0.4.0"

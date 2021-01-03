@@ -12,5 +12,5 @@ publish = false
 [dev-dependencies]
 sirena = { path = "../sirena" }
 sirena-modules = { path = "../sirena-modules" }
-graphity = { path = "../../graphity" }
+graphity = "2.0"
 cpal = "0.13"
