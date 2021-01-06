@@ -1,5 +1,7 @@
 # Sirena
 
+Proof of concept.
+
 Run examples:
 
 ``` sh

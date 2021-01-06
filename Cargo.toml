@@ -1,6 +1,19 @@
-[workspace]
-members = [
-    "sirena",
-    "sirena-modules",
-    "examples",
-]
+[package]
+name = "sirena"
+version = "0.0.1"
+authors = ["Petr Horáček <hrck@protonmail.com>"]
+edition = "2018"
+license = "GPL-3.0-or-later"
+description = "Sounds!"
+repository = "https://github.com/zlosynth/sirena"
+documentation = "https://docs.rs/sirena"
+readme = "README.md"
+
+[dependencies]
+meval = "0.2"
+graphity = "2.0"
+cpal = "0.13"
+gazpatcho = { path = "../gazpatcho" }
+
+[dev-dependencies]
+approx = "0.4"
