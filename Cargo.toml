@@ -17,3 +17,6 @@ gazpatcho = { path = "../gazpatcho" }
 
 [dev-dependencies]
 approx = "0.4"
+
+[profile.release]
+debug = true

@@ -1,8 +1,15 @@
+// TODO: The maths module should understand nodes. C4 ...
 use std::cell::RefCell;
 use std::rc::Rc;
 
 use gazpatcho::config as c;
 use graphity::Node;
+use graphity::{node::ConsumerIndex, node::ProducerIndex, NodeIndex};
+
+pub const CLASS: &str = "math";
+pub const IN1: &str = "x";
+pub const IN2: &str = "y";
+pub const OUT: &str = "out";
 
 pub struct Math {
     formula: Rc<RefCell<meval::Expr>>,
@@ -59,22 +66,22 @@ impl Node<[f32; 32]> for Math {
 pub fn template() -> c::NodeTemplate {
     c::NodeTemplate {
         label: "Math".to_owned(),
-        class: "math".to_owned(),
+        class: CLASS.to_owned(),
         display_heading: false,
         pins: vec![
             c::Pin {
                 label: "x".to_owned(),
-                class: "x".to_owned(),
+                class: IN1.to_owned(),
                 direction: c::Input,
             },
             c::Pin {
                 label: "y".to_owned(),
-                class: "y".to_owned(),
+                class: IN2.to_owned(),
                 direction: c::Input,
             },
             c::Pin {
                 label: "Out".to_owned(),
-                class: "out".to_owned(),
+                class: OUT.to_owned(),
                 direction: c::Output,
             },
         ],
@@ -84,6 +91,29 @@ pub fn template() -> c::NodeTemplate {
             size: [200.0, 23.0],
             read_only: false,
         }],
+    }
+}
+
+pub fn producer<NI>(source: &NI, pin_class: &str) -> <NI as NodeIndex>::ProducerIndex
+where
+    NI: NodeIndex,
+    NI::Producer: std::convert::From<Output>,
+{
+    match pin_class {
+        "out" => source.producer(Output),
+        &_ => unreachable!(),
+    }
+}
+
+pub fn consumer<NI>(destination: &NI, pin_class: &str) -> <NI as NodeIndex>::ConsumerIndex
+where
+    NI: NodeIndex,
+    NI::Consumer: std::convert::From<Input>,
+{
+    match pin_class {
+        IN1 => destination.consumer(Input::In1),
+        IN2 => destination.consumer(Input::In2),
+        &_ => unreachable!(),
     }
 }
 
