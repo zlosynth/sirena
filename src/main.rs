@@ -57,17 +57,30 @@ const SINK_NODE_CLASS: &str = "dac";
 const SINK_NODE_OUTPUT_PIN: &str = "out";
 
 pub fn main() {
+    let (ui_report_tx, ui_report_rx) = mpsc::channel();
+    let (ui_request_tx, ui_request_rx) = mpsc::channel();
+    let (output_stream, data_req_rx, data_tx) = stream::build_output_stream(SAMPLE_RATE);
+    let (ui_action_tx, ui_action_rx) = mpsc::channel();
+
+    run_ui_handler(ui_report_rx, ui_request_tx, ui_action_tx);
+
+    run_graph_handler(data_req_rx, ui_action_rx, data_tx);
+
+    output_stream
+        .play()
+        .expect("Failed playing the output stream");
+
     let config = gazpatcho::config::Config {
         node_templates: CLASSES.iter().map(|(_, c)| c.template()).collect(),
     };
+    gazpatcho::run_with_mpsc("Sirena", config, ui_report_tx, ui_request_rx);
+}
 
-    let (ui_report_tx, ui_report_rx) = mpsc::channel::<gazpatcho::report::Report>();
-    let (ui_request_tx, ui_request_rx) = mpsc::channel();
-
-    let (output_stream, data_req_rx, data_tx) = stream::build_output_stream(SAMPLE_RATE);
-
-    let (ui_action_tx, ui_action_rx) = mpsc::channel();
-
+fn run_ui_handler(
+    ui_report_rx: mpsc::Receiver<gazpatcho::report::Report>,
+    ui_request_tx: mpsc::Sender<gazpatcho::request::Request>,
+    ui_action_tx: mpsc::Sender<Action>,
+) -> thread::JoinHandle<()> {
     thread::spawn(move || {
         let mut sink_node_instance: Option<String> = None;
 
@@ -127,8 +140,14 @@ pub fn main() {
                 ui_action_tx.send(Action::AddPatch(patch)).unwrap();
             }
         }
-    });
+    })
+}
 
+fn run_graph_handler(
+    data_req_rx: mpsc::Receiver<()>,
+    ui_action_rx: mpsc::Receiver<Action>,
+    data_tx: mpsc::Sender<[f32; 32]>,
+) -> thread::JoinHandle<()> {
     thread::spawn(move || {
         struct Meta {
             pub module: Box<dyn Module<__Node>>,
@@ -203,11 +222,5 @@ pub fn main() {
                 }
             }
         }
-    });
-
-    output_stream
-        .play()
-        .expect("Failed playing the output stream");
-
-    gazpatcho::run_with_mpsc("Sirena", config, ui_report_tx, ui_request_rx);
+    })
 }
