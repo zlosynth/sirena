@@ -487,6 +487,7 @@ dependencies = [
  "alsa",
  "core-foundation-sys 0.6.2",
  "coreaudio-rs",
+ "jack",
  "jni 0.17.0",
  "js-sys",
  "lazy_static",
@@ -952,6 +953,29 @@ name = "itoa"
 version = "0.4.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "dd25036021b0de88a0aff6b850051563c6516d0bf53f8638938edbb9de732736"
+
+[[package]]
+name = "jack"
+version = "0.6.5"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "7c1871c91fa65aa328f3bedbaa54a6e5d1de009264684c153eb708ba933aa6f5"
+dependencies = [
+ "bitflags",
+ "jack-sys",
+ "lazy_static",
+ "libc",
+]
+
+[[package]]
+name = "jack-sys"
+version = "0.2.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "8e1d6ab7ada402b6a27912a2b86504be62a48c58313c886fe72a059127acb4d7"
+dependencies = [
+ "lazy_static",
+ "libc",
+ "libloading",
+]
 
 [[package]]
 name = "jni"

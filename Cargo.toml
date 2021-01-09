@@ -9,6 +9,9 @@ repository = "https://github.com/zlosynth/sirena"
 documentation = "https://docs.rs/sirena"
 readme = "README.md"
 
+[features]
+jack = ["cpal/jack"]
+
 [dependencies]
 meval = "0.2"
 graphity = "2.0"

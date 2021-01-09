@@ -47,11 +47,20 @@ pub fn build_output_stream(
 
     let mut buffer = RingBuffer::new(req_tx, data_rx);
 
-    let host = cpal::default_host();
+    #[cfg(any(
+        not(any(target_os = "linux", target_os = "dragonfly", target_os = "freebsd")),
+        not(feature = "jack")
+    ))]
+    let device =
+        get_default_output_device().expect("Failed connecting to the default output device");
 
-    let device = host
-        .default_output_device()
-        .expect("Failed to obtain the default output device");
+    #[cfg(all(
+        any(target_os = "linux", target_os = "dragonfly", target_os = "freebsd"),
+        feature = "jack"
+    ))]
+    let device = get_jack_output_device()
+        .or_else(get_default_output_device)
+        .expect("Failed connecting to both Jack and the default output device");
 
     let mut supported_configs = device
         .supported_output_configs()
@@ -79,4 +88,22 @@ pub fn build_output_stream(
         .expect("Failed constructing the output stream");
 
     (output_stream, req_rx, data_tx)
+}
+
+fn get_default_output_device() -> Option<cpal::Device> {
+    let host = cpal::default_host();
+    host.default_output_device()
+}
+
+#[cfg(all(
+    any(target_os = "linux", target_os = "dragonfly", target_os = "freebsd"),
+    feature = "jack"
+))]
+fn get_jack_output_device() -> Option<cpal::Device> {
+    let host_id = cpal::available_hosts()
+        .into_iter()
+        .find(|id| *id == cpal::HostId::Jack)?;
+    let host = cpal::host_from_id(host_id).ok()?;
+
+    host.default_output_device()
 }
