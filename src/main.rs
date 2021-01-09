@@ -11,13 +11,13 @@ extern crate approx;
 mod action;
 mod diff;
 mod modules;
+mod registration;
 mod stream;
 
 use cpal::traits::StreamTrait;
-use gazpatcho::config::NodeTemplate;
 use graphity::{NodeIndex, NodeWrapper};
 use std::boxed::Box;
-use std::collections::{HashMap, HashSet};
+use std::collections::HashMap;
 use std::sync::mpsc;
 use std::thread;
 
@@ -26,6 +26,7 @@ use crate::modules::bank;
 use crate::modules::dac;
 use crate::modules::math;
 use crate::modules::vco;
+use crate::registration::{Module, ModuleClass};
 
 const SAMPLE_RATE: u32 = 44800;
 
@@ -49,18 +50,6 @@ lazy_static! {
             .map(|c| (c.template().class, c))
             .collect()
     };
-}
-
-trait ModuleClass<N, C, P>: Send + Sync {
-    fn instantiate(&self, data: HashMap<String, gazpatcho::model::Value>) -> Box<dyn Module<N>>;
-    fn template(&self) -> NodeTemplate;
-    fn consumer(&self, class: &str) -> C;
-    fn producer(&self, class: &str) -> P;
-}
-
-trait Module<N> {
-    fn take_node(&mut self) -> N;
-    fn update(&mut self, _data: HashMap<String, gazpatcho::model::Value>) {}
 }
 
 pub fn main() {

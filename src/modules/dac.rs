@@ -3,7 +3,7 @@ use std::collections::HashMap;
 
 pub struct Class;
 
-impl<N, C, P> crate::ModuleClass<N, C, P> for Class
+impl<N, C, P> crate::registration::ModuleClass<N, C, P> for Class
 where
     N: From<Node>,
     C: From<Consumer>,
@@ -41,7 +41,7 @@ where
 
 pub struct Module;
 
-impl<N> crate::Module<N> for Module
+impl<N> crate::registration::Module<N> for Module
 where
     N: From<Node>,
 {
