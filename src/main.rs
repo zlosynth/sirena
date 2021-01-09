@@ -53,10 +53,7 @@ enum Action {
     AddNode(gazpatcho::model::Node),
     UpdateNode,
     RemoveNode,
-    AddOutputPatch {
-        source_node_id: String,
-        source_pin_class: String,
-    },
+    AddOutputPatch(gazpatcho::model::PinAddress),
     AddPatch(gazpatcho::model::Patch),
     RemovePatch,
 }
@@ -125,16 +122,13 @@ pub fn main() {
                         let consumer_index = destination_node_index.consumer(consumer);
                         graph.must_add_edge(producer_index, consumer_index);
                     }
-                    Action::AddOutputPatch {
-                        source_node_id,
-                        source_pin_class,
-                    } => {
-                        let source_node_class = class_by_module.get(&source_node_id).unwrap();
-                        let source_node_index = nodes.get(&source_node_id).unwrap();
+                    Action::AddOutputPatch(pin_address) => {
+                        let source_node_class = class_by_module.get(&pin_address.node_id).unwrap();
+                        let source_node_index = nodes.get(&pin_address.node_id).unwrap();
                         let producer = classes
                             .get(source_node_class)
                             .unwrap()
-                            .producer(&source_pin_class);
+                            .producer(&pin_address.pin_class);
                         let producer_index = source_node_index.producer(producer);
                         graph.must_add_edge(producer_index, output.consumer(bank::Input));
                     }
@@ -235,10 +229,10 @@ fn demo_actions(ui_action_tx: mpsc::Sender<Action>) {
         }))
         .unwrap();
     ui_action_tx
-        .send(Action::AddOutputPatch {
-            source_node_id: "dac:1".to_owned(),
-            source_pin_class: "out".to_owned(),
-        })
+        .send(Action::AddOutputPatch(gazpatcho::model::PinAddress {
+            node_id: "dac:1".to_owned(),
+            pin_class: "out".to_owned(),
+        }))
         .unwrap();
     ui_action_tx
         .send(Action::AddNode(gazpatcho::model::Node {
