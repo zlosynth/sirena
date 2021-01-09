@@ -27,9 +27,7 @@ use cpal::traits::StreamTrait;
 use gazpatcho::config::NodeTemplate;
 use graphity::{NodeIndex, NodeWrapper};
 use std::boxed::Box;
-use std::cell::RefCell;
 use std::collections::HashMap;
-use std::rc::Rc;
 use std::sync::mpsc;
 use std::thread;
 
@@ -82,9 +80,9 @@ enum Action {
 
 pub fn main() {
     let classes: Vec<Box<dyn ModuleClass<__Node, __Consumer, __Producer>>> = vec![
+        Box::new(math::Class),
         Box::new(vco::Class),
-        Box::new(vco::Class),
-        Box::new(vco::Class),
+        Box::new(dac::Class),
     ];
 
     let classes: HashMap<_, Box<dyn ModuleClass<__Node, __Consumer, __Producer>>> = classes

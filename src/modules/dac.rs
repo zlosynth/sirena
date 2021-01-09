@@ -1,6 +1,6 @@
 use gazpatcho::config as c;
 
-struct Class;
+pub struct Class;
 
 impl<N, C, P> crate::ModuleClass<N, C, P> for Class
 where
@@ -35,7 +35,7 @@ where
     }
 }
 
-struct Module;
+pub struct Module;
 
 impl<N> crate::Module<N> for Module
 where

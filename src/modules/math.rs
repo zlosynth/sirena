@@ -10,7 +10,7 @@ pub const IN1: &str = "x";
 pub const IN2: &str = "y";
 pub const OUT: &str = "out";
 
-struct Class;
+pub struct Class;
 
 impl<N, C, P> crate::ModuleClass<N, C, P> for Class
 where
@@ -68,7 +68,7 @@ where
     }
 }
 
-struct Module {
+pub struct Module {
     formula: Rc<RefCell<meval::Expr>>,
 }
 
