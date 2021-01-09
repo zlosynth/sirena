@@ -76,6 +76,7 @@ pub fn main() {
     gazpatcho::run_with_mpsc("Sirena", config, ui_report_tx, ui_request_rx);
 }
 
+// TODO: UI Controller
 fn run_ui_handler(
     ui_report_rx: mpsc::Receiver<gazpatcho::report::Report>,
     ui_request_tx: mpsc::Sender<gazpatcho::request::Request>,
@@ -143,6 +144,7 @@ fn run_ui_handler(
     })
 }
 
+// TODO: Graph Controller
 fn run_graph_handler(
     data_req_rx: mpsc::Receiver<()>,
     ui_action_rx: mpsc::Receiver<Action>,

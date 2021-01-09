@@ -66,8 +66,8 @@ where
     // TODO: Implement From<&str> trait on Input
     fn consumer(&self, class: &str) -> C {
         match class {
-            "x" => Consumer::In1.into(),
-            "y" => Consumer::In2.into(),
+            IN1 => Consumer::In1.into(),
+            IN2 => Consumer::In2.into(),
             _ => unreachable!(),
         }
     }
