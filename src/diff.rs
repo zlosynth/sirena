@@ -2,6 +2,7 @@ use gazpatcho::model::{Node, Patch};
 use gazpatcho::report::Report;
 use std::collections::{HashMap, HashSet};
 
+#[derive(Debug)]
 pub struct Diff {
     pub added_nodes: Vec<Node>,
     pub updated_nodes: Vec<Node>,
@@ -27,7 +28,7 @@ impl Diff {
         let old_nodes_by_id: HashMap<_, _> =
             old_report.nodes.iter().map(|n| (n.id.clone(), n)).collect();
         let new_nodes_by_id: HashMap<_, _> =
-            old_report.nodes.iter().map(|n| (n.id.clone(), n)).collect();
+            new_report.nodes.iter().map(|n| (n.id.clone(), n)).collect();
 
         let added_nodes: Vec<_> = new_nodes_by_id
             .iter()

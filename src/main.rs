@@ -15,6 +15,7 @@ mod registration;
 mod stream;
 
 use cpal::traits::StreamTrait;
+use gazpatcho::model::PinAddress;
 use graphity::{NodeIndex, NodeWrapper};
 use std::boxed::Box;
 use std::collections::HashMap;
@@ -68,9 +69,7 @@ pub fn main() {
     let (ui_action_tx, ui_action_rx) = mpsc::channel();
 
     thread::spawn(move || {
-        // TODO: Run UI handler, compares reports, reverts unwanted, passes events to the graph thread
         // TODO: Make sure there is one DAC at most
-        // TODO: Custom module for diff, translating the diff into list of actions
 
         let mut old_report: Option<gazpatcho::report::Report> = None;
 
@@ -119,11 +118,29 @@ pub fn main() {
             pub node_index: __NodeIndex,
             pub class: String,
         }
-        let mut meta = HashMap::new();
+        let mut meta: HashMap<String, Meta> = HashMap::new();
 
         let mut graph = Graph::new();
 
         let output = graph.add_node(bank::Bank::default());
+
+        let get_producer_index = |meta: &HashMap<String, Meta>, pin_address: &PinAddress| {
+            let source = meta.get(&pin_address.node_id).unwrap();
+            let producer = CLASSES
+                .get(&source.class)
+                .unwrap()
+                .producer(&pin_address.pin_class);
+            source.node_index.producer(producer)
+        };
+
+        let get_consumer_index = |meta: &HashMap<String, Meta>, pin_address: &PinAddress| {
+            let destination = meta.get(&pin_address.node_id).unwrap();
+            let consumer = CLASSES
+                .get(&destination.class)
+                .unwrap()
+                .consumer(&pin_address.pin_class);
+            destination.node_index.consumer(consumer)
+        };
 
         for _ in data_req_rx {
             graph.tick();
@@ -153,46 +170,17 @@ pub fn main() {
                         meta.remove(&node.id);
                     }
                     Action::AddPatch(patch) => {
-                        let source = meta.get(&patch.source.node_id).unwrap();
-                        let producer = CLASSES
-                            .get(&source.class)
-                            .unwrap()
-                            .producer(&patch.source.pin_class);
-                        let producer_index = source.node_index.producer(producer);
-
-                        let destination = meta.get(&patch.destination.node_id).unwrap();
-                        let consumer = CLASSES
-                            .get(&destination.class)
-                            .unwrap()
-                            .consumer(&patch.destination.pin_class);
-                        let consumer_index = destination.node_index.consumer(consumer);
-
+                        let producer_index = get_producer_index(&meta, &patch.source);
+                        let consumer_index = get_consumer_index(&meta, &patch.destination);
                         graph.must_add_edge(producer_index, consumer_index);
                     }
                     Action::RemovePatch(patch) => {
-                        let source = meta.get(&patch.source.node_id).unwrap();
-                        let producer = CLASSES
-                            .get(&source.class)
-                            .unwrap()
-                            .producer(&patch.source.pin_class);
-                        let producer_index = source.node_index.producer(producer);
-
-                        let destination = meta.get(&patch.destination.node_id).unwrap();
-                        let consumer = CLASSES
-                            .get(&destination.class)
-                            .unwrap()
-                            .consumer(&patch.destination.pin_class);
-                        let consumer_index = destination.node_index.consumer(consumer);
-
+                        let producer_index = get_producer_index(&meta, &patch.source);
+                        let consumer_index = get_consumer_index(&meta, &patch.destination);
                         graph.remove_edge(producer_index, consumer_index);
                     }
                     Action::AddOutputPatch(pin_address) => {
-                        let source = meta.get(&pin_address.node_id).unwrap();
-                        let producer = CLASSES
-                            .get(&source.class)
-                            .unwrap()
-                            .producer(&pin_address.pin_class);
-                        let producer_index = source.node_index.producer(producer);
+                        let producer_index = get_producer_index(&meta, &pin_address);
                         graph.must_add_edge(producer_index, output.consumer(bank::Input));
                     }
                 }
