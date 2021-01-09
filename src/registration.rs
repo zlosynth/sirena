@@ -13,5 +13,5 @@ pub trait ModuleClass<N, C, P>: Send + Sync {
 
 pub trait Module<N> {
     fn take_node(&mut self) -> N;
-    fn update(&mut self, _data: HashMap<String, gazpatcho::model::Value>) {}
+    fn update(&mut self, data: HashMap<String, gazpatcho::model::Value>) {}
 }

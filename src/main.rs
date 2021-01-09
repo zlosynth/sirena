@@ -111,12 +111,15 @@ pub fn main() {
 
     // TODO: Split fetching of data and reacting to actions
     thread::spawn(move || {
-        // TODO: single map with right hand struct for module, node and class
-        let mut modules = HashMap::new();
-        let mut nodes = HashMap::new();
-        let mut class_by_module = HashMap::new();
+        struct Meta {
+            pub module: Box<dyn Module<__Node>>,
+            pub node_index: __NodeIndex,
+            pub class: String,
+        }
+        let mut meta = HashMap::new();
 
         let mut graph = Graph::new();
+
         let output = graph.add_node(bank::Bank::default());
 
         for _ in data_req_rx {
@@ -129,64 +132,64 @@ pub fn main() {
                     Action::AddNode(node) => {
                         let mut module = CLASSES.get(&node.class).unwrap().instantiate(node.data);
                         let node_index = graph.add_node(module.take_node());
-                        nodes.insert(node.id.clone(), node_index);
-                        class_by_module.insert(node.id.clone(), node.class);
-                        modules.insert(node.id, module);
+                        meta.insert(
+                            node.id,
+                            Meta {
+                                module,
+                                node_index,
+                                class: node.class,
+                            },
+                        );
                     }
                     Action::UpdateNode(node) => {
-                        modules.get_mut(&node.id).unwrap().update(node.data);
+                        meta.get_mut(&node.id).unwrap().module.update(node.data);
                     }
                     Action::RemoveNode(node) => {
-                        let node_index = nodes.get(&node.id).unwrap();
-                        graph.remove_node(*node_index);
-                        nodes.remove(&node.id);
-                        class_by_module.remove(&node.id);
-                        modules.remove(&node.id);
+                        let node_index = meta.get(&node.id).unwrap().node_index;
+                        graph.remove_node(node_index);
+                        meta.remove(&node.id);
                     }
                     Action::AddPatch(patch) => {
-                        let source_node_class = class_by_module.get(&patch.source.node_id).unwrap();
-                        let source_node_index = nodes.get(&patch.source.node_id).unwrap();
+                        let source = meta.get(&patch.source.node_id).unwrap();
                         let producer = CLASSES
-                            .get(source_node_class)
+                            .get(&source.class)
                             .unwrap()
                             .producer(&patch.source.pin_class);
-                        let producer_index = source_node_index.producer(producer);
-                        let destination_node_class =
-                            class_by_module.get(&patch.destination.node_id).unwrap();
-                        let destination_node_index = nodes.get(&patch.destination.node_id).unwrap();
+                        let producer_index = source.node_index.producer(producer);
+
+                        let destination = meta.get(&patch.destination.node_id).unwrap();
                         let consumer = CLASSES
-                            .get(destination_node_class)
+                            .get(&destination.class)
                             .unwrap()
                             .consumer(&patch.destination.pin_class);
-                        let consumer_index = destination_node_index.consumer(consumer);
+                        let consumer_index = destination.node_index.consumer(consumer);
+
                         graph.must_add_edge(producer_index, consumer_index);
                     }
                     Action::RemovePatch(patch) => {
-                        let source_node_class = class_by_module.get(&patch.source.node_id).unwrap();
-                        let source_node_index = nodes.get(&patch.source.node_id).unwrap();
+                        let source = meta.get(&patch.source.node_id).unwrap();
                         let producer = CLASSES
-                            .get(source_node_class)
+                            .get(&source.class)
                             .unwrap()
                             .producer(&patch.source.pin_class);
-                        let producer_index = source_node_index.producer(producer);
-                        let destination_node_class =
-                            class_by_module.get(&patch.destination.node_id).unwrap();
-                        let destination_node_index = nodes.get(&patch.destination.node_id).unwrap();
+                        let producer_index = source.node_index.producer(producer);
+
+                        let destination = meta.get(&patch.destination.node_id).unwrap();
                         let consumer = CLASSES
-                            .get(destination_node_class)
+                            .get(&destination.class)
                             .unwrap()
                             .consumer(&patch.destination.pin_class);
-                        let consumer_index = destination_node_index.consumer(consumer);
+                        let consumer_index = destination.node_index.consumer(consumer);
+
                         graph.remove_edge(producer_index, consumer_index);
                     }
                     Action::AddOutputPatch(pin_address) => {
-                        let source_node_class = class_by_module.get(&pin_address.node_id).unwrap();
-                        let source_node_index = nodes.get(&pin_address.node_id).unwrap();
+                        let source = meta.get(&pin_address.node_id).unwrap();
                         let producer = CLASSES
-                            .get(source_node_class)
+                            .get(&source.class)
                             .unwrap()
                             .producer(&pin_address.pin_class);
-                        let producer_index = source_node_index.producer(producer);
+                        let producer_index = source.node_index.producer(producer);
                         graph.must_add_edge(producer_index, output.consumer(bank::Input));
                     }
                 }
