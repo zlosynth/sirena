@@ -5,7 +5,7 @@ use std::collections::HashMap;
 pub use graphity::Node;
 
 pub trait ModuleClass<N, C, P>: Send + Sync {
-    fn instantiate(&self, data: HashMap<String, gazpatcho::model::Value>) -> Box<dyn Module<N>>;
+    fn instantiate(&self) -> Box<dyn Module<N>>;
     fn template(&self) -> NodeTemplate;
     fn consumer(&self, class: &str) -> C;
     fn producer(&self, class: &str) -> P;

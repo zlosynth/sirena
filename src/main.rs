@@ -1,3 +1,24 @@
+// TODO:
+// - clean up existing modules
+// - adsr
+// - math1, math4, math8
+// - midi channels
+// - midi polyphony
+// - reverb
+// - delay
+// - vco based on wavetable
+// - different waveforms in vco
+// - sample and hold
+// - quantizer
+// - filter
+// - clock with divider
+// - slew
+// - wavefolder
+// - scope
+// - frequency analyzer
+
+#![allow(clippy::large_enum_variant)]
+
 #[macro_use]
 extern crate graphity;
 
@@ -26,6 +47,7 @@ use crate::action::Action;
 use crate::modules::bank;
 use crate::modules::dac;
 use crate::modules::math;
+use crate::modules::midi;
 use crate::modules::vco;
 use crate::registration::{Module, ModuleClass};
 
@@ -36,6 +58,7 @@ graphity!(
     Bank = {bank::Bank, bank::Input, bank::Output},
     DAC = {dac::Node, dac::Consumer, dac::Producer},
     VCO = {vco::Node, vco::Consumer, vco::Producer},
+    MIDI = {midi::Node, midi::Consumer, midi::Producer},
     Math = {math::Node, math::Consumer, math::Producer},
 );
 
@@ -45,6 +68,7 @@ lazy_static! {
             Box::new(math::Class),
             Box::new(vco::Class),
             Box::new(dac::Class),
+            Box::new(midi::Class::new()),
         ];
         classes
             .into_iter()
@@ -76,7 +100,6 @@ pub fn main() {
     gazpatcho::run_with_mpsc("Sirena", config, ui_report_tx, ui_request_rx);
 }
 
-// TODO: UI Controller
 fn run_ui_handler(
     ui_report_rx: mpsc::Receiver<gazpatcho::report::Report>,
     ui_request_tx: mpsc::Sender<gazpatcho::request::Request>,
@@ -144,7 +167,6 @@ fn run_ui_handler(
     })
 }
 
-// TODO: Graph Controller
 fn run_graph_handler(
     data_req_rx: mpsc::Receiver<()>,
     ui_action_rx: mpsc::Receiver<Action>,
@@ -185,10 +207,12 @@ fn run_graph_handler(
             let data = graph.node(&output).unwrap().read(bank::Output);
             data_tx.send(data).unwrap();
 
+            // TODO: Collect actions from modules, configuring back the UI
+
             for action in ui_action_rx.try_iter() {
                 match action {
                     Action::AddNode(node) => {
-                        let mut module = CLASSES.get(&node.class).unwrap().instantiate(node.data);
+                        let mut module = CLASSES.get(&node.class).unwrap().instantiate();
                         let node_index = graph.add_node(module.take_node());
                         meta.insert(
                             node.id,

@@ -6,8 +6,8 @@ use std::rc::Rc;
 use gazpatcho::config as c;
 
 pub const CLASS: &str = "math";
-pub const IN1: &str = "x";
-pub const IN2: &str = "y";
+pub const IN1: &str = "a";
+pub const IN2: &str = "b";
 pub const OUT: &str = "out";
 
 pub struct Class;
@@ -18,18 +18,10 @@ where
     C: From<Consumer>,
     P: From<Producer>,
 {
-    fn instantiate(
-        &self,
-        data: HashMap<String, gazpatcho::model::Value>,
-    ) -> Box<dyn crate::Module<N>> {
-        let formula = data.get("formula").unwrap().unwrap_string();
-        let formula = if let Ok(formula) = formula.parse() {
-            formula
-        } else {
-            "0".parse().unwrap()
-        };
-        let formula = Rc::new(RefCell::new(formula));
-        Box::new(Module { formula })
+    fn instantiate(&self) -> Box<dyn crate::Module<N>> {
+        Box::new(Module {
+            formula: Rc::new(RefCell::new("0".parse().unwrap())),
+        })
     }
 
     fn template(&self) -> c::NodeTemplate {
@@ -39,12 +31,12 @@ where
             display_heading: false,
             pins: vec![
                 c::Pin {
-                    label: "x".to_owned(),
+                    label: "a".to_owned(),
                     class: IN1.to_owned(),
                     direction: c::Input,
                 },
                 c::Pin {
-                    label: "y".to_owned(),
+                    label: "b".to_owned(),
                     class: IN2.to_owned(),
                     direction: c::Input,
                 },
@@ -56,7 +48,7 @@ where
             ],
             widgets: vec![c::TextBox {
                 key: "formula".to_owned(),
-                capacity: 1000,
+                capacity: 200,
                 size: [200.0, 23.0],
                 read_only: false,
             }],
@@ -141,7 +133,7 @@ impl graphity::Node<[f32; 32]> for Node {
 
     fn tick(&mut self) {
         let formula = self.formula.borrow().clone();
-        if let Ok(formula) = formula.bind2("x", "y") {
+        if let Ok(formula) = formula.bind2("a", "b") {
             for (i, x) in self.in1.iter().enumerate() {
                 self.out[i] = formula(*x as f64, self.in2[i] as f64) as f32;
             }
@@ -156,7 +148,7 @@ mod tests {
 
     #[test]
     fn sum2() {
-        let formula = Rc::new(RefCell::new("x + y".parse().unwrap()));
+        let formula = Rc::new(RefCell::new("a + b".parse().unwrap()));
 
         let mut math = Node::new(formula);
 

@@ -2,7 +2,6 @@
 
 use core::f32::consts::PI;
 use gazpatcho::config as c;
-use std::collections::HashMap;
 
 pub struct Class;
 
@@ -12,10 +11,7 @@ where
     C: From<Consumer>,
     P: From<Producer>,
 {
-    fn instantiate(
-        &self,
-        _data: HashMap<String, gazpatcho::model::Value>,
-    ) -> Box<dyn crate::Module<N>> {
+    fn instantiate(&self) -> Box<dyn crate::Module<N>> {
         Box::new(Module)
     }
 
@@ -88,6 +84,7 @@ impl graphity::Node<[f32; 32]> for Node {
     }
 
     fn tick(&mut self) {
+        self.phase %= 48000.0 * 360.0 * 32.0;
         for (i, result) in self.result.iter_mut().enumerate() {
             *result = sin(self.phase / 48000.0, self.frequency[i]);
             self.phase += 1.0;

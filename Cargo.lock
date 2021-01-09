@@ -1472,6 +1472,12 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "3831453b3449ceb48b6d9c7ad7c96d5ea673e9b470a1dc578c2ce6521230884c"
 
 [[package]]
+name = "portmidi"
+version = "0.2.5"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "17eb5854ec067149b738c1d99a4b9af927679fe5bb2ef88542fafb6177dc2557"
+
+[[package]]
 name = "proc-macro-crate"
 version = "0.1.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1783,6 +1789,8 @@ dependencies = [
  "graphity",
  "lazy_static",
  "meval",
+ "portmidi",
+ "wmidi",
 ]
 
 [[package]]
@@ -2347,6 +2355,12 @@ dependencies = [
  "winapi 0.3.9",
  "x11-dl",
 ]
+
+[[package]]
+name = "wmidi"
+version = "4.0.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "5a9811fe1a39ea15abd2142c8dcbf9aaddbabf8792a79f4fc42424844ad66b22"
 
 [[package]]
 name = "ws2_32-sys"
