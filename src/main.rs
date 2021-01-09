@@ -57,12 +57,7 @@ enum Action {
         source_node_id: String,
         source_pin_class: String,
     },
-    AddPatch {
-        source_node_id: String,
-        source_pin_class: String,
-        destination_node_id: String,
-        destination_pin_class: String,
-    },
+    AddPatch(gazpatcho::model::Patch),
     RemovePatch,
 }
 
@@ -112,26 +107,21 @@ pub fn main() {
                         class_by_module.insert(node.id.clone(), node.class);
                         modules.insert(node.id, module);
                     }
-                    Action::AddPatch {
-                        source_node_id,
-                        source_pin_class,
-                        destination_node_id,
-                        destination_pin_class,
-                    } => {
-                        let source_node_class = class_by_module.get(&source_node_id).unwrap();
-                        let source_node_index = nodes.get(&source_node_id).unwrap();
+                    Action::AddPatch(patch) => {
+                        let source_node_class = class_by_module.get(&patch.source.node_id).unwrap();
+                        let source_node_index = nodes.get(&patch.source.node_id).unwrap();
                         let producer = classes
                             .get(source_node_class)
                             .unwrap()
-                            .producer(&source_pin_class);
+                            .producer(&patch.source.pin_class);
                         let producer_index = source_node_index.producer(producer);
                         let destination_node_class =
-                            class_by_module.get(&destination_node_id).unwrap();
-                        let destination_node_index = nodes.get(&destination_node_id).unwrap();
+                            class_by_module.get(&patch.destination.node_id).unwrap();
+                        let destination_node_index = nodes.get(&patch.destination.node_id).unwrap();
                         let consumer = classes
                             .get(destination_node_class)
                             .unwrap()
-                            .consumer(&destination_pin_class);
+                            .consumer(&patch.destination.pin_class);
                         let consumer_index = destination_node_index.consumer(consumer);
                         graph.must_add_edge(producer_index, consumer_index);
                     }
@@ -258,16 +248,24 @@ fn demo_actions(ui_action_tx: mpsc::Sender<Action>) {
         }))
         .unwrap();
 
-    ui_action_tx.send(Action::AddPatch {
-        source_node_id: "math:1".to_owned(),
-        source_pin_class: "out".to_owned(),
-        destination_node_id: "vco:1".to_owned(),
-        destination_pin_class: "freq".to_owned(),
-    });
-    ui_action_tx.send(Action::AddPatch {
-        source_node_id: "vco:1".to_owned(),
-        source_pin_class: "out".to_owned(),
-        destination_node_id: "dac:1".to_owned(),
-        destination_pin_class: "in".to_owned(),
-    });
+    ui_action_tx.send(Action::AddPatch(gazpatcho::model::Patch {
+        source: gazpatcho::model::PinAddress {
+            node_id: "math:1".to_owned(),
+            pin_class: "out".to_owned(),
+        },
+        destination: gazpatcho::model::PinAddress {
+            node_id: "vco:1".to_owned(),
+            pin_class: "freq".to_owned(),
+        },
+    }));
+    ui_action_tx.send(Action::AddPatch(gazpatcho::model::Patch {
+        source: gazpatcho::model::PinAddress {
+            node_id: "vco:1".to_owned(),
+            pin_class: "out".to_owned(),
+        },
+        destination: gazpatcho::model::PinAddress {
+            node_id: "dac:1".to_owned(),
+            pin_class: "in".to_owned(),
+        },
+    }));
 }
