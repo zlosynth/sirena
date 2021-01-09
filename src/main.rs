@@ -97,44 +97,7 @@ pub fn main() {
     thread::spawn(move || {
         // TODO: Run UI handler, compares reports, reverts unwanted, passes events to the graph thread
         // TODO: Make sure there is one DAC at most
-
-        ui_action_tx
-            .send(Action::AddNode {
-                class: "vco".to_owned(),
-                id: "vco:1".to_owned(),
-            })
-            .unwrap();
-        ui_action_tx
-            .send(Action::AddNode {
-                class: "dac".to_owned(),
-                id: "dac:1".to_owned(),
-            })
-            .unwrap();
-        ui_action_tx
-            .send(Action::AddOutputPatch {
-                source_node_id: "dac:1".to_owned(),
-                source_pin_class: "out".to_owned(),
-            })
-            .unwrap();
-        ui_action_tx
-            .send(Action::AddNode {
-                class: "math".to_owned(),
-                id: "math:1".to_owned(),
-            })
-            .unwrap();
-
-        ui_action_tx.send(Action::AddPatch {
-            source_node_id: "math:1".to_owned(),
-            source_pin_class: "out".to_owned(),
-            destination_node_id: "vco:1".to_owned(),
-            destination_pin_class: "freq".to_owned(),
-        });
-        ui_action_tx.send(Action::AddPatch {
-            source_node_id: "vco:1".to_owned(),
-            source_pin_class: "out".to_owned(),
-            destination_node_id: "dac:1".to_owned(),
-            destination_pin_class: "in".to_owned(),
-        });
+        demo_actions(ui_action_tx);
     });
 
     thread::spawn(move || {
@@ -276,3 +239,43 @@ pub fn main() {
 //         removed_patches,
 //     )
 // }
+
+fn demo_actions(ui_action_tx: mpsc::Sender<Action>) {
+    ui_action_tx
+        .send(Action::AddNode {
+            class: "vco".to_owned(),
+            id: "vco:1".to_owned(),
+        })
+        .unwrap();
+    ui_action_tx
+        .send(Action::AddNode {
+            class: "dac".to_owned(),
+            id: "dac:1".to_owned(),
+        })
+        .unwrap();
+    ui_action_tx
+        .send(Action::AddOutputPatch {
+            source_node_id: "dac:1".to_owned(),
+            source_pin_class: "out".to_owned(),
+        })
+        .unwrap();
+    ui_action_tx
+        .send(Action::AddNode {
+            class: "math".to_owned(),
+            id: "math:1".to_owned(),
+        })
+        .unwrap();
+
+    ui_action_tx.send(Action::AddPatch {
+        source_node_id: "math:1".to_owned(),
+        source_pin_class: "out".to_owned(),
+        destination_node_id: "vco:1".to_owned(),
+        destination_pin_class: "freq".to_owned(),
+    });
+    ui_action_tx.send(Action::AddPatch {
+        source_node_id: "vco:1".to_owned(),
+        source_pin_class: "out".to_owned(),
+        destination_node_id: "dac:1".to_owned(),
+        destination_pin_class: "in".to_owned(),
+    });
+}
