@@ -65,7 +65,6 @@ trait Module<N> {
 }
 
 enum Action {
-    // TODO: Pass gazpatcho node instead
     AddNode(gazpatcho::model::Node),
     UpdateNode,
     RemoveNode,
@@ -75,6 +74,13 @@ enum Action {
 }
 
 pub fn main() {
+    let config = gazpatcho::config::Config {
+        node_templates: CLASSES.iter().map(|(k, c)| c.template()).collect(),
+    };
+
+    let (ui_report_tx, ui_report_rx) = mpsc::channel();
+    let (ui_request_tx, ui_request_rx) = mpsc::channel();
+
     let (output_stream, data_req_rx, data_tx) = stream::build_output_stream(SAMPLE_RATE);
 
     let (ui_action_tx, ui_action_rx) = mpsc::channel::<Action>();
@@ -147,14 +153,7 @@ pub fn main() {
         .play()
         .expect("Failed playing the output stream");
 
-    loop {}
-
-    // let config = Config {
-    //     node_templates: classes.iter().map(|(k, c)| c.template()).collect(),
-    // };
-    // let (ui_report_tx, ui_report_rx) = mpsc::channel::<Report>();
-    // let (ui_request_tx, ui_request_rx) = mpsc::channel::<Request>();
-    // gazpatcho::run_with_mpsc("Sirena", config, ui_report_tx, ui_request_rx);
+    gazpatcho::run_with_mpsc("Sirena", config, ui_report_tx, ui_request_rx);
 }
 
 // fn diff_report(
