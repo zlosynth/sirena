@@ -13,7 +13,7 @@ readme = "README.md"
 meval = "0.2"
 graphity = "2.0"
 cpal = "0.13"
-gazpatcho = { path = "../gazpatcho" }
+gazpatcho = "1.4"
 lazy_static = "1.4"
 
 [dev-dependencies]
