@@ -67,10 +67,10 @@ trait Module<N> {
 enum Action {
     AddNode(gazpatcho::model::Node),
     UpdateNode,
-    RemoveNode,
+    RemoveNode(gazpatcho::model::Node),
     AddOutputPatch(gazpatcho::model::PinAddress),
     AddPatch(gazpatcho::model::Patch),
-    RemovePatch,
+    RemovePatch(gazpatcho::model::Patch),
 }
 
 pub fn main() {
@@ -83,7 +83,7 @@ pub fn main() {
 
     let (output_stream, data_req_rx, data_tx) = stream::build_output_stream(SAMPLE_RATE);
 
-    let (ui_action_tx, ui_action_rx) = mpsc::channel::<Action>();
+    let (ui_action_tx, ui_action_rx) = mpsc::channel();
 
     thread::spawn(move || {
         // TODO: Run UI handler, compares reports, reverts unwanted, passes events to the graph thread
@@ -115,6 +115,13 @@ pub fn main() {
                         class_by_module.insert(node.id.clone(), node.class);
                         modules.insert(node.id, module);
                     }
+                    Action::RemoveNode(node) => {
+                        let node_index = nodes.get(&node.id).unwrap();
+                        graph.remove_node(*node_index);
+                        nodes.remove(&node.id);
+                        class_by_module.remove(&node.id);
+                        modules.remove(&node.id);
+                    }
                     Action::AddPatch(patch) => {
                         let source_node_class = class_by_module.get(&patch.source.node_id).unwrap();
                         let source_node_index = nodes.get(&patch.source.node_id).unwrap();
@@ -132,6 +139,24 @@ pub fn main() {
                             .consumer(&patch.destination.pin_class);
                         let consumer_index = destination_node_index.consumer(consumer);
                         graph.must_add_edge(producer_index, consumer_index);
+                    }
+                    Action::RemovePatch(patch) => {
+                        let source_node_class = class_by_module.get(&patch.source.node_id).unwrap();
+                        let source_node_index = nodes.get(&patch.source.node_id).unwrap();
+                        let producer = CLASSES
+                            .get(source_node_class)
+                            .unwrap()
+                            .producer(&patch.source.pin_class);
+                        let producer_index = source_node_index.producer(producer);
+                        let destination_node_class =
+                            class_by_module.get(&patch.destination.node_id).unwrap();
+                        let destination_node_index = nodes.get(&patch.destination.node_id).unwrap();
+                        let consumer = CLASSES
+                            .get(destination_node_class)
+                            .unwrap()
+                            .consumer(&patch.destination.pin_class);
+                        let consumer_index = destination_node_index.consumer(consumer);
+                        graph.remove_edge(producer_index, consumer_index);
                     }
                     Action::AddOutputPatch(pin_address) => {
                         let source_node_class = class_by_module.get(&pin_address.node_id).unwrap();
