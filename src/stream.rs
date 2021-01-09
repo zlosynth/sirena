@@ -42,7 +42,6 @@ impl RingBuffer {
     }
 }
 
-// TODO: Build buffer inside and return it
 pub fn build_output_stream(
     sample_rate: u32,
 ) -> (cpal::Stream, mpsc::Receiver<()>, mpsc::Sender<[f32; 32]>) {
