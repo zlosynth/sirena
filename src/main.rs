@@ -8,6 +8,7 @@ extern crate lazy_static;
 #[macro_use]
 extern crate approx;
 
+mod action;
 mod diff;
 mod modules;
 mod stream;
@@ -20,6 +21,7 @@ use std::collections::{HashMap, HashSet};
 use std::sync::mpsc;
 use std::thread;
 
+use crate::action::Action;
 use crate::modules::bank;
 use crate::modules::dac;
 use crate::modules::math;
@@ -61,15 +63,6 @@ trait Module<N> {
     fn update(&mut self, _data: HashMap<String, gazpatcho::model::Value>) {}
 }
 
-enum Action {
-    AddNode(gazpatcho::model::Node),
-    UpdateNode(gazpatcho::model::Node),
-    RemoveNode(gazpatcho::model::Node),
-    AddOutputPatch(gazpatcho::model::PinAddress),
-    AddPatch(gazpatcho::model::Patch),
-    RemovePatch(gazpatcho::model::Patch),
-}
-
 pub fn main() {
     let config = gazpatcho::config::Config {
         node_templates: CLASSES.iter().map(|(_, c)| c.template()).collect(),
@@ -85,7 +78,6 @@ pub fn main() {
     thread::spawn(move || {
         // TODO: Run UI handler, compares reports, reverts unwanted, passes events to the graph thread
         // TODO: Make sure there is one DAC at most
-        // TODO: When dac is added, add the output patch too
         // TODO: Custom module for diff, translating the diff into list of actions
 
         let mut old_report: Option<gazpatcho::report::Report> = None;

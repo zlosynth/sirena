@@ -2,8 +2,6 @@ use gazpatcho::model::{Node, Patch};
 use gazpatcho::report::Report;
 use std::collections::{HashMap, HashSet};
 
-use crate::Action;
-
 pub struct Diff {
     pub added_nodes: Vec<Node>,
     pub updated_nodes: Vec<Node>,
