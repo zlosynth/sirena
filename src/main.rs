@@ -15,7 +15,7 @@ use cpal::traits::StreamTrait;
 use gazpatcho::config::NodeTemplate;
 use graphity::{NodeIndex, NodeWrapper};
 use std::boxed::Box;
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::sync::mpsc;
 use std::thread;
 
@@ -74,7 +74,7 @@ pub fn main() {
         node_templates: CLASSES.iter().map(|(_, c)| c.template()).collect(),
     };
 
-    let (ui_report_tx, ui_report_rx) = mpsc::channel();
+    let (ui_report_tx, ui_report_rx) = mpsc::channel::<gazpatcho::report::Report>();
     let (ui_request_tx, ui_request_rx) = mpsc::channel();
 
     let (output_stream, data_req_rx, data_tx) = stream::build_output_stream(SAMPLE_RATE);
@@ -84,7 +84,57 @@ pub fn main() {
     thread::spawn(move || {
         // TODO: Run UI handler, compares reports, reverts unwanted, passes events to the graph thread
         // TODO: Make sure there is one DAC at most
-        demo_actions(ui_action_tx);
+        // TODO: When dac is added, add the output patch too
+        // TODO: Custom module for diff, translating the diff into list of actions
+
+        let mut old_report: Option<gazpatcho::report::Report> = None;
+
+        for report in ui_report_rx {
+            let (added_nodes, updated_nodes, removed_nodes, added_patches, removed_patches) =
+                if let Some(old_report) = &old_report {
+                    diff_report(&old_report, &report)
+                } else {
+                    (
+                        report.nodes.clone(),
+                        vec![],
+                        vec![],
+                        report.patches.clone(),
+                        vec![],
+                    )
+                };
+            old_report = Some(report);
+
+            for patch in removed_patches {
+                ui_action_tx.send(Action::RemovePatch(patch)).unwrap();
+            }
+
+            for node in removed_nodes {
+                ui_action_tx.send(Action::RemoveNode(node)).unwrap();
+            }
+
+            for node in added_nodes {
+                let add_output_action = if node.class == "dac" {
+                    Some(Action::AddOutputPatch(gazpatcho::model::PinAddress {
+                        node_id: node.id.clone(),
+                        pin_class: "out".to_owned(),
+                    }))
+                } else {
+                    None
+                };
+                ui_action_tx.send(Action::AddNode(node)).unwrap();
+                if let Some(add_output_action) = add_output_action {
+                    ui_action_tx.send(add_output_action).unwrap();
+                }
+            }
+
+            for node in updated_nodes {
+                ui_action_tx.send(Action::UpdateNode(node)).unwrap();
+            }
+
+            for patch in added_patches {
+                ui_action_tx.send(Action::AddPatch(patch)).unwrap();
+            }
+        }
     });
 
     // TODO: Split fetching of data and reacting to actions
@@ -102,7 +152,7 @@ pub fn main() {
             let data = graph.node(&output).unwrap().read(bank::Output);
             data_tx.send(data).unwrap();
 
-            for action in &ui_action_rx {
+            for action in ui_action_rx.try_iter() {
                 match action {
                     Action::AddNode(node) => {
                         let mut module = CLASSES.get(&node.class).unwrap().instantiate(node.data);
@@ -179,66 +229,67 @@ pub fn main() {
     gazpatcho::run_with_mpsc("Sirena", config, ui_report_tx, ui_request_rx);
 }
 
-// fn diff_report(
-//     old: &gazpatcho::report::Report,
-//     new: &gazpatcho::report::Report,
-// ) -> (
-//     Vec<gazpatcho::model::Node>,
-//     Vec<gazpatcho::model::Node>,
-//     Vec<String>,
-//     Vec<gazpatcho::model::Patch>,
-//     Vec<gazpatcho::model::Patch>,
-// ) {
-//     let old_by_id: HashMap<_, _> = old
-//         .nodes
-//         .iter()
-//         .map(|n| (n.id.clone(), n.clone()))
-//         .collect();
-//     let new_by_id: HashMap<_, _> = new
-//         .nodes
-//         .iter()
-//         .map(|n| (n.id.clone(), n.clone()))
-//         .collect();
+fn diff_report(
+    old: &gazpatcho::report::Report,
+    new: &gazpatcho::report::Report,
+) -> (
+    Vec<gazpatcho::model::Node>,
+    Vec<gazpatcho::model::Node>,
+    Vec<gazpatcho::model::Node>,
+    Vec<gazpatcho::model::Patch>,
+    Vec<gazpatcho::model::Patch>,
+) {
+    let old_by_id: HashMap<_, _> = old
+        .nodes
+        .iter()
+        .map(|n| (n.id.clone(), n.clone()))
+        .collect();
+    let new_by_id: HashMap<_, _> = new
+        .nodes
+        .iter()
+        .map(|n| (n.id.clone(), n.clone()))
+        .collect();
 
-//     let mut new_nodes = Vec::new();
-//     let mut updated_nodes = Vec::new();
+    let mut new_nodes = Vec::new();
+    let mut updated_nodes = Vec::new();
 
-//     for (k, n) in new_by_id.iter() {
-//         if !old_by_id.contains_key(k) {
-//             new_nodes.push(n.clone());
-//         } else if old_by_id[k] != *n {
-//             updated_nodes.push(n.clone());
-//         }
-//     }
+    for (k, n) in new_by_id.iter() {
+        if !old_by_id.contains_key(k) {
+            new_nodes.push(n.clone());
+        } else if old_by_id[k] != *n {
+            updated_nodes.push(n.clone());
+        }
+    }
 
-//     let removed_ids = old_by_id
-//         .keys()
-//         .filter(|k| !new_by_id.contains_key(*k))
-//         .cloned()
-//         .collect();
+    let removed_nodes = old_by_id
+        .iter()
+        .filter(|(k, n)| !new_by_id.contains_key(*k))
+        .map(|(k, n)| n)
+        .cloned()
+        .collect();
 
-//     let old_patches: HashSet<_> = old.patches.iter().collect();
-//     let new_patches: HashSet<_> = new.patches.iter().collect();
+    let old_patches: HashSet<_> = old.patches.iter().collect();
+    let new_patches: HashSet<_> = new.patches.iter().collect();
 
-//     let added_patches = new_patches
-//         .difference(&old_patches)
-//         .cloned()
-//         .cloned()
-//         .collect();
-//     let removed_patches = old_patches
-//         .difference(&new_patches)
-//         .cloned()
-//         .cloned()
-//         .collect();
+    let added_patches = new_patches
+        .difference(&old_patches)
+        .cloned()
+        .cloned()
+        .collect();
+    let removed_patches = old_patches
+        .difference(&new_patches)
+        .cloned()
+        .cloned()
+        .collect();
 
-//     (
-//         new_nodes,
-//         updated_nodes,
-//         removed_ids,
-//         added_patches,
-//         removed_patches,
-//     )
-// }
+    (
+        new_nodes,
+        updated_nodes,
+        removed_nodes,
+        added_patches,
+        removed_patches,
+    )
+}
 
 fn demo_actions(ui_action_tx: mpsc::Sender<Action>) {
     ui_action_tx

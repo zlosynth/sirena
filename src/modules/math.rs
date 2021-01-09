@@ -24,7 +24,12 @@ where
         data: HashMap<String, gazpatcho::model::Value>,
     ) -> Box<dyn crate::Module<N>> {
         let formula = data.get("formula").unwrap().unwrap_string();
-        let formula = Rc::new(RefCell::new(formula.parse().unwrap()));
+        let formula = if let Ok(formula) = formula.parse() {
+            formula
+        } else {
+            "0".parse().unwrap()
+        };
+        let formula = Rc::new(RefCell::new(formula));
         Box::new(Module { formula })
     }
 
@@ -87,7 +92,9 @@ where
 
     fn update(&mut self, data: HashMap<String, gazpatcho::model::Value>) {
         let formula = data.get("formula").unwrap().unwrap_string();
-        *self.formula.borrow_mut() = formula.parse().unwrap();
+        if let Ok(formula) = formula.parse() {
+            *self.formula.borrow_mut() = formula;
+        }
     }
 }
 
