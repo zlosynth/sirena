@@ -23,10 +23,8 @@ mod stream;
 // the module would keep all its metadata (refcells)
 // the module would reconcile actions of gazpatcho (the node type would be used as a key in hashmap)
 
-use cpal::traits::{DeviceTrait, HostTrait, StreamTrait};
-use gazpatcho::config::{Config, NodeTemplate};
-use gazpatcho::report::Report;
-use gazpatcho::request::Request;
+use cpal::traits::StreamTrait;
+use gazpatcho::config::NodeTemplate;
 use graphity::{NodeIndex, NodeWrapper};
 use std::boxed::Box;
 use std::cell::RefCell;
