@@ -14,7 +14,7 @@ where
 {
     fn instantiate(
         &self,
-        data: HashMap<String, gazpatcho::model::Value>,
+        _data: HashMap<String, gazpatcho::model::Value>,
     ) -> Box<dyn crate::Module<N>> {
         Box::new(Module)
     }
@@ -40,11 +40,11 @@ where
         }
     }
 
-    fn consumer(&self, class: &str) -> C {
+    fn consumer(&self, _class: &str) -> C {
         Consumer::Frequency.into()
     }
 
-    fn producer(&self, class: &str) -> P {
+    fn producer(&self, _class: &str) -> P {
         Producer.into()
     }
 }
@@ -90,7 +90,7 @@ impl graphity::Node<[f32; 32]> for Node {
     fn tick(&mut self) {
         for (i, result) in self.result.iter_mut().enumerate() {
             *result = sin(self.phase / 44800.0, self.frequency[i]);
-            self.phase = self.phase + 1.0;
+            self.phase += 1.0;
         }
     }
 }

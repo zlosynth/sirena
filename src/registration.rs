@@ -14,5 +14,6 @@ pub trait ModuleClass<N, C, P>: Send + Sync {
 // TODO: Rename to handle. Class would return node and handle
 pub trait Module<N> {
     fn take_node(&mut self) -> N;
+    #[allow(unused_variables)]
     fn update(&mut self, data: HashMap<String, gazpatcho::model::Value>) {}
 }

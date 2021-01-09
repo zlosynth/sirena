@@ -4,7 +4,6 @@ use std::collections::HashMap;
 use std::rc::Rc;
 
 use gazpatcho::config as c;
-use graphity::{node::ConsumerIndex, node::ProducerIndex, NodeIndex};
 
 pub const CLASS: &str = "math";
 pub const IN1: &str = "x";
@@ -73,7 +72,7 @@ where
         }
     }
 
-    fn producer(&self, class: &str) -> P {
+    fn producer(&self, _class: &str) -> P {
         Producer.into()
     }
 }

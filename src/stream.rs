@@ -1,4 +1,4 @@
-use cpal::traits::{DeviceTrait, HostTrait, StreamTrait};
+use cpal::traits::{DeviceTrait, HostTrait};
 use std::sync::mpsc;
 
 struct RingBuffer {
@@ -11,15 +11,12 @@ struct RingBuffer {
 impl RingBuffer {
     pub fn new(req_tx: mpsc::Sender<()>, data_rx: mpsc::Receiver<[f32; 32]>) -> Self {
         req_tx.send(()).unwrap();
-
-        let buffer = Self {
+        Self {
             buffer: [0.0; 32],
             index: 0,
             req_tx,
             data_rx,
-        };
-
-        buffer
+        }
     }
 
     pub fn pop(&mut self) -> f32 {
@@ -56,13 +53,12 @@ pub fn build_output_stream(
         .default_output_device()
         .expect("Failed to obtain the default output device");
 
-    let supported_configs = device
+    let mut supported_configs = device
         .supported_output_configs()
         .expect("Failed querying supported output configuration");
 
     let config = supported_configs
-        .filter(|c| c.sample_format() == cpal::SampleFormat::F32 && c.channels() == 2)
-        .next()
+        .find(|c| c.sample_format() == cpal::SampleFormat::F32 && c.channels() == 2)
         .expect("No suitable output config is available")
         .with_sample_rate(cpal::SampleRate(sample_rate));
 
