@@ -2,32 +2,84 @@
 
 use core::f32::consts::PI;
 use gazpatcho::config as c;
-use graphity::Node;
+
+pub struct Class;
+
+impl<N, C, P> crate::ModuleClass<N, C, P> for Class
+where
+    N: From<Node>,
+    C: From<Consumer>,
+    P: From<Producer>,
+{
+    fn instantiate(&self) -> Box<dyn crate::Module<N>> {
+        Box::new(Module)
+    }
+
+    fn template(&self) -> c::NodeTemplate {
+        c::NodeTemplate {
+            label: "VCO".to_owned(),
+            class: "vco".to_owned(),
+            display_heading: true,
+            pins: vec![
+                c::Pin {
+                    label: "Freq".to_owned(),
+                    class: "freq".to_owned(),
+                    direction: c::Input,
+                },
+                c::Pin {
+                    label: "Out".to_owned(),
+                    class: "out".to_owned(),
+                    direction: c::Output,
+                },
+            ],
+            widgets: vec![],
+        }
+    }
+
+    fn consumer(&self, class: &str) -> C {
+        Consumer::Frequency.into()
+    }
+
+    fn producer(&self, class: &str) -> P {
+        Producer.into()
+    }
+}
+
+pub struct Module;
+
+impl<N> crate::Module<N> for Module
+where
+    N: From<Node>,
+{
+    fn take_node(&mut self) -> N {
+        Node::default().into()
+    }
+}
 
 #[derive(Default)]
-pub struct VCO {
+pub struct Node {
     phase: f32,
     frequency: [f32; 32],
     result: [f32; 32],
 }
 
 #[derive(PartialEq, Eq, Hash, Clone, Copy, Debug)]
-pub enum Input {
+pub enum Consumer {
     Frequency,
 }
 
 #[derive(PartialEq, Eq, Hash, Clone, Copy, Debug)]
-pub struct Output;
+pub struct Producer;
 
-impl Node<[f32; 32]> for VCO {
-    type Consumer = Input;
-    type Producer = Output;
+impl graphity::Node<[f32; 32]> for Node {
+    type Consumer = Consumer;
+    type Producer = Producer;
 
-    fn write(&mut self, _input: Input, data: [f32; 32]) {
+    fn write(&mut self, _consumer: Consumer, data: [f32; 32]) {
         self.frequency = data;
     }
 
-    fn read(&self, _output: Output) -> [f32; 32] {
+    fn read(&self, _producer: Producer) -> [f32; 32] {
         self.result
     }
 
@@ -41,27 +93,6 @@ impl Node<[f32; 32]> for VCO {
 
 fn sin(phase: f32, frequency: f32) -> f32 {
     (phase * frequency * 2.0 * PI).sin()
-}
-
-pub fn template() -> c::NodeTemplate {
-    c::NodeTemplate {
-        label: "VCO".to_owned(),
-        class: "vco".to_owned(),
-        display_heading: true,
-        pins: vec![
-            c::Pin {
-                label: "Freq".to_owned(),
-                class: "freq".to_owned(),
-                direction: c::Input,
-            },
-            c::Pin {
-                label: "Out".to_owned(),
-                class: "out".to_owned(),
-                direction: c::Output,
-            },
-        ],
-        widgets: vec![],
-    }
 }
 
 #[cfg(test)]

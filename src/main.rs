@@ -46,7 +46,7 @@ graphity!(
     Graph<[f32; 32]>;
     Bank = {bank::Bank, bank::Input, bank::Output},
     DAC = {dac::DAC, dac::Input, dac::Output},
-    VCO = {vco::VCO, vco::Input, vco::Output},
+    VCO = {vco::Node, vco::Consumer, vco::Producer},
     Math = {math::Math, math::Input, math::Output},
 );
 
@@ -94,42 +94,6 @@ where
 {
     fn take_node(&mut self) -> N {
         dac::DAC::default().into()
-    }
-}
-
-struct VCOClass;
-
-impl<N, C, P> ModuleClass<N, C, P> for VCOClass
-where
-    N: From<vco::VCO>,
-    C: From<vco::Input>,
-    P: From<vco::Output>,
-{
-    fn instantiate(&self) -> Box<dyn Module<N>> {
-        Box::new(VCO)
-    }
-
-    fn template(&self) -> NodeTemplate {
-        vco::template()
-    }
-
-    fn consumer(&self, class: &str) -> C {
-        vco::Input::Frequency.into()
-    }
-
-    fn producer(&self, class: &str) -> P {
-        vco::Output.into()
-    }
-}
-
-struct VCO;
-
-impl<N> Module<N> for VCO
-where
-    N: From<vco::VCO>,
-{
-    fn take_node(&mut self) -> N {
-        vco::VCO::default().into()
     }
 }
 
@@ -199,8 +163,11 @@ enum Action {
 }
 
 pub fn main() {
-    let classes: Vec<Box<dyn ModuleClass<__Node, __Consumer, __Producer>>> =
-        vec![Box::new(MathClass), Box::new(VCOClass), Box::new(DACClass)];
+    let classes: Vec<Box<dyn ModuleClass<__Node, __Consumer, __Producer>>> = vec![
+        Box::new(MathClass),
+        Box::new(vco::Class),
+        Box::new(DACClass),
+    ];
 
     let classes: HashMap<_, Box<dyn ModuleClass<__Node, __Consumer, __Producer>>> = classes
         .into_iter()
