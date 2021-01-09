@@ -8,6 +8,7 @@ extern crate lazy_static;
 #[macro_use]
 extern crate approx;
 
+mod diff;
 mod modules;
 mod stream;
 
@@ -90,29 +91,19 @@ pub fn main() {
         let mut old_report: Option<gazpatcho::report::Report> = None;
 
         for report in ui_report_rx {
-            let (added_nodes, updated_nodes, removed_nodes, added_patches, removed_patches) =
-                if let Some(old_report) = &old_report {
-                    diff_report(&old_report, &report)
-                } else {
-                    (
-                        report.nodes.clone(),
-                        vec![],
-                        vec![],
-                        report.patches.clone(),
-                        vec![],
-                    )
-                };
+            let diff = diff::Diff::new(old_report.as_ref(), &report);
+
             old_report = Some(report);
 
-            for patch in removed_patches {
+            for patch in diff.removed_patches {
                 ui_action_tx.send(Action::RemovePatch(patch)).unwrap();
             }
 
-            for node in removed_nodes {
+            for node in diff.removed_nodes {
                 ui_action_tx.send(Action::RemoveNode(node)).unwrap();
             }
 
-            for node in added_nodes {
+            for node in diff.added_nodes {
                 let add_output_action = if node.class == "dac" {
                     Some(Action::AddOutputPatch(gazpatcho::model::PinAddress {
                         node_id: node.id.clone(),
@@ -127,11 +118,11 @@ pub fn main() {
                 }
             }
 
-            for node in updated_nodes {
+            for node in diff.updated_nodes {
                 ui_action_tx.send(Action::UpdateNode(node)).unwrap();
             }
 
-            for patch in added_patches {
+            for patch in diff.added_patches {
                 ui_action_tx.send(Action::AddPatch(patch)).unwrap();
             }
         }
@@ -227,123 +218,4 @@ pub fn main() {
         .expect("Failed playing the output stream");
 
     gazpatcho::run_with_mpsc("Sirena", config, ui_report_tx, ui_request_rx);
-}
-
-fn diff_report(
-    old: &gazpatcho::report::Report,
-    new: &gazpatcho::report::Report,
-) -> (
-    Vec<gazpatcho::model::Node>,
-    Vec<gazpatcho::model::Node>,
-    Vec<gazpatcho::model::Node>,
-    Vec<gazpatcho::model::Patch>,
-    Vec<gazpatcho::model::Patch>,
-) {
-    let old_by_id: HashMap<_, _> = old
-        .nodes
-        .iter()
-        .map(|n| (n.id.clone(), n.clone()))
-        .collect();
-    let new_by_id: HashMap<_, _> = new
-        .nodes
-        .iter()
-        .map(|n| (n.id.clone(), n.clone()))
-        .collect();
-
-    let mut new_nodes = Vec::new();
-    let mut updated_nodes = Vec::new();
-
-    for (k, n) in new_by_id.iter() {
-        if !old_by_id.contains_key(k) {
-            new_nodes.push(n.clone());
-        } else if old_by_id[k] != *n {
-            updated_nodes.push(n.clone());
-        }
-    }
-
-    let removed_nodes = old_by_id
-        .iter()
-        .filter(|(k, n)| !new_by_id.contains_key(*k))
-        .map(|(k, n)| n)
-        .cloned()
-        .collect();
-
-    let old_patches: HashSet<_> = old.patches.iter().collect();
-    let new_patches: HashSet<_> = new.patches.iter().collect();
-
-    let added_patches = new_patches
-        .difference(&old_patches)
-        .cloned()
-        .cloned()
-        .collect();
-    let removed_patches = old_patches
-        .difference(&new_patches)
-        .cloned()
-        .cloned()
-        .collect();
-
-    (
-        new_nodes,
-        updated_nodes,
-        removed_nodes,
-        added_patches,
-        removed_patches,
-    )
-}
-
-fn demo_actions(ui_action_tx: mpsc::Sender<Action>) {
-    ui_action_tx
-        .send(Action::AddNode(gazpatcho::model::Node {
-            class: "vco".to_owned(),
-            id: "vco:1".to_owned(),
-            data: HashMap::new(),
-        }))
-        .unwrap();
-    ui_action_tx
-        .send(Action::AddNode(gazpatcho::model::Node {
-            class: "dac".to_owned(),
-            id: "dac:1".to_owned(),
-            data: HashMap::new(),
-        }))
-        .unwrap();
-    ui_action_tx
-        .send(Action::AddOutputPatch(gazpatcho::model::PinAddress {
-            node_id: "dac:1".to_owned(),
-            pin_class: "out".to_owned(),
-        }))
-        .unwrap();
-    let math_data: HashMap<_, _> = vec![(
-        "formula".to_owned(),
-        gazpatcho::model::Value::String("440".to_owned()),
-    )]
-    .into_iter()
-    .collect();
-    ui_action_tx
-        .send(Action::AddNode(gazpatcho::model::Node {
-            class: "math".to_owned(),
-            id: "math:1".to_owned(),
-            data: math_data,
-        }))
-        .unwrap();
-
-    ui_action_tx.send(Action::AddPatch(gazpatcho::model::Patch {
-        source: gazpatcho::model::PinAddress {
-            node_id: "math:1".to_owned(),
-            pin_class: "out".to_owned(),
-        },
-        destination: gazpatcho::model::PinAddress {
-            node_id: "vco:1".to_owned(),
-            pin_class: "freq".to_owned(),
-        },
-    }));
-    ui_action_tx.send(Action::AddPatch(gazpatcho::model::Patch {
-        source: gazpatcho::model::PinAddress {
-            node_id: "vco:1".to_owned(),
-            pin_class: "out".to_owned(),
-        },
-        destination: gazpatcho::model::PinAddress {
-            node_id: "dac:1".to_owned(),
-            pin_class: "in".to_owned(),
-        },
-    }));
 }
