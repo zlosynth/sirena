@@ -1755,6 +1755,7 @@ dependencies = [
  "cpal",
  "gazpatcho",
  "graphity",
+ "lazy_static",
  "meval",
 ]
 

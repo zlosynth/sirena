@@ -6,6 +6,9 @@
 #[macro_use]
 extern crate graphity;
 
+#[macro_use]
+extern crate lazy_static;
+
 #[cfg(test)]
 #[macro_use]
 extern crate approx;
@@ -36,7 +39,21 @@ graphity!(
     Math = {math::Node, math::Consumer, math::Producer},
 );
 
-trait ModuleClass<N, C, P>: Send {
+lazy_static! {
+    static ref CLASSES: HashMap<String, Box<dyn ModuleClass<__Node, __Consumer, __Producer>>> = {
+        let classes: Vec<Box<dyn ModuleClass<__Node, __Consumer, __Producer>>> = vec![
+            Box::new(math::Class),
+            Box::new(vco::Class),
+            Box::new(dac::Class),
+        ];
+        classes
+            .into_iter()
+            .map(|c| (c.template().class, c))
+            .collect()
+    };
+}
+
+trait ModuleClass<N, C, P>: Send + Sync {
     fn instantiate(&self) -> Box<dyn Module<N>>;
     fn template(&self) -> NodeTemplate;
     fn consumer(&self, class: &str) -> C;
@@ -47,7 +64,6 @@ trait Module<N> {
     fn take_node(&mut self) -> N;
 }
 
-// TODO: Maybe just pass gazpatcho report structs inside
 enum Action {
     // TODO: Pass gazpatcho node instead
     AddNode(gazpatcho::model::Node),
@@ -59,17 +75,6 @@ enum Action {
 }
 
 pub fn main() {
-    let classes: Vec<Box<dyn ModuleClass<__Node, __Consumer, __Producer>>> = vec![
-        Box::new(math::Class),
-        Box::new(vco::Class),
-        Box::new(dac::Class),
-    ];
-
-    let classes: HashMap<_, Box<dyn ModuleClass<__Node, __Consumer, __Producer>>> = classes
-        .into_iter()
-        .map(|c| (c.template().class, c))
-        .collect();
-
     let (output_stream, data_req_rx, data_tx) = stream::build_output_stream(SAMPLE_RATE);
 
     let (ui_action_tx, ui_action_rx) = mpsc::channel::<Action>();
@@ -98,7 +103,7 @@ pub fn main() {
             for action in &ui_action_rx {
                 match action {
                     Action::AddNode(node) => {
-                        let mut module = classes.get(&node.class).unwrap().instantiate();
+                        let mut module = CLASSES.get(&node.class).unwrap().instantiate();
                         let node_index = graph.add_node(module.take_node());
                         nodes.insert(node.id.clone(), node_index);
                         class_by_module.insert(node.id.clone(), node.class);
@@ -107,7 +112,7 @@ pub fn main() {
                     Action::AddPatch(patch) => {
                         let source_node_class = class_by_module.get(&patch.source.node_id).unwrap();
                         let source_node_index = nodes.get(&patch.source.node_id).unwrap();
-                        let producer = classes
+                        let producer = CLASSES
                             .get(source_node_class)
                             .unwrap()
                             .producer(&patch.source.pin_class);
@@ -115,7 +120,7 @@ pub fn main() {
                         let destination_node_class =
                             class_by_module.get(&patch.destination.node_id).unwrap();
                         let destination_node_index = nodes.get(&patch.destination.node_id).unwrap();
-                        let consumer = classes
+                        let consumer = CLASSES
                             .get(destination_node_class)
                             .unwrap()
                             .consumer(&patch.destination.pin_class);
@@ -125,7 +130,7 @@ pub fn main() {
                     Action::AddOutputPatch(pin_address) => {
                         let source_node_class = class_by_module.get(&pin_address.node_id).unwrap();
                         let source_node_index = nodes.get(&pin_address.node_id).unwrap();
-                        let producer = classes
+                        let producer = CLASSES
                             .get(source_node_class)
                             .unwrap()
                             .producer(&pin_address.pin_class);
