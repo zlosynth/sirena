@@ -1,12 +1,7 @@
-// TODO: Kepe this as PoC lab, don't try too hard to mka eit into a lib
-// add instrument.rs, with struct, implement modules over it
-
-// TODO: Turn this into a library (limit to UI)
 // TODO: Define:
 // - MIDI input (start mono, with note and gate)
 // - ADSR
 // - filter
-// TODO: Buffer should be an option, to ignore ports that are not connected
 
 #[macro_use]
 extern crate graphity;
@@ -17,11 +12,6 @@ extern crate approx;
 
 mod modules;
 mod stream;
-
-// TODO
-// each module will be boxed and kept in a hash map
-// the module would keep all its metadata (refcells)
-// the module would reconcile actions of gazpatcho (the node type would be used as a key in hashmap)
 
 use cpal::traits::StreamTrait;
 use gazpatcho::config::NodeTemplate;
@@ -100,6 +90,7 @@ pub fn main() {
         demo_actions(ui_action_tx);
     });
 
+    // TODO: Split fetching of data and reacting to actions
     thread::spawn(move || {
         // TODO: single map with right hand struct for module, node and class
         let mut modules = HashMap::new();
