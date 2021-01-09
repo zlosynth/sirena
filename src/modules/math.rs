@@ -3,7 +3,6 @@ use std::cell::RefCell;
 use std::rc::Rc;
 
 use gazpatcho::config as c;
-use graphity::Node;
 use graphity::{node::ConsumerIndex, node::ProducerIndex, NodeIndex};
 
 pub const CLASS: &str = "math";
@@ -11,14 +10,85 @@ pub const IN1: &str = "x";
 pub const IN2: &str = "y";
 pub const OUT: &str = "out";
 
-pub struct Math {
+struct Class;
+
+impl<N, C, P> crate::ModuleClass<N, C, P> for Class
+where
+    N: From<Node>,
+    C: From<Consumer>,
+    P: From<Producer>,
+{
+    fn instantiate(&self) -> Box<dyn crate::Module<N>> {
+        let formula = Rc::new(RefCell::new("440".parse().unwrap()));
+        Box::new(Module { formula })
+    }
+
+    fn template(&self) -> c::NodeTemplate {
+        c::NodeTemplate {
+            label: "Math".to_owned(),
+            class: CLASS.to_owned(),
+            display_heading: false,
+            pins: vec![
+                c::Pin {
+                    label: "x".to_owned(),
+                    class: IN1.to_owned(),
+                    direction: c::Input,
+                },
+                c::Pin {
+                    label: "y".to_owned(),
+                    class: IN2.to_owned(),
+                    direction: c::Input,
+                },
+                c::Pin {
+                    label: "Out".to_owned(),
+                    class: OUT.to_owned(),
+                    direction: c::Output,
+                },
+            ],
+            widgets: vec![c::TextBox {
+                key: "formula".to_owned(),
+                capacity: 1000,
+                size: [200.0, 23.0],
+                read_only: false,
+            }],
+        }
+    }
+
+    // TODO: Implement From<&str> trait on Input
+    fn consumer(&self, class: &str) -> C {
+        match class {
+            "x" => Consumer::In1.into(),
+            "y" => Consumer::In2.into(),
+            _ => unreachable!(),
+        }
+    }
+
+    fn producer(&self, class: &str) -> P {
+        Producer.into()
+    }
+}
+
+struct Module {
+    formula: Rc<RefCell<meval::Expr>>,
+}
+
+impl<N> crate::Module<N> for Module
+where
+    N: From<Node>,
+{
+    fn take_node(&mut self) -> N {
+        Node::new(Rc::clone(&self.formula)).into()
+    }
+}
+
+pub struct Node {
     formula: Rc<RefCell<meval::Expr>>,
     in1: [f32; 32],
     in2: [f32; 32],
     out: [f32; 32],
 }
 
-impl Math {
+impl Node {
     pub fn new(formula: Rc<RefCell<meval::Expr>>) -> Self {
         Self {
             formula,
@@ -30,26 +100,26 @@ impl Math {
 }
 
 #[derive(PartialEq, Eq, Hash, Clone, Copy, Debug)]
-pub enum Input {
+pub enum Consumer {
     In1,
     In2,
 }
 
 #[derive(PartialEq, Eq, Hash, Clone, Copy, Debug)]
-pub struct Output;
+pub struct Producer;
 
-impl Node<[f32; 32]> for Math {
-    type Consumer = Input;
-    type Producer = Output;
+impl graphity::Node<[f32; 32]> for Node {
+    type Consumer = Consumer;
+    type Producer = Producer;
 
-    fn write(&mut self, input: Input, data: [f32; 32]) {
-        match input {
-            Input::In1 => self.in1 = data,
-            Input::In2 => self.in2 = data,
+    fn write(&mut self, consumer: Consumer, data: [f32; 32]) {
+        match consumer {
+            Consumer::In1 => self.in1 = data,
+            Consumer::In2 => self.in2 = data,
         }
     }
 
-    fn read(&self, _output: Output) -> [f32; 32] {
+    fn read(&self, _producer: Producer) -> [f32; 32] {
         self.out
     }
 
@@ -63,74 +133,21 @@ impl Node<[f32; 32]> for Math {
     }
 }
 
-pub fn template() -> c::NodeTemplate {
-    c::NodeTemplate {
-        label: "Math".to_owned(),
-        class: CLASS.to_owned(),
-        display_heading: false,
-        pins: vec![
-            c::Pin {
-                label: "x".to_owned(),
-                class: IN1.to_owned(),
-                direction: c::Input,
-            },
-            c::Pin {
-                label: "y".to_owned(),
-                class: IN2.to_owned(),
-                direction: c::Input,
-            },
-            c::Pin {
-                label: "Out".to_owned(),
-                class: OUT.to_owned(),
-                direction: c::Output,
-            },
-        ],
-        widgets: vec![c::TextBox {
-            key: "formula".to_owned(),
-            capacity: 1000,
-            size: [200.0, 23.0],
-            read_only: false,
-        }],
-    }
-}
-
-pub fn producer<NI>(source: &NI, pin_class: &str) -> <NI as NodeIndex>::ProducerIndex
-where
-    NI: NodeIndex,
-    NI::Producer: std::convert::From<Output>,
-{
-    match pin_class {
-        "out" => source.producer(Output),
-        &_ => unreachable!(),
-    }
-}
-
-pub fn consumer<NI>(destination: &NI, pin_class: &str) -> <NI as NodeIndex>::ConsumerIndex
-where
-    NI: NodeIndex,
-    NI::Consumer: std::convert::From<Input>,
-{
-    match pin_class {
-        IN1 => destination.consumer(Input::In1),
-        IN2 => destination.consumer(Input::In2),
-        &_ => unreachable!(),
-    }
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
+    use graphity::Node as _;
 
     #[test]
     fn sum2() {
         let formula = Rc::new(RefCell::new("x + y".parse().unwrap()));
 
-        let mut math = Math::new(formula);
+        let mut math = Node::new(formula);
 
-        math.write(Input::In1, [1.0; 32]);
-        math.write(Input::In2, [2.0; 32]);
+        math.write(Consumer::In1, [1.0; 32]);
+        math.write(Consumer::In2, [2.0; 32]);
         math.tick();
 
-        assert_eq!(math.read(Output)[0], 3.0);
+        assert_eq!(math.read(Producer)[0], 3.0);
     }
 }

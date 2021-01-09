@@ -45,7 +45,7 @@ graphity!(
     Bank = {bank::Bank, bank::Input, bank::Output},
     DAC = {dac::Node, dac::Consumer, dac::Producer},
     VCO = {vco::Node, vco::Consumer, vco::Producer},
-    Math = {math::Math, math::Input, math::Output},
+    Math = {math::Node, math::Consumer, math::Producer},
 );
 
 trait ModuleClass<N, C, P>: Send {
@@ -57,50 +57,6 @@ trait ModuleClass<N, C, P>: Send {
 
 trait Module<N> {
     fn take_node(&mut self) -> N;
-}
-
-struct MathClass;
-
-impl<N, C, P> ModuleClass<N, C, P> for MathClass
-where
-    N: From<math::Math>,
-    C: From<math::Input>,
-    P: From<math::Output>,
-{
-    fn instantiate(&self) -> Box<dyn Module<N>> {
-        let formula = Rc::new(RefCell::new("440".parse().unwrap()));
-        Box::new(Math { formula })
-    }
-
-    fn template(&self) -> NodeTemplate {
-        math::template()
-    }
-
-    // TODO: Implement From<&str> trait on Input
-    fn consumer(&self, class: &str) -> C {
-        match class {
-            "x" => math::Input::In1.into(),
-            "y" => math::Input::In2.into(),
-            _ => unreachable!(),
-        }
-    }
-
-    fn producer(&self, class: &str) -> P {
-        math::Output.into()
-    }
-}
-
-struct Math {
-    formula: Rc<RefCell<meval::Expr>>,
-}
-
-impl<N> Module<N> for Math
-where
-    N: From<math::Math>,
-{
-    fn take_node(&mut self) -> N {
-        math::Math::new(Rc::clone(&self.formula)).into()
-    }
 }
 
 // TODO: Maybe just pass gazpatcho report structs inside
@@ -126,7 +82,7 @@ enum Action {
 
 pub fn main() {
     let classes: Vec<Box<dyn ModuleClass<__Node, __Consumer, __Producer>>> = vec![
-        Box::new(MathClass),
+        Box::new(vco::Class),
         Box::new(vco::Class),
         Box::new(vco::Class),
     ];
