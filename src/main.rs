@@ -52,6 +52,9 @@ lazy_static! {
     };
 }
 
+const SINK_NODE_CLASS: &str = "dac";
+const SINK_NODE_OUTPUT_PIN: &str = "out";
+
 pub fn main() {
     let config = gazpatcho::config::Config {
         node_templates: CLASSES.iter().map(|(_, c)| c.template()).collect(),
@@ -85,10 +88,10 @@ pub fn main() {
             }
 
             for node in diff.added_nodes {
-                let add_output_action = if node.class == "dac" {
+                let add_output_action = if node.class == SINK_NODE_CLASS {
                     Some(Action::AddOutputPatch(gazpatcho::model::PinAddress {
                         node_id: node.id.clone(),
-                        pin_class: "out".to_owned(),
+                        pin_class: SINK_NODE_OUTPUT_PIN.to_owned(),
                     }))
                 } else {
                     None
