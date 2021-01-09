@@ -49,10 +49,8 @@ trait Module<N> {
 
 // TODO: Maybe just pass gazpatcho report structs inside
 enum Action {
-    AddNode {
-        class: String,
-        id: String,
-    },
+    // TODO: Pass gazpatcho node instead
+    AddNode(gazpatcho::model::Node),
     UpdateNode,
     RemoveNode,
     AddOutputPatch {
@@ -107,12 +105,12 @@ pub fn main() {
 
             for action in &ui_action_rx {
                 match action {
-                    Action::AddNode { class, id } => {
-                        let mut module = classes.get(&class).unwrap().instantiate();
+                    Action::AddNode(node) => {
+                        let mut module = classes.get(&node.class).unwrap().instantiate();
                         let node_index = graph.add_node(module.take_node());
-                        nodes.insert(id.clone(), node_index);
-                        class_by_module.insert(id.clone(), class);
-                        modules.insert(id, module);
+                        nodes.insert(node.id.clone(), node_index);
+                        class_by_module.insert(node.id.clone(), node.class);
+                        modules.insert(node.id, module);
                     }
                     Action::AddPatch {
                         source_node_id,
@@ -233,16 +231,18 @@ pub fn main() {
 
 fn demo_actions(ui_action_tx: mpsc::Sender<Action>) {
     ui_action_tx
-        .send(Action::AddNode {
+        .send(Action::AddNode(gazpatcho::model::Node {
             class: "vco".to_owned(),
             id: "vco:1".to_owned(),
-        })
+            data: HashMap::new(),
+        }))
         .unwrap();
     ui_action_tx
-        .send(Action::AddNode {
+        .send(Action::AddNode(gazpatcho::model::Node {
             class: "dac".to_owned(),
             id: "dac:1".to_owned(),
-        })
+            data: HashMap::new(),
+        }))
         .unwrap();
     ui_action_tx
         .send(Action::AddOutputPatch {
@@ -251,10 +251,11 @@ fn demo_actions(ui_action_tx: mpsc::Sender<Action>) {
         })
         .unwrap();
     ui_action_tx
-        .send(Action::AddNode {
+        .send(Action::AddNode(gazpatcho::model::Node {
             class: "math".to_owned(),
             id: "math:1".to_owned(),
-        })
+            data: HashMap::new(),
+        }))
         .unwrap();
 
     ui_action_tx.send(Action::AddPatch {
