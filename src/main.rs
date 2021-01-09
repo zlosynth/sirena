@@ -45,7 +45,7 @@ const SAMPLE_RATE: u32 = 44800;
 graphity!(
     Graph<[f32; 32]>;
     Bank = {bank::Bank, bank::Input, bank::Output},
-    DAC = {dac::DAC, dac::Input, dac::Output},
+    DAC = {dac::Node, dac::Consumer, dac::Producer},
     VCO = {vco::Node, vco::Consumer, vco::Producer},
     Math = {math::Math, math::Input, math::Output},
 );
@@ -59,42 +59,6 @@ trait ModuleClass<N, C, P>: Send {
 
 trait Module<N> {
     fn take_node(&mut self) -> N;
-}
-
-struct DACClass;
-
-impl<N, C, P> ModuleClass<N, C, P> for DACClass
-where
-    N: From<dac::DAC>,
-    C: From<dac::Input>,
-    P: From<dac::Output>,
-{
-    fn instantiate(&self) -> Box<dyn Module<N>> {
-        Box::new(DAC)
-    }
-
-    fn template(&self) -> NodeTemplate {
-        dac::template()
-    }
-
-    fn consumer(&self, class: &str) -> C {
-        dac::Input.into()
-    }
-
-    fn producer(&self, class: &str) -> P {
-        dac::Output.into()
-    }
-}
-
-struct DAC;
-
-impl<N> Module<N> for DAC
-where
-    N: From<dac::DAC>,
-{
-    fn take_node(&mut self) -> N {
-        dac::DAC::default().into()
-    }
 }
 
 struct MathClass;
@@ -166,7 +130,7 @@ pub fn main() {
     let classes: Vec<Box<dyn ModuleClass<__Node, __Consumer, __Producer>>> = vec![
         Box::new(MathClass),
         Box::new(vco::Class),
-        Box::new(DACClass),
+        Box::new(vco::Class),
     ];
 
     let classes: HashMap<_, Box<dyn ModuleClass<__Node, __Consumer, __Producer>>> = classes

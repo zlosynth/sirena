@@ -1,40 +1,71 @@
 use gazpatcho::config as c;
-use graphity::Node;
+
+struct Class;
+
+impl<N, C, P> crate::ModuleClass<N, C, P> for Class
+where
+    N: From<Node>,
+    C: From<Consumer>,
+    P: From<Producer>,
+{
+    fn instantiate(&self) -> Box<dyn crate::Module<N>> {
+        Box::new(Module)
+    }
+
+    fn template(&self) -> c::NodeTemplate {
+        c::NodeTemplate {
+            label: "DAC".to_owned(),
+            class: "dac".to_owned(),
+            display_heading: true,
+            pins: vec![c::Pin {
+                label: "In".to_owned(),
+                class: "in".to_owned(),
+                direction: c::Input,
+            }],
+            widgets: vec![],
+        }
+    }
+
+    fn consumer(&self, class: &str) -> C {
+        Consumer.into()
+    }
+
+    fn producer(&self, class: &str) -> P {
+        Producer.into()
+    }
+}
+
+struct Module;
+
+impl<N> crate::Module<N> for Module
+where
+    N: From<Node>,
+{
+    fn take_node(&mut self) -> N {
+        Node::default().into()
+    }
+}
 
 #[derive(Default)]
-pub struct DAC {
+pub struct Node {
     values: [f32; 32],
 }
 
 #[derive(PartialEq, Eq, Hash, Clone, Copy, Debug)]
-pub struct Input;
+pub struct Consumer;
 
 #[derive(PartialEq, Eq, Hash, Clone, Copy, Debug)]
-pub struct Output;
+pub struct Producer;
 
-impl Node<[f32; 32]> for DAC {
-    type Consumer = Input;
-    type Producer = Output;
+impl graphity::Node<[f32; 32]> for Node {
+    type Consumer = Consumer;
+    type Producer = Producer;
 
-    fn write(&mut self, _input: Input, data: [f32; 32]) {
+    fn write(&mut self, _consumer: Consumer, data: [f32; 32]) {
         self.values = data;
     }
 
-    fn read(&self, _output: Output) -> [f32; 32] {
+    fn read(&self, _producer: Producer) -> [f32; 32] {
         self.values
-    }
-}
-
-pub fn template() -> c::NodeTemplate {
-    c::NodeTemplate {
-        label: "DAC".to_owned(),
-        class: "dac".to_owned(),
-        display_heading: true,
-        pins: vec![c::Pin {
-            label: "In".to_owned(),
-            class: "in".to_owned(),
-            direction: c::Input,
-        }],
-        widgets: vec![],
     }
 }
