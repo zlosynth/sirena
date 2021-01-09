@@ -1,5 +1,6 @@
 // TODO: The maths module should understand nodes. C4 ...
 use std::cell::RefCell;
+use std::collections::HashMap;
 use std::rc::Rc;
 
 use gazpatcho::config as c;
@@ -18,8 +19,12 @@ where
     C: From<Consumer>,
     P: From<Producer>,
 {
-    fn instantiate(&self) -> Box<dyn crate::Module<N>> {
-        let formula = Rc::new(RefCell::new("440".parse().unwrap()));
+    fn instantiate(
+        &self,
+        data: HashMap<String, gazpatcho::model::Value>,
+    ) -> Box<dyn crate::Module<N>> {
+        let formula = data.get("formula").unwrap().unwrap_string();
+        let formula = Rc::new(RefCell::new(formula.parse().unwrap()));
         Box::new(Module { formula })
     }
 
@@ -78,6 +83,11 @@ where
 {
     fn take_node(&mut self) -> N {
         Node::new(Rc::clone(&self.formula)).into()
+    }
+
+    fn update(&mut self, data: HashMap<String, gazpatcho::model::Value>) {
+        let formula = data.get("formula").unwrap().unwrap_string();
+        *self.formula.borrow_mut() = formula.parse().unwrap();
     }
 }
 

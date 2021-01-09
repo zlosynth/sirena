@@ -1,8 +1,3 @@
-// TODO: Define:
-// - MIDI input (start mono, with note and gate)
-// - ADSR
-// - filter
-
 #[macro_use]
 extern crate graphity;
 
@@ -54,7 +49,7 @@ lazy_static! {
 }
 
 trait ModuleClass<N, C, P>: Send + Sync {
-    fn instantiate(&self) -> Box<dyn Module<N>>;
+    fn instantiate(&self, data: HashMap<String, gazpatcho::model::Value>) -> Box<dyn Module<N>>;
     fn template(&self) -> NodeTemplate;
     fn consumer(&self, class: &str) -> C;
     fn producer(&self, class: &str) -> P;
@@ -62,11 +57,12 @@ trait ModuleClass<N, C, P>: Send + Sync {
 
 trait Module<N> {
     fn take_node(&mut self) -> N;
+    fn update(&mut self, _data: HashMap<String, gazpatcho::model::Value>) {}
 }
 
 enum Action {
     AddNode(gazpatcho::model::Node),
-    UpdateNode,
+    UpdateNode(gazpatcho::model::Node),
     RemoveNode(gazpatcho::model::Node),
     AddOutputPatch(gazpatcho::model::PinAddress),
     AddPatch(gazpatcho::model::Patch),
@@ -75,7 +71,7 @@ enum Action {
 
 pub fn main() {
     let config = gazpatcho::config::Config {
-        node_templates: CLASSES.iter().map(|(k, c)| c.template()).collect(),
+        node_templates: CLASSES.iter().map(|(_, c)| c.template()).collect(),
     };
 
     let (ui_report_tx, ui_report_rx) = mpsc::channel();
@@ -109,11 +105,14 @@ pub fn main() {
             for action in &ui_action_rx {
                 match action {
                     Action::AddNode(node) => {
-                        let mut module = CLASSES.get(&node.class).unwrap().instantiate();
+                        let mut module = CLASSES.get(&node.class).unwrap().instantiate(node.data);
                         let node_index = graph.add_node(module.take_node());
                         nodes.insert(node.id.clone(), node_index);
                         class_by_module.insert(node.id.clone(), node.class);
                         modules.insert(node.id, module);
+                    }
+                    Action::UpdateNode(node) => {
+                        modules.get_mut(&node.id).unwrap().update(node.data);
                     }
                     Action::RemoveNode(node) => {
                         let node_index = nodes.get(&node.id).unwrap();
@@ -168,7 +167,6 @@ pub fn main() {
                         let producer_index = source_node_index.producer(producer);
                         graph.must_add_edge(producer_index, output.consumer(bank::Input));
                     }
-                    _ => println!("unhandled action"),
                 }
             }
         }
@@ -263,11 +261,17 @@ fn demo_actions(ui_action_tx: mpsc::Sender<Action>) {
             pin_class: "out".to_owned(),
         }))
         .unwrap();
+    let math_data: HashMap<_, _> = vec![(
+        "formula".to_owned(),
+        gazpatcho::model::Value::String("440".to_owned()),
+    )]
+    .into_iter()
+    .collect();
     ui_action_tx
         .send(Action::AddNode(gazpatcho::model::Node {
             class: "math".to_owned(),
             id: "math:1".to_owned(),
-            data: HashMap::new(),
+            data: math_data,
         }))
         .unwrap();
 
