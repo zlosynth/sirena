@@ -29,7 +29,7 @@ use crate::modules::math;
 use crate::modules::vco;
 use crate::registration::{Module, ModuleClass};
 
-const SAMPLE_RATE: u32 = 44800;
+const SAMPLE_RATE: u32 = 48000;
 
 graphity!(
     Graph<[f32; 32]>;
