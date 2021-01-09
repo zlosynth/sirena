@@ -69,7 +69,7 @@ pub fn main() {
     let (ui_action_tx, ui_action_rx) = mpsc::channel();
 
     thread::spawn(move || {
-        // TODO: Make sure there is one DAC at most
+        let mut sink_node_instance: Option<String> = None;
 
         let mut old_report: Option<gazpatcho::report::Report> = None;
 
@@ -83,19 +83,37 @@ pub fn main() {
             }
 
             for node in diff.removed_nodes {
+                if let Some(sink_node_instance_id) = &sink_node_instance {
+                    if node.id == *sink_node_instance_id {
+                        sink_node_instance = None;
+                    }
+                }
+
                 ui_action_tx.send(Action::RemoveNode(node)).unwrap();
             }
 
             for node in diff.added_nodes {
                 let add_output_action = if node.class == SINK_NODE_CLASS {
-                    Some(Action::AddOutputPatch(gazpatcho::model::PinAddress {
-                        node_id: node.id.clone(),
-                        pin_class: SINK_NODE_OUTPUT_PIN.to_owned(),
-                    }))
+                    if sink_node_instance.is_some() {
+                        ui_request_tx
+                            .send(gazpatcho::request::Request::RemoveNode {
+                                node_id: node.id.clone(),
+                            })
+                            .unwrap();
+                        None
+                    } else {
+                        sink_node_instance = Some(node.id.clone());
+                        Some(Action::AddOutputPatch(gazpatcho::model::PinAddress {
+                            node_id: node.id.clone(),
+                            pin_class: SINK_NODE_OUTPUT_PIN.to_owned(),
+                        }))
+                    }
                 } else {
                     None
                 };
+
                 ui_action_tx.send(Action::AddNode(node)).unwrap();
+
                 if let Some(add_output_action) = add_output_action {
                     ui_action_tx.send(add_output_action).unwrap();
                 }
@@ -111,7 +129,6 @@ pub fn main() {
         }
     });
 
-    // TODO: Split fetching of data and reacting to actions
     thread::spawn(move || {
         struct Meta {
             pub module: Box<dyn Module<__Node>>,
