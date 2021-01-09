@@ -2,8 +2,14 @@
 
 Proof of concept.
 
-Run examples:
+Run it:
 
 ``` sh
-cargo run --package examples --example sine
+cargo run --release
+```
+
+Run it with Jack:
+
+``` sh
+cargo run --release --features jack
 ```
