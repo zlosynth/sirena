@@ -239,16 +239,41 @@ impl graphity::Node<[f32; 32]> for Node {
     fn tick(&mut self) {
         for message in self.daemon.borrow().try_iter() {
             let message = wmidi::MidiMessage::try_from(&message.message[..]).unwrap();
-            if let wmidi::MidiMessage::NoteOn(_, note, _) = message {
-                self.active = Some(note);
-                self.freq = [note.to_freq_f32(); 32];
-                self.gate = [1.0; 32];
-            } else if let wmidi::MidiMessage::NoteOff(_, note, _) = message {
-                if let Some(active) = self.active {
-                    if active == note {
-                        self.gate = [0.0; 32];
+            match message {
+                wmidi::MidiMessage::NoteOn(_, note, _) => {
+                    self.active = Some(note);
+                    self.freq = [note.to_freq_f32(); 32];
+                    self.gate = [1.0; 32];
+                }
+                wmidi::MidiMessage::NoteOff(_, note, _) => {
+                    if let Some(active) = self.active {
+                        if active == note {
+                            self.gate = [0.0; 32];
+                        }
                     }
                 }
+                wmidi::MidiMessage::ControlChange(_, function, value) => {
+                    let value: f32 = u8::from(value).into();
+                    let value = [value / 128.0; 32];
+                    match u8::from(function) {
+                        1 => self.cc1 = value,
+                        2 => self.cc2 = value,
+                        3 => self.cc3 = value,
+                        4 => self.cc4 = value,
+                        5 => self.cc5 = value,
+                        6 => self.cc6 = value,
+                        7 => self.cc7 = value,
+                        8 => self.cc8 = value,
+                        _ => (),
+                    }
+                },
+                wmidi::MidiMessage::PitchBendChange(_, pitchbend) => {
+                    let mut pitchbend: f32 = u16::from(pitchbend).into();
+                    pitchbend -= f32::powi(2.0, 13);
+                    pitchbend /= f32::powi(2.0, 13);
+                    self.pitchbend = [pitchbend; 32];
+                }
+                _ => (),
             }
         }
     }

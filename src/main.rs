@@ -1,4 +1,5 @@
 // TODO:
+// - monitor showing the current value
 // - clean up existing modules
 // - adsr
 // - math1, math4, math8
