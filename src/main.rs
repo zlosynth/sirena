@@ -1,7 +1,5 @@
 // TODO: Keep module and node in a single struct?
 // TODO:
-// - monitor showing the current value
-// - debug why vco goes silent after a while
 // - clean up existing modules
 // - adsr
 // - math1, math4, math8

@@ -84,7 +84,7 @@ impl graphity::Node<[f32; 32]> for Node {
     }
 
     fn tick(&mut self) {
-        self.phase %= 48000.0 * 360.0 * 32.0;
+        self.phase %= f32::powi(2.0, 24);
         for (i, result) in self.result.iter_mut().enumerate() {
             *result = sin(self.phase / 48000.0, self.frequency[i]);
             self.phase += 1.0;
