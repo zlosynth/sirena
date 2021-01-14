@@ -32,7 +32,7 @@ where
     C: From<Consumer>,
     P: From<Producer>,
 {
-    fn instantiate(&self) -> Box<dyn crate::Module<N>> {
+    fn instantiate(&self, _id: String) -> Box<dyn crate::Module<N>> {
         Box::new(Module {
             input_devices: self.input_devices.clone(),
             daemon: Rc::new(RefCell::new(Daemon::default())),
@@ -266,7 +266,7 @@ impl graphity::Node<[f32; 32]> for Node {
                         8 => self.cc8 = value,
                         _ => (),
                     }
-                },
+                }
                 wmidi::MidiMessage::PitchBendChange(_, pitchbend) => {
                     let mut pitchbend: f32 = u16::from(pitchbend).into();
                     pitchbend -= f32::powi(2.0, 13);

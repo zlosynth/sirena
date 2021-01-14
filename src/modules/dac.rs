@@ -8,7 +8,7 @@ where
     C: From<Consumer>,
     P: From<Producer>,
 {
-    fn instantiate(&self) -> Box<dyn crate::Module<N>> {
+    fn instantiate(&self, _id: String) -> Box<dyn crate::Module<N>> {
         Box::new(Module)
     }
 

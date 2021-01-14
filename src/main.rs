@@ -1,5 +1,7 @@
+// TODO: Keep module and node in a single struct?
 // TODO:
 // - monitor showing the current value
+// - debug why vco goes silent after a while
 // - clean up existing modules
 // - adsr
 // - math1, math4, math8
@@ -17,6 +19,7 @@
 // - wavefolder
 // - scope
 // - frequency analyzer
+// - fix drop down on MIDI
 
 #![allow(clippy::large_enum_variant)]
 
@@ -49,6 +52,7 @@ use crate::modules::bank;
 use crate::modules::dac;
 use crate::modules::math;
 use crate::modules::midi;
+use crate::modules::value;
 use crate::modules::vco;
 use crate::registration::{Module, ModuleClass};
 
@@ -57,15 +61,17 @@ const SAMPLE_RATE: u32 = 48000;
 graphity!(
     Graph<[f32; 32]>;
     Bank = {bank::Bank, bank::Input, bank::Output},
-    DAC = {dac::Node, dac::Consumer, dac::Producer},
+    Math = {math::Node, math::Consumer, math::Producer},
+    Value = {value::Node, value::Consumer, value::Producer},
     VCO = {vco::Node, vco::Consumer, vco::Producer},
     MIDI = {midi::Node, midi::Consumer, midi::Producer},
-    Math = {math::Node, math::Consumer, math::Producer},
+    DAC = {dac::Node, dac::Consumer, dac::Producer},
 );
 
 lazy_static! {
     static ref CLASSES: HashMap<String, Box<dyn ModuleClass<__Node, __Consumer, __Producer>>> = {
         let classes: Vec<Box<dyn ModuleClass<__Node, __Consumer, __Producer>>> = vec![
+            Box::new(value::Class),
             Box::new(math::Class),
             Box::new(vco::Class),
             Box::new(dac::Class),
@@ -87,9 +93,9 @@ pub fn main() {
     let (output_stream, data_req_rx, data_tx) = stream::build_output_stream(SAMPLE_RATE);
     let (ui_action_tx, ui_action_rx) = mpsc::channel();
 
-    run_ui_handler(ui_report_rx, ui_request_tx, ui_action_tx);
+    run_ui_handler(ui_report_rx, ui_request_tx.clone(), ui_action_tx);
 
-    run_graph_handler(data_req_rx, ui_action_rx, data_tx);
+    run_graph_handler(data_req_rx, ui_request_tx, ui_action_rx, data_tx);
 
     output_stream
         .play()
@@ -170,6 +176,7 @@ fn run_ui_handler(
 
 fn run_graph_handler(
     data_req_rx: mpsc::Receiver<()>,
+    ui_request_tx: mpsc::Sender<gazpatcho::request::Request>,
     ui_action_rx: mpsc::Receiver<Action>,
     data_tx: mpsc::Sender<[f32; 32]>,
 ) -> thread::JoinHandle<()> {
@@ -213,8 +220,12 @@ fn run_graph_handler(
             for action in ui_action_rx.try_iter() {
                 match action {
                     Action::AddNode(node) => {
-                        let mut module = CLASSES.get(&node.class).unwrap().instantiate();
+                        let mut module = CLASSES
+                            .get(&node.class)
+                            .unwrap()
+                            .instantiate(node.id.clone());
                         let node_index = graph.add_node(module.take_node());
+                        module.register_ui_tx(ui_request_tx.clone());
                         meta.insert(
                             node.id,
                             Meta {
