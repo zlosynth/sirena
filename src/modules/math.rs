@@ -18,9 +18,19 @@ where
     C: From<Consumer>,
     P: From<Producer>,
 {
-    fn instantiate(&self, _id: String) -> Box<dyn crate::Module<N>> {
+    fn instantiate(
+        &self,
+        _id: String,
+        data: HashMap<String, gazpatcho::model::Value>,
+    ) -> Box<dyn crate::Module<N>> {
+        let formula = data.get("formula").unwrap().unwrap_string();
+        let formula = if let Ok(formula) = formula.parse() {
+            formula
+        } else {
+            "0".parse().unwrap()
+        };
         Box::new(Module {
-            formula: Rc::new(RefCell::new("0".parse().unwrap())),
+            formula: Rc::new(RefCell::new(formula)),
         })
     }
 

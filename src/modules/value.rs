@@ -12,10 +12,24 @@ where
     C: From<Consumer>,
     P: From<Producer>,
 {
-    fn instantiate(&self, id: String) -> Box<dyn crate::Module<N>> {
+    fn instantiate(
+        &self,
+        id: String,
+        data: HashMap<String, gazpatcho::model::Value>,
+    ) -> Box<dyn crate::Module<N>> {
+        let value = data.get("value").unwrap().unwrap_string();
+        let value = if value.is_empty() {
+            0.0
+        } else {
+            if let Ok(value) = value.parse::<f32>() {
+                value
+            } else {
+                0.0
+            }
+        };
         Box::new(Module {
             id,
-            value: Arc::new(Mutex::new(0.0)),
+            value: Arc::new(Mutex::new(value)),
             join_handle: None,
             stop_tx: None,
         })

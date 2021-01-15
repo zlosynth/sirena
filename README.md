@@ -1,6 +1,6 @@
 # Sirena
 
-Proof of concept.
+Proof of concept. By no means is this a proper DSP code.
 
 Run it:
 

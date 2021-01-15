@@ -32,7 +32,11 @@ where
     C: From<Consumer>,
     P: From<Producer>,
 {
-    fn instantiate(&self, _id: String) -> Box<dyn crate::Module<N>> {
+    fn instantiate(
+        &self,
+        _id: String,
+        _data: HashMap<String, gazpatcho::model::Value>,
+    ) -> Box<dyn crate::Module<N>> {
         Box::new(Module {
             input_devices: self.input_devices.clone(),
             daemon: Rc::new(RefCell::new(Daemon::default())),

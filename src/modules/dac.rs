@@ -1,4 +1,5 @@
 use gazpatcho::config as c;
+use std::collections::HashMap;
 
 pub struct Class;
 
@@ -8,7 +9,11 @@ where
     C: From<Consumer>,
     P: From<Producer>,
 {
-    fn instantiate(&self, _id: String) -> Box<dyn crate::Module<N>> {
+    fn instantiate(
+        &self,
+        _id: String,
+        _data: HashMap<String, gazpatcho::model::Value>,
+    ) -> Box<dyn crate::Module<N>> {
         Box::new(Module)
     }
 

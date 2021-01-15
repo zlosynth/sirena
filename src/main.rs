@@ -1,5 +1,7 @@
 // TODO: Keep module and node in a single struct?
 // TODO:
+// - scope
+// - add full test coverage
 // - clean up existing modules
 // - adsr
 // - math1, math4, math8
@@ -15,7 +17,6 @@
 // - clock with divider
 // - slew
 // - wavefolder
-// - scope
 // - frequency analyzer
 // - fix drop down on MIDI
 
@@ -50,6 +51,7 @@ use crate::modules::bank;
 use crate::modules::dac;
 use crate::modules::math;
 use crate::modules::midi;
+use crate::modules::scope;
 use crate::modules::value;
 use crate::modules::vco;
 use crate::registration::{Module, ModuleClass};
@@ -61,6 +63,7 @@ graphity!(
     Bank = {bank::Bank, bank::Input, bank::Output},
     Math = {math::Node, math::Consumer, math::Producer},
     Value = {value::Node, value::Consumer, value::Producer},
+    Scope = {scope::Node, scope::Consumer, scope::Producer},
     VCO = {vco::Node, vco::Consumer, vco::Producer},
     MIDI = {midi::Node, midi::Consumer, midi::Producer},
     DAC = {dac::Node, dac::Consumer, dac::Producer},
@@ -70,6 +73,7 @@ lazy_static! {
     static ref CLASSES: HashMap<String, Box<dyn ModuleClass<__Node, __Consumer, __Producer>>> = {
         let classes: Vec<Box<dyn ModuleClass<__Node, __Consumer, __Producer>>> = vec![
             Box::new(value::Class),
+            Box::new(scope::Class),
             Box::new(math::Class),
             Box::new(vco::Class),
             Box::new(dac::Class),
@@ -213,15 +217,13 @@ fn run_graph_handler(
             let data = graph.node(&output).unwrap().read(bank::Output);
             data_tx.send(data).unwrap();
 
-            // TODO: Collect actions from modules, configuring back the UI
-
             for action in ui_action_rx.try_iter() {
                 match action {
                     Action::AddNode(node) => {
                         let mut module = CLASSES
                             .get(&node.class)
                             .unwrap()
-                            .instantiate(node.id.clone());
+                            .instantiate(node.id.clone(), node.data);
                         let node_index = graph.add_node(module.take_node());
                         module.register_ui_tx(ui_request_tx.clone());
                         meta.insert(
