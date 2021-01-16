@@ -62,7 +62,7 @@ const SAMPLE_RATE: u32 = 48000;
 
 graphity!(
     Graph<Samples>;
-    Bank = {bank::Bank, bank::Consumer, bank::Producer},
+    Bank = {bank::Node, bank::Consumer, bank::Producer},
     Math = {math::Node, math::Consumer, math::Producer},
     Value = {value::Node, value::Consumer, value::Producer},
     Scope = {scope::Node, scope::Consumer, scope::Producer},
@@ -194,7 +194,7 @@ fn run_graph_handler(
 
         let mut graph = Graph::new();
 
-        let output = graph.add_node(bank::Bank::default());
+        let output = graph.add_node(bank::Node::new());
 
         let get_producer_index = |meta: &HashMap<String, Meta>, pin_address: &PinAddress| {
             let source = meta.get(&pin_address.node_id).unwrap();
