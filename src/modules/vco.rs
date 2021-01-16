@@ -6,7 +6,7 @@ use std::collections::HashMap;
 
 pub struct Class;
 
-impl<N, C, P> crate::registration::ModuleClass<N, C, P> for Class
+impl<N, C, P> crate::registration::Module<N, C, P> for Class
 where
     N: From<Node>,
     C: From<Consumer>,
@@ -16,8 +16,8 @@ where
         &self,
         _id: String,
         _data: HashMap<String, gazpatcho::model::Value>,
-    ) -> Box<dyn crate::Module<N>> {
-        Box::new(Module)
+    ) -> (Box<dyn crate::Widget>, N) {
+        (Box::new(Module), Node::default().into())
     }
 
     fn template(&self) -> c::NodeTemplate {
@@ -52,14 +52,7 @@ where
 
 pub struct Module;
 
-impl<N> crate::registration::Module<N> for Module
-where
-    N: From<Node>,
-{
-    fn take_node(&mut self) -> N {
-        Node::default().into()
-    }
-}
+impl crate::registration::Widget for Module {}
 
 #[derive(Default)]
 pub struct Node {

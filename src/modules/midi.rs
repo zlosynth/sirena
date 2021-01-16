@@ -26,7 +26,7 @@ impl Class {
     }
 }
 
-impl<N, C, P> crate::registration::ModuleClass<N, C, P> for Class
+impl<N, C, P> crate::registration::Module<N, C, P> for Class
 where
     N: From<Node>,
     C: From<Consumer>,
@@ -36,11 +36,21 @@ where
         &self,
         _id: String,
         _data: HashMap<String, gazpatcho::model::Value>,
-    ) -> Box<dyn crate::Module<N>> {
-        Box::new(Module {
-            input_devices: self.input_devices.clone(),
-            daemon: Rc::new(RefCell::new(Daemon::default())),
-        })
+    ) -> (Box<dyn crate::Widget>, N) {
+        let mut daemon = Rc::new(RefCell::new(Daemon::default()));
+        let input_devices = self.input_devices.clone();
+        if !input_devices.is_empty() {
+            daemon
+                .borrow_mut()
+                .set_device(input_devices.values().next().unwrap().clone());
+        }
+        (
+            Box::new(Module {
+                input_devices: input_devices,
+                daemon: Rc::clone(&daemon),
+            }),
+            Node::new(daemon).into(),
+        )
     }
 
     fn template(&self) -> c::NodeTemplate {
@@ -152,19 +162,7 @@ pub struct Module {
     input_devices: HashMap<String, portmidi::DeviceInfo>,
 }
 
-impl<N> crate::registration::Module<N> for Module
-where
-    N: From<Node>,
-{
-    fn take_node(&mut self) -> N {
-        if !self.input_devices.is_empty() {
-            self.daemon
-                .borrow_mut()
-                .set_device(self.input_devices.values().next().unwrap().clone());
-        }
-        Node::new(Rc::clone(&self.daemon)).into()
-    }
-
+impl crate::registration::Widget for Module {
     fn update(&mut self, data: HashMap<String, gazpatcho::model::Value>) {
         let input_key = data.get("input").unwrap().unwrap_string();
         self.daemon

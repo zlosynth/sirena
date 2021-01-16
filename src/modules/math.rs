@@ -12,7 +12,7 @@ pub const OUT: &str = "out";
 
 pub struct Class;
 
-impl<N, C, P> crate::registration::ModuleClass<N, C, P> for Class
+impl<N, C, P> crate::registration::Module<N, C, P> for Class
 where
     N: From<Node>,
     C: From<Consumer>,
@@ -22,16 +22,20 @@ where
         &self,
         _id: String,
         data: HashMap<String, gazpatcho::model::Value>,
-    ) -> Box<dyn crate::Module<N>> {
+    ) -> (Box<dyn crate::Widget>, N) {
         let formula = data.get("formula").unwrap().unwrap_string();
         let formula = if let Ok(formula) = formula.parse() {
             formula
         } else {
             "0".parse().unwrap()
         };
-        Box::new(Module {
-            formula: Rc::new(RefCell::new(formula)),
-        })
+        let formula = Rc::new(RefCell::new(formula));
+        (
+            Box::new(Module {
+                formula: Rc::clone(&formula),
+            }),
+            Node::new(formula).into(),
+        )
     }
 
     fn template(&self) -> c::NodeTemplate {
@@ -83,14 +87,7 @@ pub struct Module {
     formula: Rc<RefCell<meval::Expr>>,
 }
 
-impl<N> crate::registration::Module<N> for Module
-where
-    N: From<Node>,
-{
-    fn take_node(&mut self) -> N {
-        Node::new(Rc::clone(&self.formula)).into()
-    }
-
+impl crate::registration::Widget for Module {
     fn update(&mut self, data: HashMap<String, gazpatcho::model::Value>) {
         let formula = data.get("formula").unwrap().unwrap_string();
         if let Ok(formula) = formula.parse() {

@@ -1,6 +1,6 @@
 // TODO: Keep module and node in a single struct?
 // TODO:
-// - scope
+// - make it so class returns widget and node
 // - add full test coverage
 // - clean up existing modules
 // - adsr
@@ -54,7 +54,7 @@ use crate::modules::midi;
 use crate::modules::scope;
 use crate::modules::value;
 use crate::modules::vco;
-use crate::registration::{Module, ModuleClass};
+use crate::registration::{Module, Widget};
 
 const SAMPLE_RATE: u32 = 48000;
 
@@ -70,8 +70,8 @@ graphity!(
 );
 
 lazy_static! {
-    static ref CLASSES: HashMap<String, Box<dyn ModuleClass<__Node, __Consumer, __Producer>>> = {
-        let classes: Vec<Box<dyn ModuleClass<__Node, __Consumer, __Producer>>> = vec![
+    static ref CLASSES: HashMap<String, Box<dyn Module<__Node, __Consumer, __Producer>>> = {
+        let classes: Vec<Box<dyn Module<__Node, __Consumer, __Producer>>> = vec![
             Box::new(value::Class),
             Box::new(scope::Class),
             Box::new(math::Class),
@@ -184,7 +184,7 @@ fn run_graph_handler(
 ) -> thread::JoinHandle<()> {
     thread::spawn(move || {
         struct Meta {
-            pub module: Box<dyn Module<__Node>>,
+            pub widget: Box<dyn Widget>,
             pub node_index: __NodeIndex,
             pub class: String,
         }
@@ -220,23 +220,23 @@ fn run_graph_handler(
             for action in ui_action_rx.try_iter() {
                 match action {
                     Action::AddNode(node) => {
-                        let mut module = CLASSES
+                        let (mut widget, node_) = CLASSES
                             .get(&node.class)
                             .unwrap()
                             .instantiate(node.id.clone(), node.data);
-                        let node_index = graph.add_node(module.take_node());
-                        module.register_ui_tx(ui_request_tx.clone());
+                        let node_index = graph.add_node(node_);
+                        widget.register_ui_tx(ui_request_tx.clone());
                         meta.insert(
                             node.id,
                             Meta {
-                                module,
+                                widget,
                                 node_index,
                                 class: node.class,
                             },
                         );
                     }
                     Action::UpdateNode(node) => {
-                        meta.get_mut(&node.id).unwrap().module.update(node.data);
+                        meta.get_mut(&node.id).unwrap().widget.update(node.data);
                     }
                     Action::RemoveNode(node) => {
                         let node_index = meta.get(&node.id).unwrap().node_index;

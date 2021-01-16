@@ -6,7 +6,7 @@ use std::time::Duration;
 
 pub struct Class;
 
-impl<N, C, P> crate::registration::ModuleClass<N, C, P> for Class
+impl<N, C, P> crate::registration::Module<N, C, P> for Class
 where
     N: From<Node>,
     C: From<Consumer>,
@@ -16,7 +16,7 @@ where
         &self,
         id: String,
         data: HashMap<String, gazpatcho::model::Value>,
-    ) -> Box<dyn crate::Module<N>> {
+    ) -> (Box<dyn crate::Widget>, N) {
         let value = data.get("value").unwrap().unwrap_string();
         let value = if value.is_empty() {
             0.0
@@ -27,12 +27,20 @@ where
                 0.0
             }
         };
-        Box::new(Module {
-            id,
-            value: Arc::new(Mutex::new(value)),
-            join_handle: None,
-            stop_tx: None,
-        })
+        let value = Arc::new(Mutex::new(value));
+        (
+            Box::new(Module {
+                id,
+                value: Arc::clone(&value),
+                join_handle: None,
+                stop_tx: None,
+            }),
+            Node {
+                value: value,
+                ..Node::default()
+            }
+            .into(),
+        )
     }
 
     fn template(&self) -> c::NodeTemplate {
@@ -77,18 +85,7 @@ pub struct Module {
     join_handle: Option<thread::JoinHandle<()>>,
 }
 
-impl<N> crate::registration::Module<N> for Module
-where
-    N: From<Node>,
-{
-    fn take_node(&mut self) -> N {
-        Node {
-            value: Arc::clone(&self.value),
-            ..Node::default()
-        }
-        .into()
-    }
-
+impl crate::registration::Widget for Module {
     fn update(&mut self, data: HashMap<String, gazpatcho::model::Value>) {
         let value = data.get("value").unwrap().unwrap_string();
         let value = if value.is_empty() {

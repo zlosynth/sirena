@@ -9,7 +9,7 @@ use std::time::Duration;
 
 pub struct Class;
 
-impl<N, C, P> crate::registration::ModuleClass<N, C, P> for Class
+impl<N, C, P> crate::registration::Module<N, C, P> for Class
 where
     N: From<Node>,
     C: From<Consumer>,
@@ -19,7 +19,7 @@ where
         &self,
         id: String,
         _data: HashMap<String, gazpatcho::model::Value>,
-    ) -> Box<dyn crate::Module<N>> {
+    ) -> (Box<dyn crate::Widget>, N) {
         let buffer = {
             let mut data: [std::mem::MaybeUninit<f32>; 2000] =
                 unsafe { std::mem::MaybeUninit::uninit().assume_init() };
@@ -30,13 +30,21 @@ where
             }
             unsafe { std::mem::transmute::<_, [f32; 2000]>(data) }
         };
-        Box::new(Module {
-            id,
-            buffer: Arc::new(Mutex::new(buffer)),
-            buffer_len: Arc::new(Mutex::new(2000)),
-            join_handle: None,
-            stop_tx: None,
-        })
+        let buffer = Arc::new(Mutex::new(buffer));
+        let buffer_len = Arc::new(Mutex::new(2000));
+        (
+            Box::new(Module {
+                id,
+                buffer: Arc::clone(&buffer),
+                buffer_len: Arc::clone(&buffer_len),
+                join_handle: None,
+                stop_tx: None,
+            }),
+            Node {
+                ..Node::new(buffer, buffer_len)
+            }
+            .into(),
+        )
     }
 
     fn template(&self) -> c::NodeTemplate {
@@ -73,17 +81,7 @@ pub struct Module {
     join_handle: Option<thread::JoinHandle<()>>,
 }
 
-impl<N> crate::registration::Module<N> for Module
-where
-    N: From<Node>,
-{
-    fn take_node(&mut self) -> N {
-        Node {
-            ..Node::new(Arc::clone(&self.buffer), Arc::clone(&self.buffer_len))
-        }
-        .into()
-    }
-
+impl crate::registration::Widget for Module {
     fn register_ui_tx(&mut self, ui_tx: mpsc::Sender<gazpatcho::request::Request>) {
         let (stop_tx, stop_rx) = mpsc::channel();
 
