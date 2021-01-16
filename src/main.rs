@@ -1,4 +1,5 @@
 // TODO: Keep module and node in a single struct?
+// TODO: The maths module should understand nodes. C4 ...
 // TODO:
 // - make it so class returns widget and node
 // - add full test coverage

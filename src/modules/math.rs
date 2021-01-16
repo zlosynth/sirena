@@ -1,9 +1,8 @@
-// TODO: The maths module should understand nodes. C4 ...
 use std::cell::RefCell;
 use std::collections::HashMap;
 use std::rc::Rc;
 
-use gazpatcho::config as c;
+use gazpatcho::config::*;
 
 use crate::registration::{Module, ModuleInstance};
 use crate::samples::{self, Samples};
@@ -21,33 +20,34 @@ where
 {
     fn instantiate(&self, _id: String) -> ModuleInstance<N> {
         let formula = Rc::new(RefCell::new("0".parse().unwrap()));
-        ModuleInstance::new(Node::new(Rc::clone(&formula)).into())
-            .with_widget(Box::new(Widget { formula }))
+        let node = Node::new(Rc::clone(&formula)).into();
+        let widget = Box::new(Widget { formula });
+        ModuleInstance::new(node).with_widget(widget)
     }
 
-    fn template(&self) -> c::NodeTemplate {
-        c::NodeTemplate {
+    fn template(&self) -> NodeTemplate {
+        NodeTemplate {
             label: "Math".to_owned(),
             class: "math".to_owned(),
             display_heading: false,
             pins: vec![
-                c::Pin {
+                Pin {
                     label: "a".to_owned(),
                     class: IN1.to_owned(),
-                    direction: c::Input,
+                    direction: Input,
                 },
-                c::Pin {
+                Pin {
                     label: "b".to_owned(),
                     class: IN2.to_owned(),
-                    direction: c::Input,
+                    direction: Input,
                 },
-                c::Pin {
+                Pin {
                     label: "Out".to_owned(),
                     class: "out".to_owned(),
-                    direction: c::Output,
+                    direction: Output,
                 },
             ],
-            widgets: vec![c::TextBox {
+            widgets: vec![TextBox {
                 key: "formula".to_owned(),
                 capacity: 200,
                 size: [200.0, 23.0],
