@@ -77,7 +77,7 @@ lazy_static! {
         let classes: Vec<Box<dyn Module<__Node, __Consumer, __Producer>>> = vec![
             Box::new(value::Class),
             Box::new(scope::Class),
-            Box::new(math::Class),
+            Box::new(math::Math),
             Box::new(vco::Class),
             Box::new(dac::DAC),
             Box::new(midi::Class::new()),

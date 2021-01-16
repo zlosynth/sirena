@@ -5,31 +5,30 @@ use std::rc::Rc;
 
 use gazpatcho::config as c;
 
+use crate::registration::{Module, ModuleInstance};
 use crate::samples::{self, Samples};
 
-pub const CLASS: &str = "math";
 pub const IN1: &str = "a";
 pub const IN2: &str = "b";
-pub const OUT: &str = "out";
 
-pub struct Class;
+pub struct Math;
 
-impl<N, C, P> crate::registration::Module<N, C, P> for Class
+impl<N, C, P> Module<N, C, P> for Math
 where
     N: From<Node>,
     C: From<Consumer>,
     P: From<Producer>,
 {
-    fn instantiate(&self, _id: String) -> crate::registration::ModuleInstance<N> {
+    fn instantiate(&self, _id: String) -> ModuleInstance<N> {
         let formula = Rc::new(RefCell::new("0".parse().unwrap()));
-        crate::registration::ModuleInstance::new(Node::new(Rc::clone(&formula)).into())
-            .with_widget(Box::new(Module { formula }))
+        ModuleInstance::new(Node::new(Rc::clone(&formula)).into())
+            .with_widget(Box::new(Widget { formula }))
     }
 
     fn template(&self) -> c::NodeTemplate {
         c::NodeTemplate {
             label: "Math".to_owned(),
-            class: CLASS.to_owned(),
+            class: "math".to_owned(),
             display_heading: false,
             pins: vec![
                 c::Pin {
@@ -44,7 +43,7 @@ where
                 },
                 c::Pin {
                     label: "Out".to_owned(),
-                    class: OUT.to_owned(),
+                    class: "out".to_owned(),
                     direction: c::Output,
                 },
             ],
@@ -57,7 +56,6 @@ where
         }
     }
 
-    // TODO: Implement From<&str> trait on Input
     fn consumer(&self, class: &str) -> C {
         match class {
             IN1 => Consumer::In1.into(),
@@ -71,11 +69,11 @@ where
     }
 }
 
-pub struct Module {
+pub struct Widget {
     formula: Rc<RefCell<meval::Expr>>,
 }
 
-impl crate::registration::Widget for Module {
+impl crate::registration::Widget for Widget {
     fn update(&mut self, data: HashMap<String, gazpatcho::model::Value>) {
         let formula = data.get("formula").unwrap().unwrap_string();
         if let Ok(formula) = formula.parse() {
