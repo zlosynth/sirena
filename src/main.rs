@@ -38,6 +38,7 @@ mod modules;
 mod registration;
 mod samples;
 mod stream;
+mod ui;
 
 use cpal::traits::StreamTrait;
 use gazpatcho::model::PinAddress;
@@ -78,7 +79,7 @@ lazy_static! {
             Box::new(scope::Class),
             Box::new(math::Class),
             Box::new(vco::Class),
-            Box::new(dac::Class),
+            Box::new(dac::Module),
             Box::new(midi::Class::new()),
         ];
         classes

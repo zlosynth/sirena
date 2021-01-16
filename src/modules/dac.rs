@@ -1,33 +1,30 @@
-use gazpatcho::config as c;
-use std::collections::HashMap;
-
 use crate::samples::Samples;
+use crate::ui::template::*;
+use crate::ui::*;
 
-pub struct Class;
+pub struct Module;
 
-impl<N, C, P> crate::registration::Module<N, C, P> for Class
+impl<N, C, P> crate::registration::Module<N, C, P> for Module
 where
     N: From<Node>,
     C: From<Consumer>,
     P: From<Producer>,
 {
-    fn instantiate(
-        &self,
-        _id: String,
-        _data: HashMap<String, gazpatcho::model::Value>,
-    ) -> (Box<dyn crate::Widget>, N) {
-        (Box::new(Module), Node::default().into())
+    fn instantiate(&self, _id: String, _data: Data) -> (Box<dyn crate::Widget>, N) {
+        let widget = Box::new(Widget);
+        let node = Node::new();
+        (widget, node.into())
     }
 
-    fn template(&self) -> c::NodeTemplate {
-        c::NodeTemplate {
+    fn template(&self) -> NodeTemplate {
+        NodeTemplate {
             label: "DAC".to_owned(),
             class: "dac".to_owned(),
             display_heading: true,
-            pins: vec![c::Pin {
+            pins: vec![Pin {
                 label: "In".to_owned(),
                 class: "in".to_owned(),
-                direction: c::Input,
+                direction: Input,
             }],
             widgets: vec![],
         }
@@ -38,17 +35,23 @@ where
     }
 
     fn producer(&self, _class: &str) -> P {
-        Producer.into()
+        unreachable!();
     }
 }
 
-pub struct Module;
+pub struct Widget;
 
-impl crate::registration::Widget for Module {}
+impl crate::registration::Widget for Widget {}
 
 #[derive(Default)]
 pub struct Node {
     values: Samples,
+}
+
+impl Node {
+    pub fn new() -> Self {
+        Self::default()
+    }
 }
 
 #[derive(PartialEq, Eq, Hash, Clone, Copy, Debug)]

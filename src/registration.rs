@@ -1,3 +1,5 @@
+// TODO: Have 3 modules, one exposing all from graphity, one from gazpatcho, one for module
+
 use gazpatcho::config::NodeTemplate;
 use std::boxed::Box;
 use std::collections::HashMap;
