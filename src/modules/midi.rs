@@ -8,6 +8,8 @@ use std::sync::mpsc;
 use std::thread;
 use std::time::Duration;
 
+use crate::samples::{self, Samples};
+
 pub struct Class {
     input_devices: HashMap<String, portmidi::DeviceInfo>,
 }
@@ -175,18 +177,18 @@ impl crate::registration::Widget for Module {
 pub struct Node {
     daemon: Rc<RefCell<Daemon>>,
     active: Option<wmidi::Note>,
-    freq: [f32; 32],
-    gate: [f32; 32],
-    velocity: [f32; 32],
-    pitchbend: [f32; 32],
-    cc1: [f32; 32],
-    cc2: [f32; 32],
-    cc3: [f32; 32],
-    cc4: [f32; 32],
-    cc5: [f32; 32],
-    cc6: [f32; 32],
-    cc7: [f32; 32],
-    cc8: [f32; 32],
+    freq: Samples,
+    gate: Samples,
+    velocity: Samples,
+    pitchbend: Samples,
+    cc1: Samples,
+    cc2: Samples,
+    cc3: Samples,
+    cc4: Samples,
+    cc5: Samples,
+    cc6: Samples,
+    cc7: Samples,
+    cc8: Samples,
 }
 
 impl Node {
@@ -217,11 +219,11 @@ pub enum Producer {
     CC8,
 }
 
-impl graphity::Node<[f32; 32]> for Node {
+impl graphity::Node<Samples> for Node {
     type Consumer = Consumer;
     type Producer = Producer;
 
-    fn read(&self, producer: Producer) -> [f32; 32] {
+    fn read(&self, producer: Producer) -> Samples {
         match producer {
             Producer::Frequency => self.freq,
             Producer::Gate => self.gate,
@@ -244,19 +246,19 @@ impl graphity::Node<[f32; 32]> for Node {
             match message {
                 wmidi::MidiMessage::NoteOn(_, note, _) => {
                     self.active = Some(note);
-                    self.freq = [note.to_freq_f32(); 32];
-                    self.gate = [1.0; 32];
+                    self.freq = samples::value(note.to_freq_f32());
+                    self.gate = samples::value(1.0);
                 }
                 wmidi::MidiMessage::NoteOff(_, note, _) => {
                     if let Some(active) = self.active {
                         if active == note {
-                            self.gate = [0.0; 32];
+                            self.gate = samples::value(0.0);
                         }
                     }
                 }
                 wmidi::MidiMessage::ControlChange(_, function, value) => {
                     let value: f32 = u8::from(value).into();
-                    let value = [value / 128.0; 32];
+                    let value = samples::value(value / 128.0);
                     match u8::from(function) {
                         1 => self.cc1 = value,
                         2 => self.cc2 = value,
@@ -273,7 +275,7 @@ impl graphity::Node<[f32; 32]> for Node {
                     let mut pitchbend: f32 = u16::from(pitchbend).into();
                     pitchbend -= f32::powi(2.0, 13);
                     pitchbend /= f32::powi(2.0, 13);
-                    self.pitchbend = [pitchbend; 32];
+                    self.pitchbend = samples::value(pitchbend);
                 }
                 _ => (),
             }

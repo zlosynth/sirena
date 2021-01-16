@@ -7,6 +7,8 @@ use std::sync::{mpsc, Arc, Mutex};
 use std::thread;
 use std::time::Duration;
 
+use crate::samples::Samples;
+
 pub struct Class;
 
 impl<N, C, P> crate::registration::Module<N, C, P> for Class
@@ -146,7 +148,7 @@ impl Drop for Module {
 }
 
 pub struct Node {
-    input: [f32; 32],
+    input: Samples,
     // TODO: Introduce ring buffer struct, including the index
     buffer: Arc<Mutex<[f32; 2000]>>,
     buffer_len: Arc<Mutex<i32>>,
@@ -186,11 +188,11 @@ pub struct Consumer;
 #[derive(PartialEq, Eq, Hash, Clone, Copy, Debug)]
 pub struct Producer;
 
-impl graphity::Node<[f32; 32]> for Node {
+impl graphity::Node<Samples> for Node {
     type Consumer = Consumer;
     type Producer = Producer;
 
-    fn write(&mut self, _consumer: Consumer, data: [f32; 32]) {
+    fn write(&mut self, _consumer: Consumer, data: Samples) {
         self.input = data;
     }
 

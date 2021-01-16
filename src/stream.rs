@@ -1,18 +1,20 @@
 use cpal::traits::{DeviceTrait, HostTrait};
 use std::sync::mpsc;
 
+use crate::samples::{self, Samples};
+
 struct RingBuffer {
-    buffer: [f32; 32],
+    buffer: Samples,
     index: usize,
     req_tx: mpsc::Sender<()>,
-    data_rx: mpsc::Receiver<[f32; 32]>,
+    data_rx: mpsc::Receiver<Samples>,
 }
 
 impl RingBuffer {
     pub fn new(req_tx: mpsc::Sender<()>, data_rx: mpsc::Receiver<[f32; 32]>) -> Self {
         req_tx.send(()).unwrap();
         Self {
-            buffer: [0.0; 32],
+            buffer: samples::zeroed(),
             index: 0,
             req_tx,
             data_rx,

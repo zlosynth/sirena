@@ -5,6 +5,8 @@ use std::rc::Rc;
 
 use gazpatcho::config as c;
 
+use crate::samples::{self, Samples};
+
 pub const CLASS: &str = "math";
 pub const IN1: &str = "a";
 pub const IN2: &str = "b";
@@ -98,18 +100,18 @@ impl crate::registration::Widget for Module {
 
 pub struct Node {
     formula: Rc<RefCell<meval::Expr>>,
-    in1: [f32; 32],
-    in2: [f32; 32],
-    out: [f32; 32],
+    in1: Samples,
+    in2: Samples,
+    out: Samples,
 }
 
 impl Node {
     pub fn new(formula: Rc<RefCell<meval::Expr>>) -> Self {
         Self {
             formula,
-            in1: [0.0; 32],
-            in2: [0.0; 32],
-            out: [0.0; 32],
+            in1: samples::zeroed(),
+            in2: samples::zeroed(),
+            out: samples::zeroed(),
         }
     }
 }
@@ -123,18 +125,18 @@ pub enum Consumer {
 #[derive(PartialEq, Eq, Hash, Clone, Copy, Debug)]
 pub struct Producer;
 
-impl graphity::Node<[f32; 32]> for Node {
+impl graphity::Node<Samples> for Node {
     type Consumer = Consumer;
     type Producer = Producer;
 
-    fn write(&mut self, consumer: Consumer, data: [f32; 32]) {
+    fn write(&mut self, consumer: Consumer, data: Samples) {
         match consumer {
             Consumer::In1 => self.in1 = data,
             Consumer::In2 => self.in2 = data,
         }
     }
 
-    fn read(&self, _producer: Producer) -> [f32; 32] {
+    fn read(&self, _producer: Producer) -> Samples {
         self.out
     }
 
@@ -159,8 +161,8 @@ mod tests {
 
         let mut math = Node::new(formula);
 
-        math.write(Consumer::In1, [1.0; 32]);
-        math.write(Consumer::In2, [2.0; 32]);
+        math.write(Consumer::In1, samples::value(1.0));
+        math.write(Consumer::In2, samples::value(2.0));
         math.tick();
 
         assert_eq!(math.read(Producer)[0], 3.0);

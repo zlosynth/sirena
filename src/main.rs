@@ -36,6 +36,7 @@ mod action;
 mod diff;
 mod modules;
 mod registration;
+mod samples;
 mod stream;
 
 use cpal::traits::StreamTrait;
@@ -55,11 +56,12 @@ use crate::modules::scope;
 use crate::modules::value;
 use crate::modules::vco;
 use crate::registration::{Module, Widget};
+use crate::samples::Samples;
 
 const SAMPLE_RATE: u32 = 48000;
 
 graphity!(
-    Graph<[f32; 32]>;
+    Graph<Samples>;
     Bank = {bank::Bank, bank::Consumer, bank::Producer},
     Math = {math::Node, math::Consumer, math::Producer},
     Value = {value::Node, value::Consumer, value::Producer},
@@ -180,7 +182,7 @@ fn run_graph_handler(
     data_req_rx: mpsc::Receiver<()>,
     ui_request_tx: mpsc::Sender<gazpatcho::request::Request>,
     ui_action_rx: mpsc::Receiver<Action>,
-    data_tx: mpsc::Sender<[f32; 32]>,
+    data_tx: mpsc::Sender<Samples>,
 ) -> thread::JoinHandle<()> {
     thread::spawn(move || {
         struct Meta {

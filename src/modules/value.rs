@@ -4,6 +4,8 @@ use std::sync::{mpsc, Arc, Mutex};
 use std::thread;
 use std::time::Duration;
 
+use crate::samples::{self, Samples};
+
 pub struct Class;
 
 impl<N, C, P> crate::registration::Module<N, C, P> for Class
@@ -137,7 +139,7 @@ impl Drop for Module {
 #[derive(Default)]
 pub struct Node {
     value: Arc<Mutex<f32>>,
-    values: [f32; 32],
+    values: Samples,
     written_to: bool,
 }
 
@@ -147,16 +149,16 @@ pub struct Consumer;
 #[derive(PartialEq, Eq, Hash, Clone, Copy, Debug)]
 pub struct Producer;
 
-impl graphity::Node<[f32; 32]> for Node {
+impl graphity::Node<Samples> for Node {
     type Consumer = Consumer;
     type Producer = Producer;
 
-    fn write(&mut self, _consumer: Consumer, data: [f32; 32]) {
+    fn write(&mut self, _consumer: Consumer, data: Samples) {
         self.written_to = true;
         self.values = data;
     }
 
-    fn read(&self, _producer: Producer) -> [f32; 32] {
+    fn read(&self, _producer: Producer) -> Samples {
         self.values
     }
 
@@ -165,7 +167,7 @@ impl graphity::Node<[f32; 32]> for Node {
             *self.value.lock().unwrap() = self.values[0];
             self.written_to = false;
         } else {
-            self.values = [*self.value.lock().unwrap(); 32];
+            self.values = samples::value(*self.value.lock().unwrap());
         }
     }
 }

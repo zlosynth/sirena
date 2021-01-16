@@ -4,6 +4,8 @@ use core::f32::consts::PI;
 use gazpatcho::config as c;
 use std::collections::HashMap;
 
+use crate::samples::{self, Samples};
+
 pub struct Class;
 
 impl<N, C, P> crate::registration::Module<N, C, P> for Class
@@ -57,8 +59,8 @@ impl crate::registration::Widget for Module {}
 #[derive(Default)]
 pub struct Node {
     phase: f32,
-    frequency: [f32; 32],
-    result: [f32; 32],
+    frequency: Samples,
+    result: Samples,
 }
 
 #[derive(PartialEq, Eq, Hash, Clone, Copy, Debug)]
@@ -69,15 +71,15 @@ pub enum Consumer {
 #[derive(PartialEq, Eq, Hash, Clone, Copy, Debug)]
 pub struct Producer;
 
-impl graphity::Node<[f32; 32]> for Node {
+impl graphity::Node<Samples> for Node {
     type Consumer = Consumer;
     type Producer = Producer;
 
-    fn write(&mut self, _consumer: Consumer, data: [f32; 32]) {
+    fn write(&mut self, _consumer: Consumer, data: Samples) {
         self.frequency = data;
     }
 
-    fn read(&self, _producer: Producer) -> [f32; 32] {
+    fn read(&self, _producer: Producer) -> Samples {
         self.result
     }
 
