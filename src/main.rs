@@ -223,10 +223,11 @@ fn run_graph_handler(
             for action in ui_action_rx.try_iter() {
                 match action {
                     Action::AddNode(node) => {
-                        let (mut widget, node_) = CLASSES
+                        let instance = CLASSES
                             .get(&node.class)
                             .unwrap()
                             .instantiate(node.id.clone());
+                        let (mut widget, node_) = (instance.widget, instance.node);
                         widget.update(node.data);
                         let node_index = graph.add_node(node_);
                         widget.register_ui_tx(ui_request_tx.clone());

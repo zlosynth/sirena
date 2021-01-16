@@ -20,13 +20,11 @@ where
     C: From<Consumer>,
     P: From<Producer>,
 {
-    fn instantiate(&self, _id: String) -> (Box<dyn crate::Widget>, N) {
+    fn instantiate(&self, _id: String) -> crate::registration::ModuleInstance<N> {
         let formula = Rc::new(RefCell::new("0".parse().unwrap()));
-        (
-            Box::new(Module {
-                formula: Rc::clone(&formula),
-            }),
-            Node::new(formula).into(),
+        crate::registration::ModuleInstance::new(
+            Node::new(Rc::clone(&formula)).into(),
+            Box::new(Module { formula }),
         )
     }
 

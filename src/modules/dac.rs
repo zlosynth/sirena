@@ -1,6 +1,5 @@
 use crate::samples::Samples;
 use crate::ui::template::*;
-use crate::ui::*;
 
 pub struct Module;
 
@@ -10,10 +9,10 @@ where
     C: From<Consumer>,
     P: From<Producer>,
 {
-    fn instantiate(&self, _id: String) -> (Box<dyn crate::Widget>, N) {
+    fn instantiate(&self, _id: String) -> crate::registration::ModuleInstance<N> {
         let widget = Box::new(Widget);
         let node = Node::new();
-        (widget, node.into())
+        crate::registration::ModuleInstance::new(node.into(), widget)
     }
 
     fn template(&self) -> NodeTemplate {

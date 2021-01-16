@@ -34,7 +34,7 @@ where
     C: From<Consumer>,
     P: From<Producer>,
 {
-    fn instantiate(&self, _id: String) -> (Box<dyn crate::Widget>, N) {
+    fn instantiate(&self, _id: String) -> crate::registration::ModuleInstance<N> {
         let mut daemon = Rc::new(RefCell::new(Daemon::default()));
         let input_devices = self.input_devices.clone();
         if !input_devices.is_empty() {
@@ -42,12 +42,12 @@ where
                 .borrow_mut()
                 .set_device(input_devices.values().next().unwrap().clone());
         }
-        (
+        crate::registration::ModuleInstance::new(
+            Node::new(Rc::clone(&daemon)).into(),
             Box::new(Module {
                 input_devices: input_devices,
-                daemon: Rc::clone(&daemon),
+                daemon,
             }),
-            Node::new(daemon).into(),
         )
     }
 

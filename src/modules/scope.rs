@@ -17,7 +17,7 @@ where
     C: From<Consumer>,
     P: From<Producer>,
 {
-    fn instantiate(&self, id: String) -> (Box<dyn crate::Widget>, N) {
+    fn instantiate(&self, id: String) -> crate::registration::ModuleInstance<N> {
         let buffer = {
             let mut data: [std::mem::MaybeUninit<f32>; 2000] =
                 unsafe { std::mem::MaybeUninit::uninit().assume_init() };
@@ -30,18 +30,18 @@ where
         };
         let buffer = Arc::new(Mutex::new(buffer));
         let buffer_len = Arc::new(Mutex::new(2000));
-        (
+        crate::registration::ModuleInstance::new(
+            Node {
+                ..Node::new(Arc::clone(&buffer), Arc::clone(&buffer_len))
+            }
+            .into(),
             Box::new(Module {
                 id,
-                buffer: Arc::clone(&buffer),
-                buffer_len: Arc::clone(&buffer_len),
+                buffer,
+                buffer_len,
                 join_handle: None,
                 stop_tx: None,
             }),
-            Node {
-                ..Node::new(buffer, buffer_len)
-            }
-            .into(),
         )
     }
 

@@ -8,10 +8,21 @@ use std::sync::mpsc;
 pub use graphity::Node;
 
 pub trait Module<N, C, P>: Send + Sync {
-    fn instantiate(&self, id: String) -> (Box<dyn Widget>, N);
+    fn instantiate(&self, id: String) -> crate::registration::ModuleInstance<N>;
     fn template(&self) -> NodeTemplate;
     fn consumer(&self, class: &str) -> C;
     fn producer(&self, class: &str) -> P;
+}
+
+pub struct ModuleInstance<N> {
+    pub node: N,
+    pub widget: Box<dyn Widget>,
+}
+
+impl<N> ModuleInstance<N> {
+    pub fn new(node: N, widget: Box<dyn Widget>) -> Self {
+        Self { node, widget }
+    }
 }
 
 // TODO: Rename to handle. Class would return node and handle

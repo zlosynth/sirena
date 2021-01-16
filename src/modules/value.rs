@@ -14,20 +14,20 @@ where
     C: From<Consumer>,
     P: From<Producer>,
 {
-    fn instantiate(&self, id: String) -> (Box<dyn crate::Widget>, N) {
+    fn instantiate(&self, id: String) -> crate::registration::ModuleInstance<N> {
         let value = Arc::new(Mutex::new(0.0));
-        (
-            Box::new(Module {
-                id,
-                value: Arc::clone(&value),
-                join_handle: None,
-                stop_tx: None,
-            }),
+        crate::registration::ModuleInstance::new(
             Node {
-                value: value,
+                value: Arc::clone(&value),
                 ..Node::default()
             }
             .into(),
+            Box::new(Module {
+                id,
+                value,
+                join_handle: None,
+                stop_tx: None,
+            }),
         )
     }
 

@@ -13,8 +13,8 @@ where
     C: From<Consumer>,
     P: From<Producer>,
 {
-    fn instantiate(&self, _id: String) -> (Box<dyn crate::Widget>, N) {
-        (Box::new(Module), Node::default().into())
+    fn instantiate(&self, id: String) -> crate::registration::ModuleInstance<N> {
+        crate::registration::ModuleInstance::new(Node::default().into(), Box::new(Module))
     }
 
     fn template(&self) -> c::NodeTemplate {
