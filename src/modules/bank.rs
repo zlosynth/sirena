@@ -31,19 +31,3 @@ impl graphity::Node<Samples> for Node {
         self.values
     }
 }
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use crate::samples;
-    use graphity::Node as _;
-
-    #[test]
-    fn what_was_written_can_be_read_back() {
-        let mut bank = Node::new();
-
-        bank.write(Consumer, samples::value(1.0));
-
-        assert_eq!(bank.read(Producer), samples::value(1.0));
-    }
-}
