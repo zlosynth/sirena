@@ -20,11 +20,13 @@ pub struct ModuleInstance<N> {
 }
 
 impl<N> ModuleInstance<N> {
-    pub fn new(node: N, widget: Box<dyn Widget>) -> Self {
-        Self {
-            node,
-            widget: Some(widget),
-        }
+    pub fn new(node: N) -> Self {
+        Self { node, widget: None }
+    }
+
+    pub fn with_widget(mut self, widget: Box<dyn Widget>) -> Self {
+        self.widget = Some(widget);
+        self
     }
 }
 

@@ -35,14 +35,14 @@ where
                 ..Node::new(Arc::clone(&buffer), Arc::clone(&buffer_len))
             }
             .into(),
-            Box::new(Module {
-                id,
-                buffer,
-                buffer_len,
-                join_handle: None,
-                stop_tx: None,
-            }),
         )
+        .with_widget(Box::new(Module {
+            id,
+            buffer,
+            buffer_len,
+            join_handle: None,
+            stop_tx: None,
+        }))
     }
 
     fn template(&self) -> c::NodeTemplate {

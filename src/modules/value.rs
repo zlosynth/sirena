@@ -22,13 +22,13 @@ where
                 ..Node::default()
             }
             .into(),
-            Box::new(Module {
-                id,
-                value,
-                join_handle: None,
-                stop_tx: None,
-            }),
         )
+        .with_widget(Box::new(Module {
+            id,
+            value,
+            join_handle: None,
+            stop_tx: None,
+        }))
     }
 
     fn template(&self) -> c::NodeTemplate {

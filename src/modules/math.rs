@@ -22,10 +22,8 @@ where
 {
     fn instantiate(&self, _id: String) -> crate::registration::ModuleInstance<N> {
         let formula = Rc::new(RefCell::new("0".parse().unwrap()));
-        crate::registration::ModuleInstance::new(
-            Node::new(Rc::clone(&formula)).into(),
-            Box::new(Module { formula }),
-        )
+        crate::registration::ModuleInstance::new(Node::new(Rc::clone(&formula)).into())
+            .with_widget(Box::new(Module { formula }))
     }
 
     fn template(&self) -> c::NodeTemplate {

@@ -13,8 +13,8 @@ where
     C: From<Consumer>,
     P: From<Producer>,
 {
-    fn instantiate(&self, id: String) -> crate::registration::ModuleInstance<N> {
-        crate::registration::ModuleInstance::new(Node::default().into(), Box::new(Module))
+    fn instantiate(&self, _id: String) -> crate::registration::ModuleInstance<N> {
+        crate::registration::ModuleInstance::new(Node::default().into())
     }
 
     fn template(&self) -> c::NodeTemplate {
@@ -46,10 +46,6 @@ where
         Producer.into()
     }
 }
-
-pub struct Module;
-
-impl crate::registration::Widget for Module {}
 
 #[derive(Default)]
 pub struct Node {

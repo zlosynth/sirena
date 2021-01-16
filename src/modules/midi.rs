@@ -42,8 +42,7 @@ where
                 .borrow_mut()
                 .set_device(input_devices.values().next().unwrap().clone());
         }
-        crate::registration::ModuleInstance::new(
-            Node::new(Rc::clone(&daemon)).into(),
+        crate::registration::ModuleInstance::new(Node::new(Rc::clone(&daemon)).into()).with_widget(
             Box::new(Module {
                 input_devices: input_devices,
                 daemon,

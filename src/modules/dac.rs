@@ -10,9 +10,8 @@ where
     P: From<Producer>,
 {
     fn instantiate(&self, _id: String) -> crate::registration::ModuleInstance<N> {
-        let widget = Box::new(Widget);
         let node = Node::new();
-        crate::registration::ModuleInstance::new(node.into(), widget)
+        crate::registration::ModuleInstance::new(node.into())
     }
 
     fn template(&self) -> NodeTemplate {
@@ -37,10 +36,6 @@ where
         Producer.into()
     }
 }
-
-pub struct Widget;
-
-impl crate::registration::Widget for Widget {}
 
 #[derive(Default)]
 pub struct Node {
