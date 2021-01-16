@@ -16,12 +16,15 @@ pub trait Module<N, C, P>: Send + Sync {
 
 pub struct ModuleInstance<N> {
     pub node: N,
-    pub widget: Box<dyn Widget>,
+    pub widget: Option<Box<dyn Widget>>,
 }
 
 impl<N> ModuleInstance<N> {
     pub fn new(node: N, widget: Box<dyn Widget>) -> Self {
-        Self { node, widget }
+        Self {
+            node,
+            widget: Some(widget),
+        }
     }
 }
 

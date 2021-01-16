@@ -34,7 +34,7 @@ where
     }
 
     fn producer(&self, _class: &str) -> P {
-        unreachable!();
+        Producer.into()
     }
 }
 

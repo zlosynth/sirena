@@ -187,7 +187,7 @@ fn run_graph_handler(
 ) -> thread::JoinHandle<()> {
     thread::spawn(move || {
         struct Meta {
-            pub widget: Box<dyn Widget>,
+            pub widget: Option<Box<dyn Widget>>,
             pub node_index: __NodeIndex,
             pub class: String,
         }
@@ -228,9 +228,11 @@ fn run_graph_handler(
                             .unwrap()
                             .instantiate(node.id.clone());
                         let (mut widget, node_) = (instance.widget, instance.node);
-                        widget.update(node.data);
+                        if let Some(widget) = &mut widget {
+                            widget.update(node.data);
+                            widget.register_ui_tx(ui_request_tx.clone());
+                        }
                         let node_index = graph.add_node(node_);
-                        widget.register_ui_tx(ui_request_tx.clone());
                         meta.insert(
                             node.id,
                             Meta {
@@ -241,7 +243,9 @@ fn run_graph_handler(
                         );
                     }
                     Action::UpdateNode(node) => {
-                        meta.get_mut(&node.id).unwrap().widget.update(node.data);
+                        if let Some(widget) = &mut meta.get_mut(&node.id).unwrap().widget {
+                            widget.update(node.data);
+                        }
                     }
                     Action::RemoveNode(node) => {
                         let node_index = meta.get(&node.id).unwrap().node_index;
