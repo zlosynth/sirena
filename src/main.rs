@@ -60,7 +60,7 @@ const SAMPLE_RATE: u32 = 48000;
 
 graphity!(
     Graph<[f32; 32]>;
-    Bank = {bank::Bank, bank::Input, bank::Output},
+    Bank = {bank::Bank, bank::Consumer, bank::Producer},
     Math = {math::Node, math::Consumer, math::Producer},
     Value = {value::Node, value::Consumer, value::Producer},
     Scope = {scope::Node, scope::Consumer, scope::Producer},
@@ -214,7 +214,7 @@ fn run_graph_handler(
 
         for _ in data_req_rx {
             graph.tick();
-            let data = graph.node(&output).unwrap().read(bank::Output);
+            let data = graph.node(&output).unwrap().read(bank::Producer);
             data_tx.send(data).unwrap();
 
             for action in ui_action_rx.try_iter() {
@@ -255,7 +255,7 @@ fn run_graph_handler(
                     }
                     Action::AddOutputPatch(pin_address) => {
                         let producer_index = get_producer_index(&meta, &pin_address);
-                        graph.must_add_edge(producer_index, output.consumer(bank::Input));
+                        graph.must_add_edge(producer_index, output.consumer(bank::Consumer));
                     }
                 }
             }

@@ -6,20 +6,20 @@ pub struct Bank {
 }
 
 #[derive(PartialEq, Eq, Hash, Clone, Copy, Debug)]
-pub struct Input;
+pub struct Consumer;
 
 #[derive(PartialEq, Eq, Hash, Clone, Copy, Debug)]
-pub struct Output;
+pub struct Producer;
 
 impl Node<[f32; 32]> for Bank {
-    type Consumer = Input;
-    type Producer = Output;
+    type Consumer = Consumer;
+    type Producer = Producer;
 
-    fn write(&mut self, _input: Input, data: [f32; 32]) {
+    fn write(&mut self, _input: Consumer, data: [f32; 32]) {
         self.values = data;
     }
 
-    fn read(&self, _output: Output) -> [f32; 32] {
+    fn read(&self, _output: Producer) -> [f32; 32] {
         self.values
     }
 }
