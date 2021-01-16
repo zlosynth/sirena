@@ -34,11 +34,7 @@ where
     C: From<Consumer>,
     P: From<Producer>,
 {
-    fn instantiate(
-        &self,
-        _id: String,
-        _data: HashMap<String, gazpatcho::model::Value>,
-    ) -> (Box<dyn crate::Widget>, N) {
+    fn instantiate(&self, _id: String) -> (Box<dyn crate::Widget>, N) {
         let mut daemon = Rc::new(RefCell::new(Daemon::default()));
         let input_devices = self.input_devices.clone();
         if !input_devices.is_empty() {

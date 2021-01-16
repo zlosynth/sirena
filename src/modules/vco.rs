@@ -2,7 +2,6 @@
 
 use core::f32::consts::PI;
 use gazpatcho::config as c;
-use std::collections::HashMap;
 
 use crate::samples::{self, Samples};
 
@@ -14,11 +13,7 @@ where
     C: From<Consumer>,
     P: From<Producer>,
 {
-    fn instantiate(
-        &self,
-        _id: String,
-        _data: HashMap<String, gazpatcho::model::Value>,
-    ) -> (Box<dyn crate::Widget>, N) {
+    fn instantiate(&self, _id: String) -> (Box<dyn crate::Widget>, N) {
         (Box::new(Module), Node::default().into())
     }
 

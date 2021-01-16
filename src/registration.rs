@@ -8,11 +8,7 @@ use std::sync::mpsc;
 pub use graphity::Node;
 
 pub trait Module<N, C, P>: Send + Sync {
-    fn instantiate(
-        &self,
-        id: String,
-        data: HashMap<String, gazpatcho::model::Value>,
-    ) -> (Box<dyn Widget>, N);
+    fn instantiate(&self, id: String) -> (Box<dyn Widget>, N);
     fn template(&self) -> NodeTemplate;
     fn consumer(&self, class: &str) -> C;
     fn producer(&self, class: &str) -> P;

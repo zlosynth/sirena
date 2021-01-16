@@ -10,7 +10,7 @@ where
     C: From<Consumer>,
     P: From<Producer>,
 {
-    fn instantiate(&self, _id: String, _data: Data) -> (Box<dyn crate::Widget>, N) {
+    fn instantiate(&self, _id: String) -> (Box<dyn crate::Widget>, N) {
         let widget = Box::new(Widget);
         let node = Node::new();
         (widget, node.into())

@@ -226,7 +226,8 @@ fn run_graph_handler(
                         let (mut widget, node_) = CLASSES
                             .get(&node.class)
                             .unwrap()
-                            .instantiate(node.id.clone(), node.data);
+                            .instantiate(node.id.clone());
+                        widget.update(node.data);
                         let node_index = graph.add_node(node_);
                         widget.register_ui_tx(ui_request_tx.clone());
                         meta.insert(

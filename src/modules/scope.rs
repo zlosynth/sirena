@@ -17,11 +17,7 @@ where
     C: From<Consumer>,
     P: From<Producer>,
 {
-    fn instantiate(
-        &self,
-        id: String,
-        _data: HashMap<String, gazpatcho::model::Value>,
-    ) -> (Box<dyn crate::Widget>, N) {
+    fn instantiate(&self, id: String) -> (Box<dyn crate::Widget>, N) {
         let buffer = {
             let mut data: [std::mem::MaybeUninit<f32>; 2000] =
                 unsafe { std::mem::MaybeUninit::uninit().assume_init() };
