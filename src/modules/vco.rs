@@ -3,7 +3,7 @@
 use core::f32::consts::PI;
 use gazpatcho::config as c;
 
-use crate::samples::{self, Samples};
+use crate::samples::Samples;
 
 pub struct Class;
 

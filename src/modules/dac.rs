@@ -1,17 +1,17 @@
+use crate::registration::{Module, ModuleInstance};
 use crate::samples::Samples;
 use crate::ui::template::*;
 
-pub struct Module;
+pub struct DAC;
 
-impl<N, C, P> crate::registration::Module<N, C, P> for Module
+impl<N, C, P> Module<N, C, P> for DAC
 where
     N: From<Node>,
     C: From<Consumer>,
     P: From<Producer>,
 {
-    fn instantiate(&self, _id: String) -> crate::registration::ModuleInstance<N> {
-        let node = Node::new();
-        crate::registration::ModuleInstance::new(node.into())
+    fn instantiate(&self, _id: String) -> ModuleInstance<N> {
+        ModuleInstance::new(Node::new().into())
     }
 
     fn template(&self) -> NodeTemplate {

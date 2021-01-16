@@ -79,7 +79,7 @@ lazy_static! {
             Box::new(scope::Class),
             Box::new(math::Class),
             Box::new(vco::Class),
-            Box::new(dac::Module),
+            Box::new(dac::DAC),
             Box::new(midi::Class::new()),
         ];
         classes
