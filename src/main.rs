@@ -81,7 +81,7 @@ lazy_static! {
             Box::new(math::Math),
             Box::new(vco::Class),
             Box::new(dac::DAC),
-            Box::new(midi::Class::new()),
+            Box::new(midi::MIDI::new()),
         ];
         classes
             .into_iter()

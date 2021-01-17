@@ -1,4 +1,4 @@
-use gazpatcho::config as c;
+use gazpatcho::config::*;
 use std::cell::RefCell;
 use std::collections::HashMap;
 use std::convert::TryFrom;
@@ -8,13 +8,29 @@ use std::sync::mpsc;
 use std::thread;
 use std::time::Duration;
 
+use crate::registration::{Module, ModuleInstance};
 use crate::samples::{self, Samples};
 
-pub struct Class {
+const INPUT: &str = "input";
+
+const FREQ: &str = "freq";
+const GATE: &str = "gate";
+const VELOCITY: &str = "velocity";
+const PITCHBEND: &str = "pitchbend";
+const CC1: &str = "cc1";
+const CC2: &str = "cc2";
+const CC3: &str = "cc3";
+const CC4: &str = "cc4";
+const CC5: &str = "cc5";
+const CC6: &str = "cc6";
+const CC7: &str = "cc7";
+const CC8: &str = "cc8";
+
+pub struct MIDI {
     input_devices: HashMap<String, portmidi::DeviceInfo>,
 }
 
-impl Class {
+impl MIDI {
     pub fn new() -> Self {
         let context = portmidi::PortMidi::new().unwrap();
         let input_devices = context
@@ -28,101 +44,95 @@ impl Class {
     }
 }
 
-impl<N, C, P> crate::registration::Module<N, C, P> for Class
+impl<N, C, P> Module<N, C, P> for MIDI
 where
     N: From<Node>,
     C: From<Consumer>,
     P: From<Producer>,
 {
-    fn instantiate(&self, _id: String) -> crate::registration::ModuleInstance<N> {
-        let mut daemon = Rc::new(RefCell::new(Daemon::default()));
-        let input_devices = self.input_devices.clone();
-        if !input_devices.is_empty() {
-            daemon
-                .borrow_mut()
-                .set_device(input_devices.values().next().unwrap().clone());
-        }
-        crate::registration::ModuleInstance::new(Node::new(Rc::clone(&daemon)).into()).with_widget(
-            Box::new(Module {
-                input_devices: input_devices,
-                daemon,
-            }),
-        )
+    fn instantiate(&self, _id: String) -> ModuleInstance<N> {
+        let daemon = Rc::new(RefCell::new(Daemon::default()));
+        let node = Node::new(Rc::clone(&daemon)).into();
+        let widget = Box::new(Widget {
+            input_devices: self.input_devices.clone(),
+            daemon,
+        });
+        ModuleInstance::new(node).with_widget(widget)
     }
 
-    fn template(&self) -> c::NodeTemplate {
-        c::NodeTemplate {
+    fn template(&self) -> NodeTemplate {
+        NodeTemplate {
             label: "MIDI".to_owned(),
             class: "midi".to_owned(),
             display_heading: true,
             pins: vec![
-                c::Pin {
+                Pin {
                     label: "Freq".to_owned(),
-                    class: "freq".to_owned(),
-                    direction: c::Output,
+                    class: FREQ.to_owned(),
+                    direction: Output,
                 },
-                c::Pin {
+                Pin {
                     label: "Gate".to_owned(),
-                    class: "gate".to_owned(),
-                    direction: c::Output,
+                    class: GATE.to_owned(),
+                    direction: Output,
                 },
-                c::Pin {
+                Pin {
                     label: "Velocity".to_owned(),
-                    class: "velocity".to_owned(),
-                    direction: c::Output,
+                    class: VELOCITY.to_owned(),
+                    direction: Output,
                 },
-                c::Pin {
+                Pin {
                     label: "Pitchbend".to_owned(),
-                    class: "pitchbend".to_owned(),
-                    direction: c::Output,
+                    class: PITCHBEND.to_owned(),
+                    direction: Output,
                 },
-                c::Pin {
+                Pin {
                     label: "CC1".to_owned(),
-                    class: "cc1".to_owned(),
-                    direction: c::Output,
+                    class: CC1.to_owned(),
+                    direction: Output,
                 },
-                c::Pin {
+                Pin {
                     label: "CC2".to_owned(),
-                    class: "cc2".to_owned(),
-                    direction: c::Output,
+                    class: CC2.to_owned(),
+                    direction: Output,
                 },
-                c::Pin {
+                Pin {
                     label: "CC3".to_owned(),
-                    class: "cc3".to_owned(),
-                    direction: c::Output,
+                    class: CC3.to_owned(),
+                    direction: Output,
                 },
-                c::Pin {
+                Pin {
                     label: "CC4".to_owned(),
-                    class: "cc4".to_owned(),
-                    direction: c::Output,
+                    class: CC4.to_owned(),
+                    direction: Output,
                 },
-                c::Pin {
+                Pin {
                     label: "CC5".to_owned(),
-                    class: "cc5".to_owned(),
-                    direction: c::Output,
+                    class: CC5.to_owned(),
+                    direction: Output,
                 },
-                c::Pin {
+                Pin {
                     label: "CC6".to_owned(),
-                    class: "cc6".to_owned(),
-                    direction: c::Output,
+                    class: CC6.to_owned(),
+                    direction: Output,
                 },
-                c::Pin {
+                Pin {
                     label: "CC7".to_owned(),
-                    class: "cc7".to_owned(),
-                    direction: c::Output,
+                    class: CC7.to_owned(),
+                    direction: Output,
                 },
-                c::Pin {
+                Pin {
                     label: "CC8".to_owned(),
-                    class: "cc8".to_owned(),
-                    direction: c::Output,
+                    class: CC8.to_owned(),
+                    direction: Output,
                 },
             ],
-            widgets: vec![c::DropDown {
-                key: "input".to_owned(),
+            widgets: vec![DropDown {
+                key: INPUT.to_owned(),
                 items: self
                     .input_devices
                     .iter()
-                    .map(|(k, d)| c::DropDownItem {
+                    .map(|(k, d)| DropDownItem {
                         label: d.name().to_string(),
                         value: k.to_string(),
                     })
@@ -137,31 +147,31 @@ where
 
     fn producer(&self, class: &str) -> P {
         match class {
-            "freq" => Producer::Frequency.into(),
-            "gate" => Producer::Gate.into(),
-            "velocity" => Producer::Velocity.into(),
-            "pitchbend" => Producer::Pitchbend.into(),
-            "cc1" => Producer::CC1.into(),
-            "cc2" => Producer::CC2.into(),
-            "cc3" => Producer::CC3.into(),
-            "cc4" => Producer::CC4.into(),
-            "cc5" => Producer::CC5.into(),
-            "cc6" => Producer::CC6.into(),
-            "cc7" => Producer::CC7.into(),
-            "cc8" => Producer::CC8.into(),
+            FREQ => Producer::Frequency.into(),
+            GATE => Producer::Gate.into(),
+            VELOCITY => Producer::Velocity.into(),
+            PITCHBEND => Producer::Pitchbend.into(),
+            CC1 => Producer::CC1.into(),
+            CC2 => Producer::CC2.into(),
+            CC3 => Producer::CC3.into(),
+            CC4 => Producer::CC4.into(),
+            CC5 => Producer::CC5.into(),
+            CC6 => Producer::CC6.into(),
+            CC7 => Producer::CC7.into(),
+            CC8 => Producer::CC8.into(),
             _ => unreachable!(),
         }
     }
 }
 
-pub struct Module {
+pub struct Widget {
     daemon: Rc<RefCell<Daemon>>,
     input_devices: HashMap<String, portmidi::DeviceInfo>,
 }
 
-impl crate::registration::Widget for Module {
+impl crate::registration::Widget for Widget {
     fn update(&mut self, data: HashMap<String, gazpatcho::model::Value>) {
-        let input_key = data.get("input").unwrap().unwrap_string();
+        let input_key = data.get(INPUT).unwrap().unwrap_string();
         self.daemon
             .borrow_mut()
             .set_device(self.input_devices.get(input_key).unwrap().clone());
@@ -239,10 +249,11 @@ impl graphity::Node<Samples> for Node {
         for message in self.daemon.borrow().try_iter() {
             let message = wmidi::MidiMessage::try_from(&message.message[..]).unwrap();
             match message {
-                wmidi::MidiMessage::NoteOn(_, note, _) => {
+                wmidi::MidiMessage::NoteOn(_, note, velocity) => {
                     self.active = Some(note);
                     self.freq = samples::value(note.to_freq_f32());
                     self.gate = samples::value(1.0);
+                    self.velocity = samples::value(u8::from(velocity) as f32);
                 }
                 wmidi::MidiMessage::NoteOff(_, note, _) => {
                     if let Some(active) = self.active {
