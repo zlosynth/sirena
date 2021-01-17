@@ -1,5 +1,6 @@
 // TODO: Keep module and node in a single struct?
 // TODO: The maths module should understand nodes. C4 ...
+// TODO: Add PWM, waveform and sync
 // TODO:
 // - make it so class returns widget and node
 // - add full test coverage
@@ -79,7 +80,7 @@ lazy_static! {
             Box::new(value::Class),
             Box::new(scope::Class),
             Box::new(math::Math),
-            Box::new(vco::Class),
+            Box::new(vco::VCO),
             Box::new(dac::DAC),
             Box::new(midi::MIDI::new()),
         ];

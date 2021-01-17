@@ -1,37 +1,36 @@
-// TODO: Add PWM, waveform and sync
-
 use core::f32::consts::PI;
-use gazpatcho::config as c;
+use gazpatcho::config::*;
 
+use crate::registration::{Module, ModuleInstance};
 use crate::samples::Samples;
 
-pub struct Class;
+pub struct VCO;
 
-impl<N, C, P> crate::registration::Module<N, C, P> for Class
+impl<N, C, P> Module<N, C, P> for VCO
 where
     N: From<Node>,
     C: From<Consumer>,
     P: From<Producer>,
 {
-    fn instantiate(&self, _id: String) -> crate::registration::ModuleInstance<N> {
-        crate::registration::ModuleInstance::new(Node::default().into())
+    fn instantiate(&self, _id: String) -> ModuleInstance<N> {
+        ModuleInstance::new(Node::default().into())
     }
 
-    fn template(&self) -> c::NodeTemplate {
-        c::NodeTemplate {
+    fn template(&self) -> NodeTemplate {
+        NodeTemplate {
             label: "VCO".to_owned(),
             class: "vco".to_owned(),
             display_heading: true,
             pins: vec![
-                c::Pin {
+                Pin {
                     label: "Freq".to_owned(),
                     class: "freq".to_owned(),
-                    direction: c::Input,
+                    direction: Input,
                 },
-                c::Pin {
+                Pin {
                     label: "Out".to_owned(),
                     class: "out".to_owned(),
-                    direction: c::Output,
+                    direction: Output,
                 },
             ],
             widgets: vec![],
