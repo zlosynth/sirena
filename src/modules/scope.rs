@@ -1,23 +1,21 @@
-// TODO:
-// - sampled
-
-use gazpatcho::config as c;
+use gazpatcho::config::*;
 use std::cmp::Ordering;
 use std::sync::{mpsc, Arc, Mutex};
 use std::thread;
 use std::time::Duration;
 
+use crate::registration::{Module, ModuleInstance};
 use crate::samples::Samples;
 
-pub struct Class;
+pub struct Scope;
 
-impl<N, C, P> crate::registration::Module<N, C, P> for Class
+impl<N, C, P> Module<N, C, P> for Scope
 where
     N: From<Node>,
     C: From<Consumer>,
     P: From<Producer>,
 {
-    fn instantiate(&self, id: String) -> crate::registration::ModuleInstance<N> {
+    fn instantiate(&self, id: String) -> ModuleInstance<N> {
         let buffer = {
             let mut data: [std::mem::MaybeUninit<f32>; 2000] =
                 unsafe { std::mem::MaybeUninit::uninit().assume_init() };
@@ -30,13 +28,13 @@ where
         };
         let buffer = Arc::new(Mutex::new(buffer));
         let buffer_len = Arc::new(Mutex::new(2000));
-        crate::registration::ModuleInstance::new(
+        ModuleInstance::new(
             Node {
                 ..Node::new(Arc::clone(&buffer), Arc::clone(&buffer_len))
             }
             .into(),
         )
-        .with_widget(Box::new(Module {
+        .with_widget(Box::new(Widget {
             id,
             buffer,
             buffer_len,
@@ -45,17 +43,17 @@ where
         }))
     }
 
-    fn template(&self) -> c::NodeTemplate {
-        c::NodeTemplate {
+    fn template(&self) -> NodeTemplate {
+        NodeTemplate {
             label: "Scope".to_owned(),
             class: "scope".to_owned(),
             display_heading: false,
-            pins: vec![c::Pin {
+            pins: vec![Pin {
                 label: "In".to_owned(),
                 class: "in".to_owned(),
-                direction: c::Input,
+                direction: Input,
             }],
-            widgets: vec![c::Canvas {
+            widgets: vec![Canvas {
                 key: "scope".to_owned(),
                 size: [400.0, 200.0],
             }],
@@ -71,7 +69,7 @@ where
     }
 }
 
-pub struct Module {
+pub struct Widget {
     id: String,
     buffer: Arc<Mutex<[f32; 2000]>>,
     buffer_len: Arc<Mutex<i32>>,
@@ -79,7 +77,7 @@ pub struct Module {
     join_handle: Option<thread::JoinHandle<()>>,
 }
 
-impl crate::registration::Widget for Module {
+impl crate::registration::Widget for Widget {
     fn register_ui_tx(&mut self, ui_tx: mpsc::Sender<gazpatcho::request::Request>) {
         let (stop_tx, stop_rx) = mpsc::channel();
 
@@ -136,7 +134,7 @@ impl crate::registration::Widget for Module {
     }
 }
 
-impl Drop for Module {
+impl Drop for Widget {
     fn drop(&mut self) {
         if let Some(stop_tx) = &self.stop_tx {
             stop_tx.send(()).unwrap();

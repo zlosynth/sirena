@@ -77,7 +77,7 @@ lazy_static! {
     static ref CLASSES: HashMap<String, Box<dyn Module<__Node, __Consumer, __Producer>>> = {
         let classes: Vec<Box<dyn Module<__Node, __Consumer, __Producer>>> = vec![
             Box::new(value::Value),
-            Box::new(scope::Class),
+            Box::new(scope::Scope),
             Box::new(math::Math),
             Box::new(vco::VCO),
             Box::new(dac::DAC),
