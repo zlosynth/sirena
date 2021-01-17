@@ -28,19 +28,19 @@ where
         };
         let buffer = Arc::new(Mutex::new(buffer));
         let buffer_len = Arc::new(Mutex::new(2000));
-        ModuleInstance::new(
-            Node {
-                ..Node::new(Arc::clone(&buffer), Arc::clone(&buffer_len))
-            }
-            .into(),
-        )
-        .with_widget(Box::new(Widget {
+
+        let node = Node {
+            ..Node::new(Arc::clone(&buffer), Arc::clone(&buffer_len))
+        }
+        .into();
+        let widget = Box::new(Widget {
             id,
             buffer,
             buffer_len,
             join_handle: None,
             stop_tx: None,
-        }))
+        });
+        ModuleInstance::new(node).with_widget(widget)
     }
 
     fn template(&self) -> NodeTemplate {
