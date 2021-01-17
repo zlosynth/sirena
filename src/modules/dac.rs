@@ -1,6 +1,7 @@
+use gazpatcho::config::*;
+
 use crate::registration::{Module, ModuleInstance};
 use crate::samples::Samples;
-use crate::ui::template::*;
 
 pub struct DAC;
 

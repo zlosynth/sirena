@@ -40,7 +40,6 @@ mod modules;
 mod registration;
 mod samples;
 mod stream;
-mod ui;
 
 use cpal::traits::StreamTrait;
 use gazpatcho::model::PinAddress;
