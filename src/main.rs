@@ -35,6 +35,7 @@ extern crate lazy_static;
 extern crate approx;
 
 mod action;
+mod bank;
 mod diff;
 mod modules;
 mod registration;
@@ -50,7 +51,6 @@ use std::sync::mpsc;
 use std::thread;
 
 use crate::action::Action;
-use crate::modules::bank;
 use crate::modules::dac;
 use crate::modules::math;
 use crate::modules::midi;
