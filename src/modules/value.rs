@@ -1,55 +1,57 @@
-use gazpatcho::config as c;
+use gazpatcho::config::*;
 use std::collections::HashMap;
 use std::sync::{mpsc, Arc, Mutex};
 use std::thread;
 use std::time::Duration;
 
+use crate::registration::{Module, ModuleInstance};
 use crate::samples::{self, Samples};
 
-pub struct Class;
+pub struct Value;
 
-impl<N, C, P> crate::registration::Module<N, C, P> for Class
+const VALUE: &str = "value";
+
+impl<N, C, P> Module<N, C, P> for Value
 where
     N: From<Node>,
     C: From<Consumer>,
     P: From<Producer>,
 {
-    fn instantiate(&self, id: String) -> crate::registration::ModuleInstance<N> {
+    fn instantiate(&self, id: String) -> ModuleInstance<N> {
         let value = Arc::new(Mutex::new(0.0));
-        crate::registration::ModuleInstance::new(
-            Node {
-                value: Arc::clone(&value),
-                ..Node::default()
-            }
-            .into(),
-        )
-        .with_widget(Box::new(Module {
+        let node = Node {
+            value: Arc::clone(&value),
+            ..Node::default()
+        }
+        .into();
+        let widget = Box::new(Widget {
             id,
             value,
             join_handle: None,
             stop_tx: None,
-        }))
+        });
+        ModuleInstance::new(node).with_widget(widget)
     }
 
-    fn template(&self) -> c::NodeTemplate {
-        c::NodeTemplate {
+    fn template(&self) -> NodeTemplate {
+        NodeTemplate {
             label: "Value".to_owned(),
             class: "value".to_owned(),
             display_heading: false,
             pins: vec![
-                c::Pin {
+                Pin {
                     label: "In".to_owned(),
                     class: "in".to_owned(),
-                    direction: c::Input,
+                    direction: Input,
                 },
-                c::Pin {
+                Pin {
                     label: "Out".to_owned(),
                     class: "out".to_owned(),
-                    direction: c::Output,
+                    direction: Output,
                 },
             ],
-            widgets: vec![c::TextBox {
-                key: "value".to_owned(),
+            widgets: vec![TextBox {
+                key: VALUE.to_owned(),
                 capacity: 100,
                 size: [80.0, 20.0],
                 read_only: false,
@@ -66,16 +68,16 @@ where
     }
 }
 
-pub struct Module {
+pub struct Widget {
     id: String,
     value: Arc<Mutex<f32>>,
     stop_tx: Option<mpsc::Sender<()>>,
     join_handle: Option<thread::JoinHandle<()>>,
 }
 
-impl crate::registration::Widget for Module {
+impl crate::registration::Widget for Widget {
     fn update(&mut self, data: HashMap<String, gazpatcho::model::Value>) {
-        let value = data.get("value").unwrap().unwrap_string();
+        let value = data.get(VALUE).unwrap().unwrap_string();
         let value = if value.is_empty() {
             Ok(0.0)
         } else {
@@ -96,7 +98,7 @@ impl crate::registration::Widget for Module {
             ui_tx
                 .send(gazpatcho::request::Request::SetValue {
                     node_id: id.clone(),
-                    key: "value".to_string(),
+                    key: VALUE.to_string(),
                     value: gazpatcho::model::Value::String((*value.lock().unwrap()).to_string()),
                 })
                 .unwrap();
@@ -113,7 +115,7 @@ impl crate::registration::Widget for Module {
     }
 }
 
-impl Drop for Module {
+impl Drop for Widget {
     fn drop(&mut self) {
         if let Some(stop_tx) = &self.stop_tx {
             stop_tx.send(()).unwrap();
