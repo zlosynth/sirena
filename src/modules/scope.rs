@@ -2,7 +2,7 @@
 // - sampled
 
 use gazpatcho::config as c;
-use std::collections::HashMap;
+use std::cmp::Ordering;
 use std::sync::{mpsc, Arc, Mutex};
 use std::thread;
 use std::time::Duration;
@@ -92,22 +92,24 @@ impl crate::registration::Widget for Module {
 
         let join_handle = thread::spawn(move || loop {
             let mut wave = Vec::new();
-            let buffer = { buffer.lock().unwrap().clone() };
+            let buffer = { *buffer.lock().unwrap() };
             let buffer_len = { *buffer_len.lock().unwrap() } as usize;
             for i in 0..400 {
                 let new_y = -buffer[i * buffer_len / 400] as i32 + 100;
 
                 if i != 0 {
-                    if prev_y < new_y {
-                        for y in prev_y + 1..=new_y {
-                            wave.push((i as f32, y as f32));
+                    match new_y.cmp(&prev_y) {
+                        Ordering::Greater => {
+                            for y in prev_y + 1..=new_y {
+                                wave.push((i as f32, y as f32));
+                            }
                         }
-                    } else if prev_y > new_y {
-                        for y in new_y..prev_y {
-                            wave.push((i as f32, y as f32));
+                        Ordering::Less => {
+                            for y in new_y..prev_y {
+                                wave.push((i as f32, y as f32));
+                            }
                         }
-                    } else {
-                        wave.push((i as f32, new_y as f32));
+                        Ordering::Equal => wave.push((i as f32, new_y as f32)),
                     }
                 } else {
                     wave.push((i as f32, new_y as f32));
@@ -212,7 +214,7 @@ impl graphity::Node<Samples> for Node {
             }
 
             if self.ticks == 1 {
-                self.interval = self.since_tick / 1;
+                self.interval = self.since_tick;
                 self.ticks = 0;
                 self.since_tick = 0;
             }
@@ -226,7 +228,6 @@ impl graphity::Node<Samples> for Node {
             self.sum += *i;
             self.sum_n += 1;
 
-            // TODO: Move out, so it does not change every tick
             let zoom_in = i32::max(1, self.interval * 3 / 2000);
             {
                 *self.buffer_len.lock().unwrap() = i32::min(self.interval * 3, 2000);
