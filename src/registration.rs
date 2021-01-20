@@ -30,7 +30,6 @@ impl<N> ModuleInstance<N> {
     }
 }
 
-// TODO: Rename to handle. Class would return node and handle
 pub trait Widget {
     #[allow(unused_variables)]
     fn update(&mut self, data: HashMap<String, gazpatcho::model::Value>) {}

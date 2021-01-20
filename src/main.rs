@@ -1,10 +1,5 @@
-// TODO: Keep module and node in a single struct?
-// TODO: The maths module should understand nodes. C4 ...
 // TODO: Add PWM, waveform and sync
 // TODO:
-// - make it so class returns widget and node
-// - add full test coverage
-// - clean up existing modules
 // - adsr
 // - math1, math4, math8
 // - midi channels

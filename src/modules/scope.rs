@@ -5,7 +5,12 @@ use std::thread;
 use std::time::Duration;
 
 use crate::registration::{Module, ModuleInstance};
-use crate::samples::Samples;
+use crate::samples::{self, Samples};
+use crate::SAMPLE_RATE;
+
+const BUFFER_SIZE: usize = 2000;
+const CANVAS_WIDTH: f32 = 400.0;
+const CANVAS_HEIGHT: f32 = 200.0;
 
 pub struct Scope;
 
@@ -16,27 +21,11 @@ where
     P: From<Producer>,
 {
     fn instantiate(&self, id: String) -> ModuleInstance<N> {
-        let buffer = {
-            let mut data: [std::mem::MaybeUninit<f32>; 2000] =
-                unsafe { std::mem::MaybeUninit::uninit().assume_init() };
-            for elem in &mut data[..] {
-                unsafe {
-                    std::ptr::write(elem.as_mut_ptr(), 0.0);
-                }
-            }
-            unsafe { std::mem::transmute::<_, [f32; 2000]>(data) }
-        };
-        let buffer = Arc::new(Mutex::new(buffer));
-        let buffer_len = Arc::new(Mutex::new(2000));
-
-        let node = Node {
-            ..Node::new(Arc::clone(&buffer), Arc::clone(&buffer_len))
-        }
-        .into();
+        let buffer = Arc::new(Mutex::new(Buffer::new()));
+        let node = Node::new(Arc::clone(&buffer)).into();
         let widget = Box::new(Widget {
             id,
             buffer,
-            buffer_len,
             join_handle: None,
             stop_tx: None,
         });
@@ -55,7 +44,7 @@ where
             }],
             widgets: vec![Canvas {
                 key: "scope".to_owned(),
-                size: [400.0, 200.0],
+                size: [CANVAS_WIDTH, CANVAS_HEIGHT],
             }],
         }
     }
@@ -65,14 +54,13 @@ where
     }
 
     fn producer(&self, _class: &str) -> P {
-        Producer.into()
+        unreachable!();
     }
 }
 
 pub struct Widget {
     id: String,
-    buffer: Arc<Mutex<[f32; 2000]>>,
-    buffer_len: Arc<Mutex<i32>>,
+    buffer: Arc<Mutex<Buffer>>,
     stop_tx: Option<mpsc::Sender<()>>,
     join_handle: Option<thread::JoinHandle<()>>,
 }
@@ -86,33 +74,44 @@ impl crate::registration::Widget for Widget {
         let mut prev_y = 0;
 
         let buffer = Arc::clone(&self.buffer);
-        let buffer_len = Arc::clone(&self.buffer_len);
 
         let join_handle = thread::spawn(move || loop {
             let mut wave = Vec::new();
-            let buffer = { *buffer.lock().unwrap() };
-            let buffer_len = { *buffer_len.lock().unwrap() } as usize;
-            for i in 0..400 {
-                let new_y = -buffer[i * buffer_len / 400] as i32 + 100;
+            {
+                let buffer = buffer.lock().unwrap();
 
-                if i != 0 {
-                    match new_y.cmp(&prev_y) {
-                        Ordering::Greater => {
-                            for y in prev_y + 1..=new_y {
-                                wave.push((i as f32, y as f32));
+                let max_delta = buffer
+                    .buffer
+                    .iter()
+                    .fold(0.0, |max, x| f32::max(max, f32::abs(*x)));
+                let scale = (CANVAS_HEIGHT / 2.0) / max_delta;
+
+                for x in 0..CANVAS_WIDTH as usize {
+                    let mut new_y = -buffer.buffer[x * buffer.occupied / CANVAS_WIDTH as usize];
+                    new_y *= scale;
+                    new_y += CANVAS_HEIGHT / 2.0;
+                    let new_y = new_y as i32;
+
+                    if x == 0 {
+                        wave.push((x as f32, new_y as f32));
+                    } else {
+                        match new_y.cmp(&prev_y) {
+                            Ordering::Greater => {
+                                for y in prev_y + 1..=new_y {
+                                    wave.push((x as f32, y as f32));
+                                }
                             }
-                        }
-                        Ordering::Less => {
-                            for y in new_y..prev_y {
-                                wave.push((i as f32, y as f32));
+                            Ordering::Less => {
+                                for y in new_y..prev_y {
+                                    wave.push((x as f32, y as f32));
+                                }
                             }
+                            Ordering::Equal => wave.push((x as f32, new_y as f32)),
                         }
-                        Ordering::Equal => wave.push((i as f32, new_y as f32)),
                     }
-                } else {
-                    wave.push((i as f32, new_y as f32));
+
+                    prev_y = new_y;
                 }
-                prev_y = new_y;
             }
             ui_tx
                 .send(gazpatcho::request::Request::SetValue {
@@ -145,32 +144,25 @@ impl Drop for Widget {
 
 pub struct Node {
     input: Samples,
-    // TODO: Introduce ring buffer struct, including the index
-    buffer: Arc<Mutex<[f32; 2000]>>,
-    buffer_len: Arc<Mutex<i32>>,
-    index: usize,
-
+    buffer: Arc<Mutex<Buffer>>,
+    buffer_index: usize,
     sum: f32,
-    sum_n: i32,
-
-    ticks: i32,
-    interval: i32,
-    since_tick: i32,
+    sum_n: u32,
+    interval: u32,
+    since_tick: u32,
     prev_val: f32,
     awaiting_reset: bool,
 }
 
 impl Node {
-    fn new(buffer: Arc<Mutex<[f32; 2000]>>, buffer_len: Arc<Mutex<i32>>) -> Self {
+    fn new(buffer: Arc<Mutex<Buffer>>) -> Self {
         Self {
-            input: [0.0; 32],
             buffer,
-            buffer_len,
-            index: 0,
+            buffer_index: 0,
+            input: samples::zeroed(),
             sum: 0.0,
             sum_n: 0,
-            ticks: 0,
-            interval: 48000,
+            interval: SAMPLE_RATE,
             since_tick: 0,
             prev_val: 0.0,
             awaiting_reset: true,
@@ -193,28 +185,18 @@ impl graphity::Node<Samples> for Node {
     }
 
     fn tick(&mut self) {
-        // TODO:
-        // 2000
-        // should fit 2 intervals
-        // 48000 / s
-        //
-        // 480 / s => has 100 frames
-        //
-        // need to fit 200 frames to 2000
-        //
-        // WORKS!
-
         for i in self.input.iter() {
             self.since_tick += 1;
+
             if self.prev_val < 0.0 && *i > 0.0 {
-                self.ticks += 1;
                 self.awaiting_reset = false;
+                self.interval = self.since_tick;
+                self.since_tick = 0;
             }
 
-            if self.ticks == 1 {
-                self.interval = self.since_tick;
-                self.ticks = 0;
-                self.since_tick = 0;
+            if self.since_tick > SAMPLE_RATE {
+                self.awaiting_reset = false;
+                self.interval = SAMPLE_RATE;
             }
 
             self.prev_val = *i;
@@ -226,27 +208,50 @@ impl graphity::Node<Samples> for Node {
             self.sum += *i;
             self.sum_n += 1;
 
-            let zoom_in = i32::max(1, self.interval * 3 / 2000);
-            {
-                *self.buffer_len.lock().unwrap() = i32::min(self.interval * 3, 2000);
-            }
+            let zoom_in = u32::max(1, self.interval * 3 / BUFFER_SIZE as u32);
+            self.buffer.lock().unwrap().occupied =
+                usize::min(self.interval as usize * 3, BUFFER_SIZE);
 
             if self.sum_n >= zoom_in {
                 {
                     let mut buffer = self.buffer.lock().unwrap();
-                    buffer[self.index] = self.sum / self.sum_n as f32;
+                    buffer.buffer[self.buffer_index] = self.sum / self.sum_n as f32;
                 }
-                self.index += 1;
-                if self.index == 2000 {
+
+                self.buffer_index += 1;
+                if self.buffer_index == BUFFER_SIZE {
                     self.awaiting_reset = true;
-                    self.index = 0;
+                    self.buffer_index = 0;
                 }
 
                 self.sum = 0.0;
                 self.sum_n = 0;
             }
         }
+    }
+}
 
-        // println!("Interval: {:?}", self.interval);
+struct Buffer {
+    pub buffer: [f32; BUFFER_SIZE],
+    pub occupied: usize,
+}
+
+impl Buffer {
+    fn new() -> Self {
+        let buffer = {
+            let mut data: [std::mem::MaybeUninit<f32>; BUFFER_SIZE] =
+                unsafe { std::mem::MaybeUninit::uninit().assume_init() };
+            for elem in &mut data[..] {
+                unsafe {
+                    std::ptr::write(elem.as_mut_ptr(), 0.0);
+                }
+            }
+            unsafe { std::mem::transmute::<_, [f32; BUFFER_SIZE]>(data) }
+        };
+
+        Self {
+            buffer,
+            occupied: 0,
+        }
     }
 }
