@@ -1,19 +1,17 @@
-// TODO: Add PWM, waveform and sync
 // TODO:
 // - adsr
-// - math1, math4, math8
+// - math4
 // - midi channels
 // - midi polyphony
 // - reverb
 // - delay
-// - vco based on wavetable
-// - different waveforms in vco
 // - sample and hold
 // - quantizer
 // - filter
 // - clock with divider
 // - slew
 // - wavefolder
+// - wavetable oscillator
 // - frequency analyzer
 // - fix drop down on MIDI
 
@@ -72,8 +70,10 @@ lazy_static! {
     static ref CLASSES: HashMap<String, Box<dyn Module<__Node, __Consumer, __Producer>>> = {
         let classes: Vec<Box<dyn Module<__Node, __Consumer, __Producer>>> = vec![
             Box::new(value::Value),
+            Box::new(math::Math::new(1)),
+            Box::new(math::Math::new(2)),
+            Box::new(math::Math::new(4)),
             Box::new(scope::Scope),
-            Box::new(math::Math),
             Box::new(vco::VCO),
             Box::new(dac::DAC),
             Box::new(midi::MIDI::new()),
