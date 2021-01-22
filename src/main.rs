@@ -1,6 +1,5 @@
 // TODO:
 // - adsr
-// - math4
 // - midi channels
 // - midi polyphony
 // - reverb

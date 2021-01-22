@@ -28,8 +28,23 @@ where
                     direction: Input,
                 },
                 Pin {
-                    label: "Out".to_owned(),
-                    class: "out".to_owned(),
+                    label: "Sine".to_owned(),
+                    class: "sine".to_owned(),
+                    direction: Output,
+                },
+                Pin {
+                    label: "Saw".to_owned(),
+                    class: "saw".to_owned(),
+                    direction: Output,
+                },
+                Pin {
+                    label: "Square".to_owned(),
+                    class: "square".to_owned(),
+                    direction: Output,
+                },
+                Pin {
+                    label: "Triangle".to_owned(),
+                    class: "triangle".to_owned(),
                     direction: Output,
                 },
             ],
@@ -41,8 +56,14 @@ where
         Consumer::Frequency.into()
     }
 
-    fn producer(&self, _class: &str) -> P {
-        Producer.into()
+    fn producer(&self, class: &str) -> P {
+        match class {
+            "sine" => Producer::Sine.into(),
+            "saw" => Producer::Saw.into(),
+            "square" => Producer::Square.into(),
+            "triangle" => Producer::Triangle.into(),
+            _ => unreachable!(),
+        }
     }
 }
 
@@ -50,7 +71,10 @@ where
 pub struct Node {
     phase: f32,
     frequency: Samples,
-    result: Samples,
+    sine: Samples,
+    saw: Samples,
+    square: Samples,
+    triangle: Samples,
 }
 
 #[derive(PartialEq, Eq, Hash, Clone, Copy, Debug)]
@@ -59,7 +83,12 @@ pub enum Consumer {
 }
 
 #[derive(PartialEq, Eq, Hash, Clone, Copy, Debug)]
-pub struct Producer;
+pub enum Producer {
+    Sine,
+    Saw,
+    Square,
+    Triangle,
+}
 
 impl graphity::Node<Samples> for Node {
     type Consumer = Consumer;
@@ -69,14 +98,23 @@ impl graphity::Node<Samples> for Node {
         self.frequency = data;
     }
 
-    fn read(&self, _producer: Producer) -> Samples {
-        self.result
+    fn read(&self, producer: Producer) -> Samples {
+        match producer {
+            Producer::Sine => self.sine,
+            Producer::Saw => self.saw,
+            Producer::Square => self.square,
+            Producer::Triangle => self.triangle,
+        }
     }
 
     fn tick(&mut self) {
         self.phase %= f32::powi(2.0, 24);
-        for (i, result) in self.result.iter_mut().enumerate() {
-            *result = sin(self.phase / 48000.0, self.frequency[i]);
+        for (i, frequency) in self.frequency.iter().enumerate() {
+            let phase = self.phase / crate::SAMPLE_RATE as f32;
+            self.sine[i] = sin(phase, *frequency);
+            self.saw[i] = saw(phase, *frequency);
+            self.square[i] = square(phase, *frequency);
+            self.triangle[i] = triangle(phase, *frequency);
             self.phase += 1.0;
         }
     }
@@ -84,6 +122,39 @@ impl graphity::Node<Samples> for Node {
 
 fn sin(phase: f32, frequency: f32) -> f32 {
     (phase * frequency * 2.0 * PI).sin()
+}
+
+fn saw(phase: f32, frequency: f32) -> f32 {
+    let mut val = (phase * frequency * 2.0 * PI).sin();
+    let mut harmonics = crate::SAMPLE_RATE / u32::max(frequency as u32, 1) / 3 - 1;
+    harmonics = u32::min(harmonics, 100);
+    for i in 2..harmonics {
+        if i % 2 == 3 {
+            val -= (phase * frequency * 2.0 * PI * i as f32).sin() / i as f32;
+        } else {
+            val += (phase * frequency * 2.0 * PI * i as f32).sin() / i as f32;
+        }
+    }
+    val
+}
+
+fn square(phase: f32, frequency: f32) -> f32 {
+    let shifted_phase = phase + (1.0 / frequency) / 2.0;
+    saw(phase, frequency) - saw(shifted_phase, frequency)
+}
+
+fn triangle(phase: f32, frequency: f32) -> f32 {
+    let mut val = (phase * frequency * 2.0 * PI).sin();
+    let mut harmonics = crate::SAMPLE_RATE / u32::max(frequency as u32, 1) / 3 - 1;
+    harmonics = u32::min(harmonics, 100);
+    for i in 2..harmonics {
+        if i % 4 == 3 {
+            val -= (phase * frequency * 2.0 * PI * i as f32).sin() / f32::powi(i as f32, 2);
+        } else if i % 4 == 1 {
+            val += (phase * frequency * 2.0 * PI * i as f32).sin() / f32::powi(i as f32, 2);
+        }
+    }
+    val
 }
 
 #[cfg(test)]
