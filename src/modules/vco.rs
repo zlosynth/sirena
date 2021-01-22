@@ -28,6 +28,11 @@ where
                     direction: Input,
                 },
                 Pin {
+                    label: "PW".to_owned(),
+                    class: "pw".to_owned(),
+                    direction: Input,
+                },
+                Pin {
                     label: "Sine".to_owned(),
                     class: "sine".to_owned(),
                     direction: Output,
@@ -52,8 +57,12 @@ where
         }
     }
 
-    fn consumer(&self, _class: &str) -> C {
-        Consumer::Frequency.into()
+    fn consumer(&self, class: &str) -> C {
+        match class {
+            "freq" => Consumer::Frequency.into(),
+            "pw" => Consumer::PulseWidth.into(),
+            _ => unreachable!(),
+        }
     }
 
     fn producer(&self, class: &str) -> P {
@@ -71,6 +80,7 @@ where
 pub struct Node {
     phase: f32,
     frequency: Samples,
+    pulse_width: Samples,
     sine: Samples,
     saw: Samples,
     square: Samples,
@@ -80,6 +90,7 @@ pub struct Node {
 #[derive(PartialEq, Eq, Hash, Clone, Copy, Debug)]
 pub enum Consumer {
     Frequency,
+    PulseWidth,
 }
 
 #[derive(PartialEq, Eq, Hash, Clone, Copy, Debug)]
@@ -94,8 +105,11 @@ impl graphity::Node<Samples> for Node {
     type Consumer = Consumer;
     type Producer = Producer;
 
-    fn write(&mut self, _consumer: Consumer, data: Samples) {
-        self.frequency = data;
+    fn write(&mut self, consumer: Consumer, data: Samples) {
+        match consumer {
+            Consumer::Frequency => self.frequency = data,
+            Consumer::PulseWidth => self.pulse_width = data,
+        }
     }
 
     fn read(&self, producer: Producer) -> Samples {
@@ -113,7 +127,7 @@ impl graphity::Node<Samples> for Node {
             let phase = self.phase / crate::SAMPLE_RATE as f32;
             self.sine[i] = sin(phase, *frequency);
             self.saw[i] = saw(phase, *frequency);
-            self.square[i] = square(phase, *frequency);
+            self.square[i] = square(phase, *frequency, self.pulse_width[i]);
             self.triangle[i] = triangle(phase, *frequency);
             self.phase += 1.0;
         }
@@ -138,9 +152,10 @@ fn saw(phase: f32, frequency: f32) -> f32 {
     val
 }
 
-fn square(phase: f32, frequency: f32) -> f32 {
-    let shifted_phase = phase + (1.0 / frequency) / 2.0;
-    saw(phase, frequency) - saw(shifted_phase, frequency)
+fn square(phase: f32, frequency: f32, pulse_width: f32) -> f32 {
+    let pulse_width = f32::max(f32::min(pulse_width + 1.0, 2.0), 0.0) * 0.9 + 0.1;
+    let shifted_phase = phase + ((1.0 / frequency) / 2.0) * (2.0 - pulse_width);
+    (saw(phase, frequency) - saw(shifted_phase, frequency)) * (2.0 / 3.0) + (pulse_width - 1.0)
 }
 
 fn triangle(phase: f32, frequency: f32) -> f32 {
