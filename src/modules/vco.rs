@@ -33,6 +33,11 @@ where
                     direction: Input,
                 },
                 Pin {
+                    label: "Sync".to_owned(),
+                    class: "sync".to_owned(),
+                    direction: Input,
+                },
+                Pin {
                     label: "Sine".to_owned(),
                     class: "sine".to_owned(),
                     direction: Output,
@@ -61,6 +66,7 @@ where
         match class {
             "freq" => Consumer::Frequency.into(),
             "pw" => Consumer::PulseWidth.into(),
+            "sync" => Consumer::Sync.into(),
             _ => unreachable!(),
         }
     }
@@ -79,8 +85,10 @@ where
 #[derive(Default)]
 pub struct Node {
     phase: f32,
+    prev_sync: f32,
     frequency: Samples,
     pulse_width: Samples,
+    sync: Samples,
     sine: Samples,
     saw: Samples,
     square: Samples,
@@ -91,6 +99,7 @@ pub struct Node {
 pub enum Consumer {
     Frequency,
     PulseWidth,
+    Sync,
 }
 
 #[derive(PartialEq, Eq, Hash, Clone, Copy, Debug)]
@@ -109,6 +118,7 @@ impl graphity::Node<Samples> for Node {
         match consumer {
             Consumer::Frequency => self.frequency = data,
             Consumer::PulseWidth => self.pulse_width = data,
+            Consumer::Sync => self.sync = data,
         }
     }
 
@@ -124,11 +134,17 @@ impl graphity::Node<Samples> for Node {
     fn tick(&mut self) {
         self.phase %= f32::powi(2.0, 24);
         for (i, frequency) in self.frequency.iter().enumerate() {
+            if self.prev_sync < 0.5 && self.sync[i] >= 0.5 {
+                self.phase = (crate::SAMPLE_RATE as f32 / frequency) / 2.0 ;
+            }
+            self.prev_sync = self.sync[i];
+
             let phase = self.phase / crate::SAMPLE_RATE as f32;
             self.sine[i] = sin(phase, *frequency);
             self.saw[i] = saw(phase, *frequency);
             self.square[i] = square(phase, *frequency, self.pulse_width[i]);
             self.triangle[i] = triangle(phase, *frequency);
+
             self.phase += 1.0;
         }
     }
