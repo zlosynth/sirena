@@ -1,7 +1,6 @@
 // TODO:
 // - adsr
-// - midi channels
-// - midi polyphony
+// - midi 4 polyphony
 // - reverb
 // - delay
 // - sample and hold
@@ -9,10 +8,7 @@
 // - filter
 // - clock with divider
 // - slew
-// - wavefolder
-// - wavetable oscillator
 // - frequency analyzer
-// - fix drop down on MIDI
 
 #![allow(clippy::large_enum_variant)]
 
@@ -21,10 +17,6 @@ extern crate graphity;
 
 #[macro_use]
 extern crate lazy_static;
-
-#[cfg(test)]
-#[macro_use]
-extern crate approx;
 
 mod action;
 mod bank;

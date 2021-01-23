@@ -132,72 +132,57 @@ impl graphity::Node<Samples> for Node {
     }
 
     fn tick(&mut self) {
-        self.phase %= f32::powi(2.0, 24);
         for (i, frequency) in self.frequency.iter().enumerate() {
             if self.prev_sync < 0.5 && self.sync[i] >= 0.5 {
-                self.phase = (crate::SAMPLE_RATE as f32 / frequency) / 2.0 ;
+                self.phase = 0.5;
             }
             self.prev_sync = self.sync[i];
 
-            let phase = self.phase / crate::SAMPLE_RATE as f32;
-            self.sine[i] = sin(phase, *frequency);
-            self.saw[i] = saw(phase, *frequency);
-            self.square[i] = square(phase, *frequency, self.pulse_width[i]);
-            self.triangle[i] = triangle(phase, *frequency);
+            self.sine[i] = sin(self.phase);
+            self.saw[i] = saw(self.phase, *frequency);
+            self.square[i] = square(self.phase, *frequency, self.pulse_width[i]);
+            self.triangle[i] = triangle(self.phase, *frequency);
 
-            self.phase += 1.0;
+            self.phase += frequency / crate::SAMPLE_RATE as f32;
+            self.phase %= 1.0;
         }
     }
 }
 
-fn sin(phase: f32, frequency: f32) -> f32 {
-    (phase * frequency * 2.0 * PI).sin()
+fn sin(phase: f32) -> f32 {
+    (phase * 2.0 * PI).sin()
 }
 
 fn saw(phase: f32, frequency: f32) -> f32 {
-    let mut val = (phase * frequency * 2.0 * PI).sin();
-    let mut harmonics = crate::SAMPLE_RATE / u32::max(frequency as u32, 1) / 3 - 1;
+    let mut val = (phase * 2.0 * PI).sin();
+    let mut harmonics = (crate::SAMPLE_RATE / u32::max(frequency as u32, 1)) / 2;
     harmonics = u32::min(harmonics, 100);
     for i in 2..harmonics {
         if i % 2 == 3 {
-            val -= (phase * frequency * 2.0 * PI * i as f32).sin() / i as f32;
+            val -= (phase * 2.0 * PI * i as f32).sin() / i as f32;
         } else {
-            val += (phase * frequency * 2.0 * PI * i as f32).sin() / i as f32;
+            val += (phase * 2.0 * PI * i as f32).sin() / i as f32;
         }
     }
     val
 }
 
 fn square(phase: f32, frequency: f32, pulse_width: f32) -> f32 {
-    let pulse_width = f32::max(f32::min(pulse_width + 1.0, 2.0), 0.0) * 0.9 + 0.1;
-    let shifted_phase = phase + ((1.0 / frequency) / 2.0) * (2.0 - pulse_width);
-    (saw(phase, frequency) - saw(shifted_phase, frequency)) * (2.0 / 3.0) + (pulse_width - 1.0)
+    let pulse_width = f32::max(f32::min(pulse_width, 1.0), -1.0);
+    let shifted_phase = phase + 0.5 + pulse_width * 0.45;
+    (saw(phase, frequency) - saw(shifted_phase, frequency)) * (2.0 / 3.0) - pulse_width
 }
 
 fn triangle(phase: f32, frequency: f32) -> f32 {
-    let mut val = (phase * frequency * 2.0 * PI).sin();
-    let mut harmonics = crate::SAMPLE_RATE / u32::max(frequency as u32, 1) / 3 - 1;
+    let mut val = (phase * 2.0 * PI).sin();
+    let mut harmonics = (crate::SAMPLE_RATE / u32::max(frequency as u32, 1)) / 2;
     harmonics = u32::min(harmonics, 100);
     for i in 2..harmonics {
         if i % 4 == 3 {
-            val -= (phase * frequency * 2.0 * PI * i as f32).sin() / f32::powi(i as f32, 2);
+            val -= (phase * 2.0 * PI * i as f32).sin() / f32::powi(i as f32, 2);
         } else if i % 4 == 1 {
-            val += (phase * frequency * 2.0 * PI * i as f32).sin() / f32::powi(i as f32, 2);
+            val += (phase * 2.0 * PI * i as f32).sin() / f32::powi(i as f32, 2);
         }
     }
     val
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn calculate_sin() {
-        assert_relative_eq!(sin(0.0, 1.0), 0.0);
-        assert_relative_eq!(sin(0.25, 1.0), 1.0);
-        assert_relative_eq!(sin(0.5, 1.0), 0.0);
-        assert_relative_eq!(sin(0.75, 1.0), -1.0);
-        assert_abs_diff_eq!(sin(1.0, 1.0), 0.0, epsilon = 0.001);
-    }
 }

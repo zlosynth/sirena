@@ -21,8 +21,5 @@ cpal = "0.13"
 gazpatcho = "1.4"
 lazy_static = "1.4"
 
-[dev-dependencies]
-approx = "0.4"
-
 [profile.release]
 debug = true
