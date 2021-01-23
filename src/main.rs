@@ -1,5 +1,4 @@
 // TODO:
-// - adsr
 // - midi 4 polyphony
 // - reverb
 // - delay
@@ -35,6 +34,7 @@ use std::sync::mpsc;
 use std::thread;
 
 use crate::action::Action;
+use crate::modules::adsr;
 use crate::modules::dac;
 use crate::modules::math;
 use crate::modules::midi;
@@ -53,6 +53,7 @@ graphity!(
     Value = {value::Node, value::Consumer, value::Producer},
     Scope = {scope::Node, scope::Consumer, scope::Producer},
     VCO = {vco::Node, vco::Consumer, vco::Producer},
+    ADSR = {adsr::Node, adsr::Consumer, adsr::Producer},
     MIDI = {midi::Node, midi::Consumer, midi::Producer},
     DAC = {dac::Node, dac::Consumer, dac::Producer},
 );
@@ -66,6 +67,7 @@ lazy_static! {
             Box::new(math::Math::new(4)),
             Box::new(scope::Scope),
             Box::new(vco::VCO),
+            Box::new(adsr::ADSR),
             Box::new(dac::DAC),
             Box::new(midi::MIDI::new()),
         ];
