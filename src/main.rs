@@ -1,4 +1,5 @@
 // TODO:
+// - stereo dac
 // - midi 4 polyphony
 // - reverb
 // - delay
