@@ -21,6 +21,7 @@ extern crate lazy_static;
 mod action;
 mod bank;
 mod diff;
+mod filters;
 mod modules;
 mod registration;
 mod samples;
