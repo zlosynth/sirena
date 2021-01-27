@@ -37,6 +37,7 @@ use std::thread;
 
 use crate::action::Action;
 use crate::modules::adsr;
+use crate::modules::comb_filter;
 use crate::modules::dac;
 use crate::modules::math;
 use crate::modules::midi;
@@ -58,6 +59,7 @@ graphity!(
     ADSR = {adsr::Node, adsr::Consumer, adsr::Producer},
     MIDI = {midi::Node, midi::Consumer, midi::Producer},
     DAC = {dac::Node, dac::Consumer, dac::Producer},
+    CombFilter = {comb_filter::Node, comb_filter::Consumer, comb_filter::Producer},
 );
 
 lazy_static! {
@@ -71,6 +73,7 @@ lazy_static! {
             Box::new(vco::VCO),
             Box::new(adsr::ADSR),
             Box::new(dac::DAC),
+            Box::new(comb_filter::CombFilter),
             Box::new(midi::MIDI::new()),
         ];
         classes
