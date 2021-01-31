@@ -37,6 +37,7 @@ use std::thread;
 
 use crate::action::Action;
 use crate::modules::adsr;
+use crate::modules::all_pass_filter;
 use crate::modules::comb_filter;
 use crate::modules::dac;
 use crate::modules::math;
@@ -60,6 +61,7 @@ graphity!(
     MIDI = {midi::Node, midi::Consumer, midi::Producer},
     DAC = {dac::Node, dac::Consumer, dac::Producer},
     CombFilter = {comb_filter::Node, comb_filter::Consumer, comb_filter::Producer},
+    AllPassFilter = {all_pass_filter::Node, all_pass_filter::Consumer, all_pass_filter::Producer},
 );
 
 lazy_static! {
@@ -74,6 +76,7 @@ lazy_static! {
             Box::new(adsr::ADSR),
             Box::new(dac::DAC),
             Box::new(comb_filter::CombFilter),
+            Box::new(all_pass_filter::AllPassFilter),
             Box::new(midi::MIDI::new()),
         ];
         classes

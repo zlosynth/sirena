@@ -1,4 +1,5 @@
 pub mod adsr;
+pub mod all_pass_filter;
 pub mod comb_filter;
 pub mod dac;
 pub mod math;

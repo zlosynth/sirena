@@ -1,3 +1,5 @@
+// TODO: Delete data after reading
+
 const BUFFER_SIZE: usize = crate::SAMPLE_RATE as usize;
 
 pub struct RingBuffer {
