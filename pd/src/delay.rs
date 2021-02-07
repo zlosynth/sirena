@@ -4,6 +4,7 @@ use sirena_modules as modules;
 
 use crate::cstr;
 use crate::log;
+use crate::time;
 
 static mut DELAY_CLASS: Option<*mut pd_sys::_class> = None;
 
@@ -28,7 +29,7 @@ unsafe extern "C" fn delay_set_delay(delay: *mut Delay, value: pd_sys::t_float) 
     let frame_rate = pd_sys::sys_getsr();
     (*delay)
         .delay_module
-        .set_delay(time_to_frames(value, frame_rate));
+        .set_delay(time::time_to_frames(value, frame_rate).min(modules::delay::MAX_DELAY));
 }
 
 unsafe extern "C" fn delay_new(initial_delay: pd_sys::t_float) -> *mut c_void {
@@ -38,17 +39,11 @@ unsafe extern "C" fn delay_new(initial_delay: pd_sys::t_float) -> *mut c_void {
     let frame_rate = pd_sys::sys_getsr();
     (*delay)
         .delay_module
-        .set_delay(time_to_frames(initial_delay, frame_rate));
+        .set_delay(time::time_to_frames(initial_delay, frame_rate).min(modules::delay::MAX_DELAY));
 
     pd_sys::outlet_new(&mut (*delay).pd_obj, &mut pd_sys::s_signal);
 
     delay as *mut c_void
-}
-
-fn time_to_frames(time: f32, frame_rate: f32) -> usize {
-    assert!(time >= 0.0, "the time must be greater or equal to zero");
-    let frames = (time * frame_rate) as usize;
-    frames.min(modules::delay::MAX_DELAY)
 }
 
 #[no_mangle]
@@ -97,25 +92,4 @@ unsafe fn register_set_delay_method(class: *mut pd_sys::_class) {
         pd_sys::t_atomtype::A_DEFFLOAT,
         0,
     );
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn calculate_delay_in_frames() {
-        let frame_rate = 48000.0;
-        let time = 0.5;
-
-        assert_eq!(time_to_frames(time, frame_rate), 24000);
-    }
-
-    #[test]
-    fn calculate_delay_in_frames_over_limit() {
-        let frame_rate = 48000.0;
-        let time = 2.0;
-
-        assert_eq!(time_to_frames(time, frame_rate), modules::delay::MAX_DELAY);
-    }
 }

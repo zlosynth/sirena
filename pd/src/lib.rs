@@ -8,10 +8,12 @@ extern crate field_offset;
 mod wrapper;
 
 pub mod counter;
-mod cstr;
 pub mod delay;
-mod log;
 pub mod xfade;
+
+mod cstr;
+mod log;
+mod time;
 
 use std::os::raw::c_void;
 
