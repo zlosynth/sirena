@@ -2,6 +2,7 @@ use std::os::raw::{c_int, c_void};
 
 use crate::cstr;
 use crate::log;
+use crate::numbers::Pin;
 
 static mut XFADE_CLASS: Option<*mut pd_sys::_class> = None;
 
@@ -20,7 +21,7 @@ fn perform(
     inlets: &[&mut [pd_sys::t_float]],
     outlets: &mut [&mut [pd_sys::t_float]],
 ) {
-    let ratio = f32::max(f32::min(xfade.ratio, 1.0), 0.0);
+    let ratio = xfade.ratio.pin(0.0, 1.0);
 
     for (out, (in1, in2)) in outlets[0]
         .iter_mut()

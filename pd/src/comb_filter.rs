@@ -4,6 +4,7 @@ use sirena_modules as modules;
 
 use crate::cstr;
 use crate::log;
+use crate::numbers::Pin;
 use crate::time;
 
 static mut COMB_FILTER_CLASS: Option<*mut pd_sys::_class> = None;
@@ -33,7 +34,7 @@ unsafe extern "C" fn set_delay(comb_filter: *mut CombFilter, value: pd_sys::t_fl
 }
 
 unsafe extern "C" fn set_gain(comb_filter: *mut CombFilter, value: pd_sys::t_float) {
-    let value = f32::max(f32::min(0.0, value), 0.999);
+    let value = value.pin(0.0, 0.999);
     (*comb_filter).filter_module.set_gain(value);
 }
 
@@ -48,7 +49,7 @@ unsafe extern "C" fn new(
     (*comb_filter)
         .filter_module
         .set_delay(time::time_to_frames(initial_delay, frame_rate));
-    let initial_gain = f32::min(f32::max(0.0, initial_gain), 0.999);
+    let initial_gain = initial_gain.pin(0.0, 0.999);
     (*comb_filter).filter_module.set_gain(initial_gain);
 
     pd_sys::outlet_new(&mut (*comb_filter).pd_obj, &mut pd_sys::s_signal);

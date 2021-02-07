@@ -14,6 +14,7 @@ pub mod xfade;
 
 mod cstr;
 mod log;
+mod numbers;
 mod time;
 
 use std::os::raw::c_void;
