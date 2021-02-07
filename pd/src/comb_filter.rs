@@ -28,9 +28,8 @@ fn perform(
 
 unsafe extern "C" fn set_delay(comb_filter: *mut CombFilter, value: pd_sys::t_float) {
     let frame_rate = pd_sys::sys_getsr();
-    (*comb_filter)
-        .filter_module
-        .set_delay(time::time_to_frames(value, frame_rate));
+    let frames = time::time_to_frames(value, frame_rate);
+    (*comb_filter).filter_module.set_delay(frames);
 }
 
 unsafe extern "C" fn set_gain(comb_filter: *mut CombFilter, value: pd_sys::t_float) {
@@ -45,10 +44,11 @@ unsafe extern "C" fn new(
     let comb_filter = pd_sys::pd_new(COMB_FILTER_CLASS.unwrap()) as *mut CombFilter;
 
     (*comb_filter).filter_module = modules::comb_filter::CombFilter::new();
+
     let frame_rate = pd_sys::sys_getsr();
-    (*comb_filter)
-        .filter_module
-        .set_delay(time::time_to_frames(initial_delay, frame_rate));
+    let frames = time::time_to_frames(initial_delay, frame_rate);
+    (*comb_filter).filter_module.set_delay(frames);
+
     let initial_gain = initial_gain.pin(0.0, 0.999);
     (*comb_filter).filter_module.set_gain(initial_gain);
 
