@@ -3,17 +3,17 @@ all: format lint check test
 
 .PHONY: format
 format:
-	cargo fmt
+	cargo fmt --all
 
 .PHONY: lint
 lint:
-	cargo clippy
+	cargo clippy --all
 
 .PHONY: check
 check:
-	cargo check
-	cargo check --examples
+	cargo check --all
+	cargo check --examples --all
 
 .PHONY: test
 test:
-	cargo test
+	cargo test --all

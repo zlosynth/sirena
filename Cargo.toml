@@ -1,25 +1,8 @@
-[package]
-name = "sirena"
-version = "0.0.1"
-authors = ["Petr Horáček <hrck@protonmail.com>"]
-edition = "2018"
-license = "GPL-3.0-or-later"
-description = "Sounds!"
-repository = "https://github.com/zlosynth/sirena"
-documentation = "https://docs.rs/sirena"
-readme = "README.md"
-
-[features]
-jack = ["cpal/jack"]
-
-[dependencies]
-portmidi = "0.2"
-wmidi = "4.0"
-meval = "0.2"
-graphity = "2.0"
-cpal = "0.13"
-gazpatcho = "1.4"
-lazy_static = "1.4"
+[workspace]
+members = [
+  "ui",
+]
 
 [profile.release]
-debug = true
+lto = true
+panic = "abort"
