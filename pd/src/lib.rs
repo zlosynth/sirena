@@ -7,6 +7,7 @@ extern crate field_offset;
 #[macro_use]
 mod wrapper;
 
+pub mod comb_filter;
 pub mod counter;
 pub mod delay;
 pub mod xfade;
@@ -41,6 +42,7 @@ pub unsafe extern "C" fn sirena_setup() {
     counter::counter_setup();
     xfade::xfade_setup();
     delay::delay_setup();
+    comb_filter::setup();
 }
 
 unsafe fn create_class() -> *mut pd_sys::_class {
