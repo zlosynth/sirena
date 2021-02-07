@@ -1,6 +1,4 @@
-// TODO: Delete data after reading
-
-const BUFFER_SIZE: usize = crate::SAMPLE_RATE as usize;
+const BUFFER_SIZE: usize = 48000;
 
 pub struct RingBuffer {
     buffer: [f32; BUFFER_SIZE],

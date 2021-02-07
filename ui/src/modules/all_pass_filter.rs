@@ -1,6 +1,7 @@
 use gazpatcho::config::*;
 
-use crate::filters::all_pass_filter;
+use sirena_modules::all_pass_filter;
+
 use crate::registration::{Module, ModuleInstance};
 use crate::samples::{self, Samples};
 

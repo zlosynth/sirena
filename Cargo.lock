@@ -1771,6 +1771,10 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "7fdf1b9db47230893d76faad238fd6097fd6d6a9245cd7a4d90dbd639536bbd2"
 
 [[package]]
+name = "sirena-modules"
+version = "0.0.1"
+
+[[package]]
 name = "sirena-ui"
 version = "0.0.1"
 dependencies = [
@@ -1780,6 +1784,7 @@ dependencies = [
  "lazy_static",
  "meval",
  "portmidi",
+ "sirena-modules",
  "wmidi",
 ]
 

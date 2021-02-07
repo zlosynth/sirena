@@ -1,5 +1,5 @@
 [package]
-name = "sirena-ui"
+name = "sirena-modules"
 version = "0.0.1"
 authors = ["Petr Horáček <hrck@protonmail.com>"]
 edition = "2018"
@@ -8,17 +8,3 @@ description = "Sounds!"
 repository = "https://github.com/zlosynth/sirena"
 documentation = "https://docs.rs/sirena"
 readme = "README.md"
-publish = false
-
-[features]
-jack = ["cpal/jack"]
-
-[dependencies]
-sirena-modules = { path = "../modules" }
-portmidi = "0.2"
-wmidi = "4.0"
-meval = "0.2"
-graphity = "2.0"
-cpal = "0.13"
-gazpatcho = "1.4"
-lazy_static = "1.4"
