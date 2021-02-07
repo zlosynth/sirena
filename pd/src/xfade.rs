@@ -3,7 +3,7 @@ use std::os::raw::{c_int, c_void};
 use crate::cstr;
 use crate::log;
 
-static mut PAN_TILDE_CLASS: Option<*mut pd_sys::_class> = None;
+static mut XFADE_CLASS: Option<*mut pd_sys::_class> = None;
 
 #[repr(C)]
 struct XFade {
@@ -31,7 +31,7 @@ fn perform(
 }
 
 unsafe extern "C" fn xfade_new(initial_ratio: pd_sys::t_float) -> *mut c_void {
-    let xfade = pd_sys::pd_new(PAN_TILDE_CLASS.unwrap()) as *mut XFade;
+    let xfade = pd_sys::pd_new(XFADE_CLASS.unwrap()) as *mut XFade;
 
     (*xfade).ratio = initial_ratio;
 
@@ -51,7 +51,7 @@ unsafe extern "C" fn xfade_new(initial_ratio: pd_sys::t_float) -> *mut c_void {
 pub unsafe extern "C" fn xfade_setup() {
     let class = create_class();
 
-    PAN_TILDE_CLASS = Some(class);
+    XFADE_CLASS = Some(class);
 
     register_dsp_method!(
         class,
