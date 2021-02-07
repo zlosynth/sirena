@@ -1,0 +1,14 @@
+[package]
+name = "sirena-pd"
+version = "0.0.1"
+authors = ["Petr Horáček <hrck@protonmail.com>"]
+edition = "2018"
+publish = false
+
+[lib]
+crate-type = ["cdylib"]
+
+[dependencies]
+pd-sys = "0.1.0"
+sirena-modules = { path = "../modules" }
+field-offset = "0.3"

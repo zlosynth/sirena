@@ -1,7 +1,8 @@
 [workspace]
 members = [
-  "ui",
   "modules",
+  "pd",
+  "ui",
 ]
 
 [profile.release]

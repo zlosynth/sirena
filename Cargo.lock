@@ -636,6 +636,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "field-offset"
+version = "0.3.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "c40e7a744c1d22cd64783732a287dd5d08a9f0e1d89b685bf084aab753cb20d4"
+dependencies = [
+ "memoffset 0.5.6",
+ "rustc_version",
+]
+
+[[package]]
 name = "filetime"
 version = "0.2.13"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -762,7 +772,7 @@ dependencies = [
  "gl_generator",
  "glutin",
  "lazy_static",
- "memoffset",
+ "memoffset 0.6.1",
  "smallvec",
  "takeable-option",
 ]
@@ -1138,6 +1148,15 @@ dependencies = [
 
 [[package]]
 name = "memoffset"
+version = "0.5.6"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "043175f069eda7b85febe4a74abbaeff828d9f8b448515d3151a14a3542811aa"
+dependencies = [
+ "autocfg",
+]
+
+[[package]]
+name = "memoffset"
 version = "0.6.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "157b4208e3059a8f9e78d559edc658e13df41410cb3ae03979c83130067fdd87"
@@ -1443,6 +1462,12 @@ dependencies = [
  "smallvec",
  "winapi 0.3.9",
 ]
+
+[[package]]
+name = "pd-sys"
+version = "0.1.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "55a278afa483e752773b367636a7f73201680d0026d02d95f0207195f0196cbf"
 
 [[package]]
 name = "peeking_take_while"
@@ -1773,6 +1798,15 @@ checksum = "7fdf1b9db47230893d76faad238fd6097fd6d6a9245cd7a4d90dbd639536bbd2"
 [[package]]
 name = "sirena-modules"
 version = "0.0.1"
+
+[[package]]
+name = "sirena-pd"
+version = "0.0.1"
+dependencies = [
+ "field-offset",
+ "pd-sys",
+ "sirena-modules",
+]
 
 [[package]]
 name = "sirena-ui"
