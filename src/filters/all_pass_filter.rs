@@ -17,7 +17,7 @@ impl AllPassFilter {
 
     pub fn set_gain(&mut self, gain: f32) -> &mut Self {
         assert!(
-            gain >= 0.0 && gain < 1.0,
+            (0.0..1.0).contains(&gain),
             "gain must be set between 0 and 1"
         );
         self.gain = gain;
