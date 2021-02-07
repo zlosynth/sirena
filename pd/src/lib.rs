@@ -9,6 +9,7 @@ mod wrapper;
 
 pub mod counter;
 mod cstr;
+pub mod delay;
 mod log;
 pub mod xfade;
 
@@ -37,6 +38,7 @@ pub unsafe extern "C" fn sirena_setup() {
 
     counter::counter_setup();
     xfade::xfade_setup();
+    delay::delay_setup();
 }
 
 unsafe fn create_class() -> *mut pd_sys::_class {

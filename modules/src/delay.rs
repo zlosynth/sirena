@@ -1,3 +1,5 @@
+pub const MAX_DELAY: usize = super::ring_buffer::MAX_BUFFER_SIZE;
+
 use super::ring_buffer::RingBuffer;
 
 pub struct Delay {
