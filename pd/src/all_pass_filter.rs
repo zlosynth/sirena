@@ -7,17 +7,17 @@ use crate::log;
 use crate::numbers::Pin;
 use crate::time;
 
-static mut COMB_FILTER_CLASS: Option<*mut pd_sys::_class> = None;
+static mut ALL_PASS_FILTER_CLASS: Option<*mut pd_sys::_class> = None;
 
 #[repr(C)]
-struct CombFilter {
+struct AllPassFilter {
     pd_obj: pd_sys::t_object,
-    filter_module: modules::comb_filter::CombFilter,
+    filter_module: modules::all_pass_filter::AllPassFilter,
     signal_dummy: f32,
 }
 
 fn perform(
-    delay: &mut CombFilter,
+    delay: &mut AllPassFilter,
     _number_of_frames: usize,
     inlets: &[&mut [pd_sys::t_float]],
     outlets: &mut [&mut [pd_sys::t_float]],
@@ -26,46 +26,46 @@ fn perform(
     delay.filter_module.process(outlets[0]);
 }
 
-unsafe extern "C" fn set_delay(comb_filter: *mut CombFilter, value: pd_sys::t_float) {
+unsafe extern "C" fn set_delay(all_pass_filter: *mut AllPassFilter, value: pd_sys::t_float) {
     let frame_rate = pd_sys::sys_getsr();
     let frames = time::time_to_frames(value, frame_rate);
-    (*comb_filter).filter_module.set_delay(frames);
+    (*all_pass_filter).filter_module.set_delay(frames);
 }
 
-unsafe extern "C" fn set_gain(comb_filter: *mut CombFilter, value: pd_sys::t_float) {
+unsafe extern "C" fn set_gain(all_pass_filter: *mut AllPassFilter, value: pd_sys::t_float) {
     let value = value.pin(0.0, 0.999);
-    (*comb_filter).filter_module.set_gain(value);
+    (*all_pass_filter).filter_module.set_gain(value);
 }
 
 unsafe extern "C" fn new(
     initial_delay: pd_sys::t_float,
     initial_gain: pd_sys::t_float,
 ) -> *mut c_void {
-    let comb_filter = pd_sys::pd_new(COMB_FILTER_CLASS.unwrap()) as *mut CombFilter;
+    let all_pass_filter = pd_sys::pd_new(ALL_PASS_FILTER_CLASS.unwrap()) as *mut AllPassFilter;
 
-    (*comb_filter).filter_module = modules::comb_filter::CombFilter::new();
+    (*all_pass_filter).filter_module = modules::all_pass_filter::AllPassFilter::new();
 
     let frame_rate = pd_sys::sys_getsr();
     let frames = time::time_to_frames(initial_delay, frame_rate);
-    (*comb_filter).filter_module.set_delay(frames);
+    (*all_pass_filter).filter_module.set_delay(frames);
 
     let initial_gain = initial_gain.pin(0.0, 0.999);
-    (*comb_filter).filter_module.set_gain(initial_gain);
+    (*all_pass_filter).filter_module.set_gain(initial_gain);
 
-    pd_sys::outlet_new(&mut (*comb_filter).pd_obj, &mut pd_sys::s_signal);
+    pd_sys::outlet_new(&mut (*all_pass_filter).pd_obj, &mut pd_sys::s_signal);
 
-    comb_filter as *mut c_void
+    all_pass_filter as *mut c_void
 }
 
 pub unsafe extern "C" fn setup() {
     let class = create_class();
 
-    COMB_FILTER_CLASS = Some(class);
+    ALL_PASS_FILTER_CLASS = Some(class);
 
     register_dsp_method!(
         class,
-        receiver = CombFilter,
-        dummy_offset = offset_of!(CombFilter => signal_dummy),
+        receiver = AllPassFilter,
+        dummy_offset = offset_of!(AllPassFilter => signal_dummy),
         number_of_inlets = 1,
         number_of_outlets = 1,
         callback = perform
@@ -76,16 +76,16 @@ pub unsafe extern "C" fn setup() {
 }
 
 unsafe fn create_class() -> *mut pd_sys::_class {
-    log::info("[combfilter~] initializing");
+    log::info("[allpassfilter~] initializing");
 
     pd_sys::class_new(
-        pd_sys::gensym(cstr::cstr("combfilter~").as_ptr()),
+        pd_sys::gensym(cstr::cstr("allpassfilter~").as_ptr()),
         Some(std::mem::transmute::<
             unsafe extern "C" fn(pd_sys::t_float, pd_sys::t_float) -> *mut c_void,
             _,
         >(new)),
         None,
-        std::mem::size_of::<CombFilter>(),
+        std::mem::size_of::<AllPassFilter>(),
         pd_sys::CLASS_DEFAULT as i32,
         pd_sys::t_atomtype::A_DEFFLOAT,
         pd_sys::t_atomtype::A_DEFFLOAT,
@@ -97,7 +97,7 @@ unsafe fn register_set_delay_method(class: *mut pd_sys::_class) {
     pd_sys::class_addmethod(
         class,
         Some(std::mem::transmute::<
-            unsafe extern "C" fn(*mut CombFilter, pd_sys::t_float),
+            unsafe extern "C" fn(*mut AllPassFilter, pd_sys::t_float),
             _,
         >(set_delay)),
         pd_sys::gensym(cstr::cstr("delay").as_ptr()),
@@ -110,7 +110,7 @@ unsafe fn register_set_gain_method(class: *mut pd_sys::_class) {
     pd_sys::class_addmethod(
         class,
         Some(std::mem::transmute::<
-            unsafe extern "C" fn(*mut CombFilter, pd_sys::t_float),
+            unsafe extern "C" fn(*mut AllPassFilter, pd_sys::t_float),
             _,
         >(set_gain)),
         pd_sys::gensym(cstr::cstr("gain").as_ptr()),
