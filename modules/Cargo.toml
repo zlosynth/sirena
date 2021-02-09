@@ -8,3 +8,6 @@ description = "Sounds!"
 repository = "https://github.com/zlosynth/sirena"
 documentation = "https://docs.rs/sirena"
 readme = "README.md"
+
+[dev-dependencies]
+approx = "0.4"
