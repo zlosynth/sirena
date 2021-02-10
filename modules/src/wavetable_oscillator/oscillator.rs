@@ -1,23 +1,20 @@
-use core::f32::consts::PI;
+use super::wavetable::Wavetable;
 
 pub struct WavetableOscillator {
+    wavetable: Wavetable,
     sample_rate: u32,
     frequency: f32,
     phase: f32,
 }
 
 impl WavetableOscillator {
-    pub fn new() -> Self {
+    pub fn new(wavetable: Wavetable, sample_rate: u32) -> Self {
         Self {
-            sample_rate: 1,
-            frequency: 1.0,
+            wavetable,
+            sample_rate,
+            frequency: 440.0,
             phase: 0.0,
         }
-    }
-
-    pub fn set_sample_rate(&mut self, sample_rate: u32) -> &mut Self {
-        self.sample_rate = sample_rate;
-        self
     }
 
     pub fn set_frequency(&mut self, frequency: f32) -> &mut Self {
@@ -26,7 +23,7 @@ impl WavetableOscillator {
     }
 
     pub fn tick(&mut self) -> f32 {
-        let sample = f32::sin(self.phase * 2.0 * PI);
+        let sample = self.wavetable.read(self.phase);
         self.phase += self.frequency / self.sample_rate as f32;
         self.phase %= 1.0;
         sample
@@ -39,20 +36,23 @@ mod tests {
 
     #[test]
     fn initialize_wavetable_oscillator() {
-        let _wavetable_oscillator = WavetableOscillator::new();
+        let wavetable = Wavetable::new();
+        let _wavetable_oscillator = WavetableOscillator::new(wavetable, 44100);
     }
 
     #[test]
     fn get_first_sample() {
-        let mut wavetable_oscillator = WavetableOscillator::new();
+        let wavetable = Wavetable::new();
+        let mut wavetable_oscillator = WavetableOscillator::new(wavetable, 44100);
 
         assert_eq!(wavetable_oscillator.tick(), 0.0);
     }
 
     #[test]
     fn get_multiple_samples() {
-        let mut wavetable_oscillator = WavetableOscillator::new();
-        wavetable_oscillator.set_sample_rate(8).set_frequency(1.0);
+        let wavetable = Wavetable::new();
+        let mut wavetable_oscillator = WavetableOscillator::new(wavetable, 8);
+        wavetable_oscillator.set_frequency(1.0);
 
         let first = wavetable_oscillator.tick();
         let second = wavetable_oscillator.tick();
@@ -62,16 +62,18 @@ mod tests {
     #[test]
     fn set_frequency() {
         let three_ticks_frequency_1 = {
-            let mut wavetable_oscillator = WavetableOscillator::new();
-            wavetable_oscillator.set_sample_rate(8).set_frequency(1.0);
+            let wavetable = Wavetable::new();
+            let mut wavetable_oscillator = WavetableOscillator::new(wavetable, 8);
+            wavetable_oscillator.set_frequency(1.0);
             wavetable_oscillator.tick();
             wavetable_oscillator.tick();
             wavetable_oscillator.tick()
         };
 
         let two_ticks_frequency_2 = {
-            let mut wavetable_oscillator = WavetableOscillator::new();
-            wavetable_oscillator.set_sample_rate(8).set_frequency(2.0);
+            let wavetable = Wavetable::new();
+            let mut wavetable_oscillator = WavetableOscillator::new(wavetable, 8);
+            wavetable_oscillator.set_frequency(2.0);
             wavetable_oscillator.tick();
             wavetable_oscillator.tick()
         };
@@ -83,16 +85,18 @@ mod tests {
     #[test]
     fn set_sample_rate() {
         let three_ticks_sample_rate_10 = {
-            let mut wavetable_oscillator = WavetableOscillator::new();
-            wavetable_oscillator.set_sample_rate(20).set_frequency(1.0);
+            let wavetable = Wavetable::new();
+            let mut wavetable_oscillator = WavetableOscillator::new(wavetable, 10);
+            wavetable_oscillator.set_frequency(2.0);
             wavetable_oscillator.tick();
             wavetable_oscillator.tick();
             wavetable_oscillator.tick()
         };
 
         let two_ticks_sample_rate_20 = {
-            let mut wavetable_oscillator = WavetableOscillator::new();
-            wavetable_oscillator.set_sample_rate(20).set_frequency(2.0);
+            let wavetable = Wavetable::new();
+            let mut wavetable_oscillator = WavetableOscillator::new(wavetable, 20);
+            wavetable_oscillator.set_frequency(2.0);
             wavetable_oscillator.tick();
             wavetable_oscillator.tick()
         };
