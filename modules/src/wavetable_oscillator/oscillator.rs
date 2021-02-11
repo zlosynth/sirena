@@ -32,17 +32,18 @@ impl WavetableOscillator {
 
 #[cfg(test)]
 mod tests {
+    use super::super::wavetable;
     use super::*;
 
     #[test]
     fn initialize_wavetable_oscillator() {
-        let wavetable = Wavetable::new();
+        let wavetable = Wavetable::new(wavetable::sine());
         let _wavetable_oscillator = WavetableOscillator::new(wavetable, 44100);
     }
 
     #[test]
     fn get_first_sample() {
-        let wavetable = Wavetable::new();
+        let wavetable = Wavetable::new(wavetable::sine());
         let mut wavetable_oscillator = WavetableOscillator::new(wavetable, 44100);
 
         assert_eq!(wavetable_oscillator.tick(), 0.0);
@@ -50,7 +51,7 @@ mod tests {
 
     #[test]
     fn get_multiple_samples() {
-        let wavetable = Wavetable::new();
+        let wavetable = Wavetable::new(wavetable::sine());
         let mut wavetable_oscillator = WavetableOscillator::new(wavetable, 8);
         wavetable_oscillator.set_frequency(1.0);
 
@@ -62,7 +63,7 @@ mod tests {
     #[test]
     fn set_frequency() {
         let three_ticks_frequency_1 = {
-            let wavetable = Wavetable::new();
+            let wavetable = Wavetable::new(wavetable::sine());
             let mut wavetable_oscillator = WavetableOscillator::new(wavetable, 8);
             wavetable_oscillator.set_frequency(1.0);
             wavetable_oscillator.tick();
@@ -71,7 +72,7 @@ mod tests {
         };
 
         let two_ticks_frequency_2 = {
-            let wavetable = Wavetable::new();
+            let wavetable = Wavetable::new(wavetable::sine());
             let mut wavetable_oscillator = WavetableOscillator::new(wavetable, 8);
             wavetable_oscillator.set_frequency(2.0);
             wavetable_oscillator.tick();
@@ -85,7 +86,7 @@ mod tests {
     #[test]
     fn set_sample_rate() {
         let three_ticks_sample_rate_10 = {
-            let wavetable = Wavetable::new();
+            let wavetable = Wavetable::new(wavetable::sine());
             let mut wavetable_oscillator = WavetableOscillator::new(wavetable, 10);
             wavetable_oscillator.set_frequency(2.0);
             wavetable_oscillator.tick();
@@ -94,13 +95,17 @@ mod tests {
         };
 
         let two_ticks_sample_rate_20 = {
-            let wavetable = Wavetable::new();
+            let wavetable = Wavetable::new(wavetable::sine());
             let mut wavetable_oscillator = WavetableOscillator::new(wavetable, 20);
             wavetable_oscillator.set_frequency(2.0);
             wavetable_oscillator.tick();
             wavetable_oscillator.tick()
         };
 
-        assert_relative_eq!(three_ticks_sample_rate_10, two_ticks_sample_rate_20);
+        assert_relative_eq!(
+            three_ticks_sample_rate_10,
+            two_ticks_sample_rate_20,
+            max_relative = 0.01
+        );
     }
 }
