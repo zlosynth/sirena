@@ -51,12 +51,16 @@ pub fn saw(harmonics: u32) -> [f32; 2048] {
         }
     }
 
-    let ratio = normalization_ratio(&wavetable);
-    for x in wavetable.iter_mut() {
-        *x *= ratio;
-    }
+    normalize(&mut wavetable);
 
     wavetable
+}
+
+fn normalize(data: &mut [f32]) {
+    let ratio = normalization_ratio(data);
+    for x in data.iter_mut() {
+        *x *= ratio;
+    }
 }
 
 fn normalization_ratio(data: &[f32]) -> f32 {
@@ -114,6 +118,17 @@ mod tests {
 
         let peak_phase = (wavetable.len() as f32 * 0.499) as usize;
         assert_relative_eq!(wavetable[peak_phase], 1.0, max_relative = 0.0001);
+    }
+
+    #[test]
+    fn normalize_waveform() {
+        let mut data = [0.0, 2.0, -4.0];
+
+        normalize(&mut data);
+
+        assert_relative_eq!(data[0], 0.0);
+        assert_relative_eq!(data[1], 0.5);
+        assert_relative_eq!(data[2], -1.0);
     }
 
     #[test]
