@@ -37,6 +37,21 @@ pub fn sine() -> [f32; 2048] {
     wavetable
 }
 
+pub fn saw(harmonics: u32) -> [f32; 2048] {
+    let mut wavetable = [0.0; 2048];
+    for (i, x) in wavetable.iter_mut().enumerate() {
+        *x = f32::sin(i as f32 / 2048.0 * 2.0 * PI);
+        for j in 1..harmonics {
+            if j % 2 == 1 {
+                *x -= f32::sin((i * j as usize) as f32 / 2048.0 * 2.0 * PI);
+            } else {
+                *x += f32::sin((i * j as usize) as f32 / 2048.0 * 2.0 * PI);
+            }
+        }
+    }
+    wavetable
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -75,5 +90,13 @@ mod tests {
 
         assert_relative_eq!(wavetable[0], 0.0);
         assert_relative_eq!(wavetable[wavetable.len() / 4], 1.0);
+    }
+
+    #[test]
+    fn saw_samples() {
+        let wavetable = saw(368);
+
+        assert_relative_eq!(wavetable[0], 0.0);
+        assert_relative_eq!(wavetable[wavetable.len() / 4], 1.0, max_relative = 0.0001);
     }
 }
