@@ -84,11 +84,13 @@ macro_rules! register_dsp_method {
             let number_of_frames = arguments[2] as usize;
 
             let mut inlets: [&mut [pd_sys::t_float]; $inlets] = Default::default();
+            #[allow(clippy::reversed_empty_ranges)]
             for i in 0..$inlets {
                 inlets[i] = crate::wrapper::read_signal(arguments[3 + i], number_of_frames);
             }
 
             let mut outlets: [&mut [pd_sys::t_float]; $outlets] = Default::default();
+            #[allow(clippy::reversed_empty_ranges)]
             for i in 0..$outlets {
                 outlets[i] =
                     crate::wrapper::read_signal(arguments[3 + $inlets + i], number_of_frames);
