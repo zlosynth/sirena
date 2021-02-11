@@ -10,8 +10,23 @@ impl Wavetable {
     }
 
     pub fn read(&self, phase: f32) -> f32 {
-        self.wavetable[(phase * 2048.0) as usize]
+        let position = phase * 2048.0;
+        linear_interpolation(&self.wavetable, position)
     }
+}
+
+fn linear_interpolation(data: &[f32], position: f32) -> f32 {
+    let index = position as usize;
+    let remainder = position % 1.0;
+
+    let value = data[index];
+    let delta_to_next = if index == (data.len() - 1) {
+        data[0] - data[index]
+    } else {
+        data[index + 1] - data[index]
+    };
+
+    value + delta_to_next * remainder
 }
 
 pub fn sine() -> [f32; 2048] {
@@ -38,6 +53,20 @@ mod tests {
         let first = wavetable.read(0.0);
         let second = wavetable.read(0.1);
         assert!(second > first);
+    }
+
+    #[test]
+    fn linear_interpolation_within_range() {
+        let data = [0.0, 10.0, 20.0];
+
+        assert_relative_eq!(linear_interpolation(&data, 1.5), 15.0);
+    }
+
+    #[test]
+    fn linear_interpolation_over_edge() {
+        let data = [0.0, 10.0, 20.0];
+
+        assert_relative_eq!(linear_interpolation(&data, 2.5), 10.0);
     }
 
     #[test]

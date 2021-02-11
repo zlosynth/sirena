@@ -102,10 +102,6 @@ mod tests {
             wavetable_oscillator.tick()
         };
 
-        assert_relative_eq!(
-            three_ticks_sample_rate_10,
-            two_ticks_sample_rate_20,
-            max_relative = 0.01
-        );
+        assert_relative_eq!(three_ticks_sample_rate_10, two_ticks_sample_rate_20);
     }
 }
