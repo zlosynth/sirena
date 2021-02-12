@@ -1,17 +1,32 @@
 use core::f32::consts::PI;
 
 pub struct Wavetable {
+    wavetable: BandlimitedWavetable,
+}
+
+struct BandlimitedWavetable {
     wavetable: [f32; 2048],
+    _minimal_sample_length: u32,
 }
 
 impl Wavetable {
     pub fn new(wavetable: [f32; 2048]) -> Self {
-        Wavetable { wavetable }
+        Wavetable {
+            wavetable: BandlimitedWavetable {
+                wavetable,
+                _minimal_sample_length: 3,
+            },
+        }
     }
 
-    pub fn read(&self, phase: f32) -> f32 {
+    fn wavetable_for_interval(&self, _interval_in_samples: u32) -> &[f32] {
+        &self.wavetable.wavetable
+    }
+
+    pub fn read(&self, phase: f32, interval_in_samples: u32) -> f32 {
         let position = phase * 2048.0;
-        linear_interpolation(&self.wavetable, position)
+        let wavetable = self.wavetable_for_interval(interval_in_samples);
+        linear_interpolation(wavetable, position)
     }
 }
 
@@ -83,8 +98,8 @@ mod tests {
     fn read_value() {
         let wavetable = Wavetable::new(sine());
 
-        let first = wavetable.read(0.0);
-        let second = wavetable.read(0.1);
+        let first = wavetable.read(0.0, 100);
+        let second = wavetable.read(0.1, 100);
         assert!(second > first);
     }
 

@@ -23,8 +23,9 @@ impl WavetableOscillator {
     }
 
     pub fn tick(&mut self) -> f32 {
-        let sample = self.wavetable.read(self.phase);
-        self.phase += self.frequency / self.sample_rate as f32;
+        let interval_in_samples = self.frequency / self.sample_rate as f32;
+        let sample = self.wavetable.read(self.phase, interval_in_samples as u32);
+        self.phase += interval_in_samples;
         self.phase %= 1.0;
         sample
     }
