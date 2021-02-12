@@ -39,7 +39,7 @@ unsafe extern "C" fn new(initial_frequency: pd_sys::t_float) -> *mut c_void {
         pd_sys::pd_new(WAVETABLE_OSCILLATOR_CLASS.unwrap()) as *mut WavetableOscillator;
 
     let sample_rate = pd_sys::sys_getsr() as u32;
-    let saw_wave = modules::wavetable_oscillator::wavetable::saw(256);
+    let saw_wave = modules::wavetable_oscillator::saw(256);
     let wavetable = modules::wavetable_oscillator::Wavetable::new(saw_wave);
     let mut oscillator =
         modules::wavetable_oscillator::WavetableOscillator::new(wavetable, sample_rate);
