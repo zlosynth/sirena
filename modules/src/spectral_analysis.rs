@@ -62,6 +62,7 @@ fn fft_magnitude(signal: &[f32]) -> Vec<f32> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use rand::Rng;
     use std::f32::consts::PI;
 
     #[test]
@@ -158,5 +159,33 @@ mod tests {
         let mean_magnitude = analysis.mean_magnitude(1.0, 21.0);
 
         assert!(mean_magnitude > 0.01);
+    }
+
+    #[test]
+    fn analyze_mean_magnitude_of_white_noise() {
+        const SAMPLE_RATE: u32 = 1200;
+
+        const SIGNAL_LENGTH_IN_SECONDS: u32 = 1;
+        let mut signal = [0.0; SAMPLE_RATE as usize * SIGNAL_LENGTH_IN_SECONDS as usize];
+        let mut rng = rand::thread_rng();
+        for i in signal.iter_mut() {
+            *i = rng.gen_range(-1.0..=1.0);
+        }
+
+        let analysis = SpectralAnalysis::analyze(&signal, SAMPLE_RATE);
+        let low_mean_magnitude = analysis.mean_magnitude(0.0, 200.0);
+        let middle_mean_magnitude = analysis.mean_magnitude(200.0, 400.0);
+        let high_mean_magnitude = analysis.mean_magnitude(400.0, 600.0);
+
+        assert_relative_eq!(
+            low_mean_magnitude,
+            middle_mean_magnitude,
+            max_relative = 1.0
+        );
+        assert_relative_eq!(
+            middle_mean_magnitude,
+            high_mean_magnitude,
+            max_relative = 1.0
+        );
     }
 }

@@ -18,3 +18,4 @@ rustfft = "5.0"
 
 [dev-dependencies]
 approx = "0.4"
+rand = "0.8"
