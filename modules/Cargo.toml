@@ -9,6 +9,10 @@ repository = "https://github.com/zlosynth/sirena"
 documentation = "https://docs.rs/sirena"
 readme = "README.md"
 
+[features]
+default = ["std"]
+std = []
+
 [dependencies]
 rustfft = "5.0"
 
