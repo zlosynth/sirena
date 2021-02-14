@@ -12,4 +12,5 @@ pub mod ring_buffer;
 pub mod wavetable_oscillator;
 
 #[cfg(feature = "std")]
+pub mod noise;
 pub mod spectral_analysis;
