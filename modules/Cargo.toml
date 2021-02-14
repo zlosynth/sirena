@@ -9,5 +9,8 @@ repository = "https://github.com/zlosynth/sirena"
 documentation = "https://docs.rs/sirena"
 readme = "README.md"
 
+[dependencies]
+rustfft = "5.0"
+
 [dev-dependencies]
 approx = "0.4"
