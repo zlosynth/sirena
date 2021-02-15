@@ -9,6 +9,7 @@ pub mod all_pass_filter;
 pub mod comb_filter;
 pub mod delay;
 pub mod ring_buffer;
+pub mod state_variable_filter;
 pub mod wavetable_oscillator;
 
 #[cfg(feature = "std")]
