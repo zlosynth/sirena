@@ -35,7 +35,7 @@ impl StateVariableFilter {
     }
 
     pub fn set_q_factor(&mut self, q_factor: f32) -> &mut Self {
-        self.q = 1.0 / q_factor;
+        self.q = 1.0 / f32::max(q_factor, 0.5);
         self
     }
 
