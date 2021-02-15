@@ -11,6 +11,7 @@ pub mod all_pass_filter;
 pub mod comb_filter;
 pub mod counter;
 pub mod delay;
+pub mod state_variable_filter;
 pub mod wavetable_oscillator;
 pub mod xfade;
 
@@ -48,6 +49,7 @@ pub unsafe extern "C" fn sirena_setup() {
     comb_filter::setup();
     all_pass_filter::setup();
     wavetable_oscillator::setup();
+    state_variable_filter::setup();
 }
 
 unsafe fn create_class() -> *mut pd_sys::_class {

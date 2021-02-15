@@ -13,7 +13,7 @@ impl StateVariableFilter {
     pub fn new(sample_rate: u32) -> Self {
         let mut filter = Self {
             sample_rate,
-            bandform: HighPass,
+            bandform: BandPass,
             f: 0.0,
             q: 0.0,
             delay_1: 0.0,
