@@ -1,23 +1,25 @@
 use core::f32::consts::PI;
 
-pub fn sine() -> [f32; 2048 * 4] {
-    let mut wavetable = [0.0; 2048 * 4];
+use super::wavetable::{OVERSAMPLING, WAVETABLE_LENGTH};
+
+pub fn sine() -> [f32; WAVETABLE_LENGTH * OVERSAMPLING] {
+    let mut wavetable = [0.0; WAVETABLE_LENGTH * OVERSAMPLING];
     for (i, x) in wavetable.iter_mut().enumerate() {
-        *x = f32::sin(i as f32 / (2048.0 * 4.0) * 2.0 * PI);
+        *x = sin(i as f32, WAVETABLE_LENGTH * OVERSAMPLING);
     }
     wavetable
 }
 
-pub fn saw(harmonics: u32) -> [f32; 2048 * 4] {
-    let mut wavetable = [0.0; 2048 * 4];
+pub fn saw(harmonics: u32) -> [f32; WAVETABLE_LENGTH * OVERSAMPLING] {
+    let mut wavetable = [0.0; WAVETABLE_LENGTH * OVERSAMPLING];
 
     for (i, x) in wavetable.iter_mut().enumerate() {
-        *x = f32::sin(i as f32 / (2048.0 * 4.0) * 2.0 * PI);
+        *x = sin(i as f32, WAVETABLE_LENGTH * OVERSAMPLING);
         for j in 2..harmonics {
             if j % 2 == 0 {
-                *x -= f32::sin(i as f32 / (2048.0 * 4.0) * 2.0 * PI * j as f32) / j as f32;
+                *x -= sin(i as f32 * j as f32, WAVETABLE_LENGTH * OVERSAMPLING) / j as f32;
             } else {
-                *x += f32::sin(i as f32 / (2048.0 * 4.0) * 2.0 * PI * j as f32) / j as f32;
+                *x += sin(i as f32 * j as f32, WAVETABLE_LENGTH * OVERSAMPLING) / j as f32;
             }
         }
     }
@@ -25,6 +27,10 @@ pub fn saw(harmonics: u32) -> [f32; 2048 * 4] {
     normalize(&mut wavetable);
 
     wavetable
+}
+
+fn sin(phase: f32, wavetable_length: usize) -> f32 {
+    f32::sin(phase / (wavetable_length as f32) * 2.0 * PI)
 }
 
 fn normalize(data: &mut [f32]) {

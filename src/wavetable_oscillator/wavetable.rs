@@ -1,14 +1,17 @@
+pub const WAVETABLE_LENGTH: usize = 2048;
+pub const OVERSAMPLING: usize = 4;
+
 pub struct Wavetable {
     wavetable: BandlimitedWavetable,
 }
 
 struct BandlimitedWavetable {
-    wavetable: [f32; 2048],
+    wavetable: [f32; WAVETABLE_LENGTH],
     _minimal_sample_length: u32,
 }
 
 impl Wavetable {
-    pub fn new(oversampled_wavetable: [f32; 2048 * 4]) -> Self {
+    pub fn new(oversampled_wavetable: [f32; WAVETABLE_LENGTH * OVERSAMPLING]) -> Self {
         Wavetable {
             wavetable: BandlimitedWavetable {
                 wavetable: undersample(oversampled_wavetable),
@@ -22,16 +25,16 @@ impl Wavetable {
     }
 
     pub fn read(&self, phase: f32, interval_in_samples: u32) -> f32 {
-        let position = phase * 2048.0;
+        let position = phase * WAVETABLE_LENGTH as f32;
         let wavetable = self.wavetable_for_interval(interval_in_samples);
         linear_interpolation(wavetable, position)
     }
 }
 
-fn undersample(data: [f32; 2048 * 4]) -> [f32; 2048] {
-    let mut undersampled_data = [0.0; 2048];
-    for i in 0..2048 {
-        undersampled_data[i] = data[i * 4];
+fn undersample(data: [f32; WAVETABLE_LENGTH * OVERSAMPLING]) -> [f32; WAVETABLE_LENGTH] {
+    let mut undersampled_data = [0.0; WAVETABLE_LENGTH];
+    for i in 0..WAVETABLE_LENGTH {
+        undersampled_data[i] = data[i * OVERSAMPLING];
     }
     undersampled_data
 }
@@ -85,7 +88,7 @@ mod tests {
 
     #[test]
     fn verify_undersampling() {
-        let mut data = [0.0; 2048 * 4];
+        let mut data = [0.0; WAVETABLE_LENGTH * OVERSAMPLING];
         for (i, x) in data.iter_mut().enumerate() {
             *x = i as f32;
         }
