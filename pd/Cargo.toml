@@ -10,5 +10,5 @@ crate-type = ["cdylib"]
 
 [dependencies]
 pd-sys = "0.1.0"
-sirena-modules = { path = "../modules" }
+sirena = { path = "../" }
 field-offset = "0.3"

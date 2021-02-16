@@ -1,7 +1,5 @@
 use std::os::raw::{c_int, c_void};
 
-use sirena_modules as modules;
-
 use crate::cstr;
 use crate::log;
 
@@ -10,7 +8,7 @@ static mut STATE_VARIABLE_FILTER_CLASS: Option<*mut pd_sys::_class> = None;
 #[repr(C)]
 struct StateVariableFilter {
     pd_obj: pd_sys::t_object,
-    filter_module: modules::state_variable_filter::StateVariableFilter,
+    filter_module: sirena::state_variable_filter::StateVariableFilter,
     signal_dummy: f32,
 }
 
@@ -41,25 +39,25 @@ unsafe extern "C" fn set_q_factor(
 unsafe extern "C" fn set_lowpass(state_variable_filter: *mut StateVariableFilter) {
     (*state_variable_filter)
         .filter_module
-        .set_bandform(modules::state_variable_filter::LowPass);
+        .set_bandform(sirena::state_variable_filter::LowPass);
 }
 
 unsafe extern "C" fn set_highpass(state_variable_filter: *mut StateVariableFilter) {
     (*state_variable_filter)
         .filter_module
-        .set_bandform(modules::state_variable_filter::HighPass);
+        .set_bandform(sirena::state_variable_filter::HighPass);
 }
 
 unsafe extern "C" fn set_bandpass(state_variable_filter: *mut StateVariableFilter) {
     (*state_variable_filter)
         .filter_module
-        .set_bandform(modules::state_variable_filter::BandPass);
+        .set_bandform(sirena::state_variable_filter::BandPass);
 }
 
 unsafe extern "C" fn set_bandreject(state_variable_filter: *mut StateVariableFilter) {
     (*state_variable_filter)
         .filter_module
-        .set_bandform(modules::state_variable_filter::BandReject);
+        .set_bandform(sirena::state_variable_filter::BandReject);
 }
 
 unsafe extern "C" fn new(
@@ -72,7 +70,7 @@ unsafe extern "C" fn new(
 
     let frame_rate = pd_sys::sys_getsr();
     (*state_variable_filter).filter_module =
-        modules::state_variable_filter::StateVariableFilter::new(frame_rate as u32);
+        sirena::state_variable_filter::StateVariableFilter::new(frame_rate as u32);
 
     let initial_q_factor = pd_sys::atom_getfloatarg(2, args_count, args);
     let initial_frequency = pd_sys::atom_getfloatarg(1, args_count, args);
@@ -80,19 +78,18 @@ unsafe extern "C" fn new(
         let args = std::slice::from_raw_parts(&args, 1);
         let bandform = pd_sys::atom_getsymbol(args[0]);
         if bandform == pd_sys::gensym(cstr::cstr("lowpass").as_ptr()) {
-            modules::state_variable_filter::LowPass
+            sirena::state_variable_filter::LowPass
         } else if bandform == pd_sys::gensym(cstr::cstr("highpass").as_ptr()) {
-            modules::state_variable_filter::HighPass
+            sirena::state_variable_filter::HighPass
         } else if bandform == pd_sys::gensym(cstr::cstr("bandpass").as_ptr()) {
-            modules::state_variable_filter::BandPass
+            sirena::state_variable_filter::BandPass
         } else if bandform == pd_sys::gensym(cstr::cstr("bandreject").as_ptr()) {
-            modules::state_variable_filter::BandReject
+            sirena::state_variable_filter::BandReject
         } else {
-            modules::state_variable_filter::LowPass
+            sirena::state_variable_filter::LowPass
         }
     } else {
-        log::info("no");
-        modules::state_variable_filter::LowPass
+        sirena::state_variable_filter::LowPass
     };
 
     (*state_variable_filter)

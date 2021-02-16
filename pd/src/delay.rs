@@ -1,7 +1,5 @@
 use std::os::raw::{c_int, c_void};
 
-use sirena_modules as modules;
-
 use crate::cstr;
 use crate::log;
 use crate::time;
@@ -11,7 +9,7 @@ static mut DELAY_CLASS: Option<*mut pd_sys::_class> = None;
 #[repr(C)]
 struct Delay {
     pd_obj: pd_sys::t_object,
-    delay_module: modules::delay::Delay,
+    delay_module: sirena::delay::Delay,
     signal_dummy: f32,
 }
 
@@ -29,17 +27,17 @@ unsafe extern "C" fn delay_set_delay(delay: *mut Delay, value: pd_sys::t_float) 
     let frame_rate = pd_sys::sys_getsr();
     (*delay)
         .delay_module
-        .set_delay(time::time_to_frames(value, frame_rate).min(modules::delay::MAX_DELAY));
+        .set_delay(time::time_to_frames(value, frame_rate).min(sirena::delay::MAX_DELAY));
 }
 
 unsafe extern "C" fn delay_new(initial_delay: pd_sys::t_float) -> *mut c_void {
     let delay = pd_sys::pd_new(DELAY_CLASS.unwrap()) as *mut Delay;
 
-    (*delay).delay_module = modules::delay::Delay::new();
+    (*delay).delay_module = sirena::delay::Delay::new();
     let frame_rate = pd_sys::sys_getsr();
     (*delay)
         .delay_module
-        .set_delay(time::time_to_frames(initial_delay, frame_rate).min(modules::delay::MAX_DELAY));
+        .set_delay(time::time_to_frames(initial_delay, frame_rate).min(sirena::delay::MAX_DELAY));
 
     pd_sys::outlet_new(&mut (*delay).pd_obj, &mut pd_sys::s_signal);
 

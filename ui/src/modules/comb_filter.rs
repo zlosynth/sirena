@@ -1,6 +1,6 @@
 use gazpatcho::config::*;
 
-use sirena_modules::comb_filter;
+use sirena::comb_filter;
 
 use crate::registration::{Module, ModuleInstance};
 use crate::samples::{self, Samples};

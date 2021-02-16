@@ -1,7 +1,5 @@
 use std::os::raw::{c_int, c_void};
 
-use sirena_modules as modules;
-
 use crate::cstr;
 use crate::log;
 use crate::numbers::Pin;
@@ -12,7 +10,7 @@ static mut COMB_FILTER_CLASS: Option<*mut pd_sys::_class> = None;
 #[repr(C)]
 struct CombFilter {
     pd_obj: pd_sys::t_object,
-    filter_module: modules::comb_filter::CombFilter,
+    filter_module: sirena::comb_filter::CombFilter,
     signal_dummy: f32,
 }
 
@@ -43,7 +41,7 @@ unsafe extern "C" fn new(
 ) -> *mut c_void {
     let comb_filter = pd_sys::pd_new(COMB_FILTER_CLASS.unwrap()) as *mut CombFilter;
 
-    (*comb_filter).filter_module = modules::comb_filter::CombFilter::new();
+    (*comb_filter).filter_module = sirena::comb_filter::CombFilter::new();
 
     let frame_rate = pd_sys::sys_getsr();
     let frames = time::time_to_frames(initial_delay, frame_rate);

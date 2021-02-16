@@ -1,7 +1,5 @@
 use std::os::raw::{c_int, c_void};
 
-use sirena_modules as modules;
-
 use crate::cstr;
 use crate::log;
 
@@ -10,7 +8,7 @@ static mut WAVETABLE_OSCILLATOR_CLASS: Option<*mut pd_sys::_class> = None;
 #[repr(C)]
 struct WavetableOscillator {
     pd_obj: pd_sys::t_object,
-    oscillator_module: modules::wavetable_oscillator::WavetableOscillator,
+    oscillator_module: sirena::wavetable_oscillator::WavetableOscillator,
     signal_dummy: f32,
 }
 
@@ -39,10 +37,10 @@ unsafe extern "C" fn new(initial_frequency: pd_sys::t_float) -> *mut c_void {
         pd_sys::pd_new(WAVETABLE_OSCILLATOR_CLASS.unwrap()) as *mut WavetableOscillator;
 
     let sample_rate = pd_sys::sys_getsr() as u32;
-    let saw_wave = modules::wavetable_oscillator::saw(256);
-    let wavetable = modules::wavetable_oscillator::Wavetable::new(saw_wave);
+    let saw_wave = sirena::wavetable_oscillator::saw(256);
+    let wavetable = sirena::wavetable_oscillator::Wavetable::new(saw_wave);
     let mut oscillator =
-        modules::wavetable_oscillator::WavetableOscillator::new(wavetable, sample_rate);
+        sirena::wavetable_oscillator::WavetableOscillator::new(wavetable, sample_rate);
     oscillator.set_frequency(initial_frequency);
     (*wavetable_oscillator).oscillator_module = oscillator;
 

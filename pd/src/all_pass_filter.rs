@@ -1,7 +1,5 @@
 use std::os::raw::{c_int, c_void};
 
-use sirena_modules as modules;
-
 use crate::cstr;
 use crate::log;
 use crate::numbers::Pin;
@@ -12,7 +10,7 @@ static mut ALL_PASS_FILTER_CLASS: Option<*mut pd_sys::_class> = None;
 #[repr(C)]
 struct AllPassFilter {
     pd_obj: pd_sys::t_object,
-    filter_module: modules::all_pass_filter::AllPassFilter,
+    filter_module: sirena::all_pass_filter::AllPassFilter,
     signal_dummy: f32,
 }
 
@@ -43,7 +41,7 @@ unsafe extern "C" fn new(
 ) -> *mut c_void {
     let all_pass_filter = pd_sys::pd_new(ALL_PASS_FILTER_CLASS.unwrap()) as *mut AllPassFilter;
 
-    (*all_pass_filter).filter_module = modules::all_pass_filter::AllPassFilter::new();
+    (*all_pass_filter).filter_module = sirena::all_pass_filter::AllPassFilter::new();
 
     let frame_rate = pd_sys::sys_getsr();
     let frames = time::time_to_frames(initial_delay, frame_rate);

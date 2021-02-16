@@ -14,7 +14,7 @@ publish = false
 jack = ["cpal/jack"]
 
 [dependencies]
-sirena-modules = { path = "../modules" }
+sirena = { path = "../" }
 portmidi = "0.2"
 wmidi = "4.0"
 meval = "0.2"
