@@ -1,23 +1,23 @@
 use core::f32::consts::PI;
 
-pub fn sine() -> [f32; 2048] {
-    let mut wavetable = [0.0; 2048];
+pub fn sine() -> [f32; 2048 * 4] {
+    let mut wavetable = [0.0; 2048 * 4];
     for (i, x) in wavetable.iter_mut().enumerate() {
-        *x = f32::sin(i as f32 / 2048.0 * 2.0 * PI);
+        *x = f32::sin(i as f32 / (2048.0 * 4.0) * 2.0 * PI);
     }
     wavetable
 }
 
-pub fn saw(harmonics: u32) -> [f32; 2048] {
-    let mut wavetable = [0.0; 2048];
+pub fn saw(harmonics: u32) -> [f32; 2048 * 4] {
+    let mut wavetable = [0.0; 2048 * 4];
 
     for (i, x) in wavetable.iter_mut().enumerate() {
-        *x = f32::sin(i as f32 / 2048.0 * 2.0 * PI);
+        *x = f32::sin(i as f32 / (2048.0 * 4.0) * 2.0 * PI);
         for j in 2..harmonics {
             if j % 2 == 0 {
-                *x -= f32::sin(i as f32 / 2048.0 * 2.0 * PI * j as f32) / j as f32;
+                *x -= f32::sin(i as f32 / (2048.0 * 4.0) * 2.0 * PI * j as f32) / j as f32;
             } else {
-                *x += f32::sin(i as f32 / 2048.0 * 2.0 * PI * j as f32) / j as f32;
+                *x += f32::sin(i as f32 / (2048.0 * 4.0) * 2.0 * PI * j as f32) / j as f32;
             }
         }
     }
@@ -60,7 +60,7 @@ mod tests {
         assert_relative_eq!(wavetable[0], 0.0);
 
         let peak_phase = (wavetable.len() as f32 * 0.499) as usize;
-        assert_relative_eq!(wavetable[peak_phase], 1.0, max_relative = 0.0001);
+        assert_relative_eq!(wavetable[peak_phase], 1.0, max_relative = 0.05);
     }
 
     #[test]

@@ -8,10 +8,10 @@ struct BandlimitedWavetable {
 }
 
 impl Wavetable {
-    pub fn new(wavetable: [f32; 2048]) -> Self {
+    pub fn new(oversampled_wavetable: [f32; 2048 * 4]) -> Self {
         Wavetable {
             wavetable: BandlimitedWavetable {
-                wavetable,
+                wavetable: undersample(oversampled_wavetable),
                 _minimal_sample_length: 3,
             },
         }
@@ -26,6 +26,14 @@ impl Wavetable {
         let wavetable = self.wavetable_for_interval(interval_in_samples);
         linear_interpolation(wavetable, position)
     }
+}
+
+fn undersample(data: [f32; 2048 * 4]) -> [f32; 2048] {
+    let mut undersampled_data = [0.0; 2048];
+    for i in 0..2048 {
+        undersampled_data[i] = data[i * 4];
+    }
+    undersampled_data
 }
 
 fn linear_interpolation(data: &[f32], position: f32) -> f32 {
@@ -73,5 +81,19 @@ mod tests {
         let data = [0.0, 10.0, 20.0];
 
         assert_relative_eq!(linear_interpolation(&data, 2.5), 10.0);
+    }
+
+    #[test]
+    fn verify_undersampling() {
+        let mut data = [0.0; 2048 * 4];
+        for (i, x) in data.iter_mut().enumerate() {
+            *x = i as f32;
+        }
+
+        let undersampled_data = undersample(data);
+
+        assert_relative_eq!(undersampled_data[0], 0.0);
+        assert_relative_eq!(undersampled_data[1], 4.0);
+        assert_relative_eq!(undersampled_data[2], 8.0);
     }
 }
