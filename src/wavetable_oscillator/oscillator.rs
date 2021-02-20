@@ -1,5 +1,47 @@
 use super::wavetable::Wavetable;
 
+pub struct DoubleWavetableOscillator {
+    wavetable_a: Wavetable,
+    wavetable_b: Wavetable,
+    sample_rate: u32,
+    frequency: f32,
+    phase: f32,
+    x: f32,
+}
+
+impl DoubleWavetableOscillator {
+    pub fn new(wavetable_a: Wavetable, wavetable_b: Wavetable, sample_rate: u32) -> Self {
+        Self {
+            wavetable_a,
+            wavetable_b,
+            sample_rate,
+            frequency: 440.0,
+            phase: 0.0,
+            x: 0.0,
+        }
+    }
+
+    pub fn set_frequency(&mut self, frequency: f32) -> &mut Self {
+        self.frequency = frequency;
+        self
+    }
+
+    pub fn set_x(&mut self, x: f32) -> &mut Self {
+        assert!(x >= 0.0 && x <= 1.0);
+        self.x = x;
+        self
+    }
+
+    pub fn tick(&mut self) -> f32 {
+        let interval_in_samples = self.frequency / self.sample_rate as f32;
+        let sample_a = self.wavetable_a.read(self.phase, self.frequency);
+        let sample_b = self.wavetable_b.read(self.phase, self.frequency);
+        self.phase += interval_in_samples;
+        self.phase %= 1.0;
+        sample_a * (1.0 - self.x) + sample_b * self.x
+    }
+}
+
 pub struct WavetableOscillator {
     wavetable: Wavetable,
     sample_rate: u32,
