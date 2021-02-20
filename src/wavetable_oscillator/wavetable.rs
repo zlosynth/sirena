@@ -1,34 +1,116 @@
+use super::waveshapes::sine;
+use crate::signal;
+use crate::state_variable_filter::{LowPass, StateVariableFilter};
+
 pub const WAVETABLE_LENGTH: usize = 2048;
 pub const OVERSAMPLING: usize = 4;
 
 pub struct Wavetable {
-    wavetable: BandlimitedWavetable,
-}
-
-struct BandlimitedWavetable {
-    wavetable: [f32; WAVETABLE_LENGTH],
-    _minimal_sample_length: u32,
+    sample_rate: u32,
+    wavetable: [f32; 2048],
+    wavetable_1_4th: [f32; 2048],
+    wavetable_1_8th: [f32; 2048],
+    wavetable_1_16th: [f32; 2048],
+    wavetable_1_32th: [f32; 2048],
+    wavetable_1_64th: [f32; 2048],
+    wavetable_1_128th: [f32; 2048],
 }
 
 impl Wavetable {
-    pub fn new(oversampled_wavetable: [f32; WAVETABLE_LENGTH * OVERSAMPLING]) -> Self {
+    pub fn new(
+        oversampled_wavetable: [f32; WAVETABLE_LENGTH * OVERSAMPLING],
+        sample_rate: u32,
+    ) -> Self {
+        let wavetable_1_128th = filter(&oversampled_wavetable, 1024.0);
+        let wavetable_1_64th = filter(&oversampled_wavetable, 256.0);
+        let wavetable_1_32th = filter(&oversampled_wavetable, 64.0);
+        let wavetable_1_16th = filter(&oversampled_wavetable, 16.0);
+        let wavetable_1_8th = filter(&oversampled_wavetable, 4.0);
+        let wavetable_1_4th = filter(&oversampled_wavetable, 1.0);
+
+        let wavetable = {
+            let oversampled_wavetable = sine();
+            let mut undersampled = undersample(oversampled_wavetable);
+            undersampled.iter_mut().for_each(|x| *x *= 0.5);
+            undersampled
+        };
+
         Wavetable {
-            wavetable: BandlimitedWavetable {
-                wavetable: undersample(oversampled_wavetable),
-                _minimal_sample_length: 3,
-            },
+            sample_rate,
+            wavetable,
+            wavetable_1_4th,
+            wavetable_1_8th,
+            wavetable_1_16th,
+            wavetable_1_32th,
+            wavetable_1_64th,
+            wavetable_1_128th,
         }
     }
 
-    fn wavetable_for_interval(&self, _interval_in_samples: u32) -> &[f32] {
-        &self.wavetable.wavetable
-    }
-
-    pub fn read(&self, phase: f32, interval_in_samples: u32) -> f32 {
+    pub fn read(&self, phase: f32, frequency: f32) -> f32 {
         let position = phase * WAVETABLE_LENGTH as f32;
-        let wavetable = self.wavetable_for_interval(interval_in_samples);
-        linear_interpolation(wavetable, position)
+
+        let (wavetable_a, wavetable_b, mix) = {
+            let relative_position = frequency / (self.sample_rate as f32 / 2.0);
+
+            if relative_position < 1.0 / 128.0 {
+                let mix = relative_position / (1.0 / 128.0);
+                (&self.wavetable_1_128th, &self.wavetable_1_64th, mix)
+            } else if relative_position < 1.0 / 64.0 {
+                let mix = (relative_position - 1.0 / 128.0) / (1.0 / 128.0);
+                (&self.wavetable_1_64th, &self.wavetable_1_32th, mix)
+            } else if relative_position < 1.0 / 32.0 {
+                let mix = (relative_position - 1.0 / 64.0) / (1.0 / 64.0);
+                (&self.wavetable_1_32th, &self.wavetable_1_16th, mix)
+            } else if relative_position < 1.0 / 16.0 {
+                let mix = (relative_position - 1.0 / 32.0) / (1.0 / 32.0);
+                (&self.wavetable_1_16th, &self.wavetable_1_8th, mix)
+            } else if relative_position < 1.0 / 8.0 {
+                let mix = (relative_position - 1.0 / 16.0) / (1.0 / 16.0);
+                (&self.wavetable_1_8th, &self.wavetable_1_4th, mix)
+            } else if relative_position < 1.0 / 4.0 {
+                let mix = (relative_position - 1.0 / 8.0) / (1.0 / 8.0);
+                (&self.wavetable_1_4th, &self.wavetable, mix)
+            } else {
+                (&self.wavetable, &self.wavetable, 1.0)
+            }
+        };
+
+        let a = linear_interpolation(wavetable_a, position);
+        let b = linear_interpolation(wavetable_b, position);
+
+        cross_fade(a, b, mix)
     }
+}
+
+fn filter(
+    oversampled_wavetable: &[f32; WAVETABLE_LENGTH * OVERSAMPLING],
+    frequency: f32,
+) -> [f32; WAVETABLE_LENGTH] {
+    let mut oversampled_wavetable = *oversampled_wavetable;
+
+    let mut filter = StateVariableFilter::new((WAVETABLE_LENGTH * OVERSAMPLING * 2) as u32);
+    filter
+        .set_bandform(LowPass)
+        .set_frequency(frequency)
+        .set_q_factor(0.7);
+    for _ in 0..3 {
+        filter.pass(&oversampled_wavetable);
+    }
+    filter.process(&mut oversampled_wavetable);
+
+    let mut undersampled = undersample(oversampled_wavetable);
+
+    signal::center(&mut undersampled);
+    signal::normalize(&mut undersampled);
+
+    undersampled
+}
+
+fn cross_fade(a: f32, b: f32, x: f32) -> f32 {
+    assert!(x >= 0.0 && x <= 1.0);
+
+    a * (1.0 - x) + b * x
 }
 
 fn undersample(data: [f32; WAVETABLE_LENGTH * OVERSAMPLING]) -> [f32; WAVETABLE_LENGTH] {
@@ -60,15 +142,17 @@ mod tests {
 
     #[test]
     fn init_wavetable() {
-        let _wavetable = Wavetable::new(sine());
+        const SAMPLE_RATE: u32 = 44100;
+        let _wavetable = Wavetable::new(sine(), SAMPLE_RATE);
     }
 
     #[test]
     fn read_value() {
-        let wavetable = Wavetable::new(sine());
+        const SAMPLE_RATE: u32 = 44100;
+        let wavetable = Wavetable::new(sine(), SAMPLE_RATE);
 
-        let first = wavetable.read(0.0, 100);
-        let second = wavetable.read(0.1, 100);
+        let first = wavetable.read(0.0, 100.0);
+        let second = wavetable.read(0.1, 100.0);
         assert!(second > first);
     }
 
@@ -98,5 +182,37 @@ mod tests {
         assert_relative_eq!(undersampled_data[0], 0.0);
         assert_relative_eq!(undersampled_data[1], 4.0);
         assert_relative_eq!(undersampled_data[2], 8.0);
+    }
+
+    #[test]
+    fn cross_fade_even() {
+        assert_relative_eq!(cross_fade(8.0, 4.0, 0.5), 6.0);
+    }
+
+    #[test]
+    fn cross_fade_uneven() {
+        assert_relative_eq!(cross_fade(10.0, 20.0, 0.2), 12.0);
+    }
+
+    #[test]
+    fn cross_fade_left_side() {
+        assert_relative_eq!(cross_fade(8.0, 4.0, 0.0), 8.0);
+    }
+
+    #[test]
+    fn cross_fade_right_side() {
+        assert_relative_eq!(cross_fade(8.0, 4.0, 1.0), 4.0);
+    }
+
+    #[test]
+    #[should_panic]
+    fn cross_fade_panics_on_x_below_zero() {
+        cross_fade(8.0, 4.0, -1.0);
+    }
+
+    #[test]
+    #[should_panic]
+    fn cross_fade_panics_on_x_above_one() {
+        cross_fade(8.0, 4.0, 2.0);
     }
 }

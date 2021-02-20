@@ -11,10 +11,10 @@ readme = "README.md"
 
 [features]
 default = ["std"]
-std = ["rand"]
+std = ["rand", "rustfft"]
 
 [dependencies]
-rustfft = "5.0"
+rustfft = { version = "5.0", optional = true }
 rand = { version = "0.8", optional = true }
 
 [dev-dependencies]

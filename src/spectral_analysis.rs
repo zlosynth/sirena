@@ -9,7 +9,8 @@ pub struct SpectralAnalysis {
 impl SpectralAnalysis {
     pub fn analyze(signal: &[f32], sample_rate: u32) -> Self {
         let magnitude = fft_magnitude(&signal);
-        let bins: Vec<f32> = magnitude.iter().take(signal.len() / 2).copied().collect();
+        let bins_length = f32::ceil(signal.len() as f32 / 2.0) as usize;
+        let bins: Vec<f32> = magnitude.iter().take(bins_length).copied().collect();
         let bin_width = sample_rate as f32 / signal.len() as f32;
         Self { bins, bin_width }
     }
@@ -40,9 +41,57 @@ impl SpectralAnalysis {
         sum / (requested_top_index - bottom_index) as f32
     }
 
+    pub fn lowest_peak(&self, relative_treshold: f32) -> f32 {
+        let peak_index = lowest_peak_index(&self.bins, relative_treshold);
+        self.frequency(peak_index)
+    }
+
+    pub fn trash_range(&mut self, bottom_frequency: f32, top_frequency: f32) {
+        assert!(bottom_frequency < top_frequency);
+        assert!(bottom_frequency >= 0.0);
+
+        let bottom_index = self.index(bottom_frequency);
+
+        let requested_top_index = self.index(top_frequency);
+        let actual_top_index = usize::min(requested_top_index, self.bins.len() - 1);
+
+        (bottom_index..=actual_top_index).for_each(|i| self.bins[i] = 0.0);
+    }
+
     fn index(&self, frequency: f32) -> usize {
         (frequency / self.bin_width) as usize
     }
+
+    fn frequency(&self, index: usize) -> f32 {
+        index as f32 * self.bin_width
+    }
+}
+
+fn lowest_peak_index(data: &[f32], relative_treshold: f32) -> usize {
+    assert!(relative_treshold > 0.0 && relative_treshold <= 1.0);
+
+    let treshold = {
+        let maximal_peak = data.iter().fold(0.0, |max, x| f32::max(max, *x));
+        maximal_peak * relative_treshold
+    };
+
+    let treshold_finder = data.iter().enumerate();
+    let peak_finder = treshold_finder.skip_while(|(_, x)| **x < treshold);
+    let peak_index = {
+        let mut index = 0;
+        let mut current_peak = 0.0;
+        for (i, x) in peak_finder {
+            if *x > current_peak {
+                index = i;
+                current_peak = *x;
+            } else {
+                break;
+            }
+        }
+        index
+    };
+
+    peak_index
 }
 
 fn fft_magnitude(signal: &[f32]) -> Vec<f32> {
@@ -132,9 +181,6 @@ mod tests {
         let mean_silent_magnitude =
             analysis.mean_magnitude(silent_frequency - 0.5, silent_frequency + 0.5);
 
-        dbg!(mean_ringing_magnitude);
-        dbg!(mean_silent_magnitude);
-
         assert!(mean_ringing_magnitude > 5.0);
         assert!(mean_ringing_magnitude > mean_silent_magnitude);
     }
@@ -184,5 +230,91 @@ mod tests {
             high_mean_magnitude,
             max_relative = 1.0
         );
+    }
+
+    #[test]
+    fn find_the_tip_of_the_lowest_peak() {
+        const SAMPLE_RATE: u32 = 1000;
+        let frequency = 29.0;
+        let signal = {
+            let mut signal = [0.0; SAMPLE_RATE as usize];
+            write_sine(&mut signal, frequency, SAMPLE_RATE);
+            signal
+        };
+
+        let analysis = SpectralAnalysis::analyze(&signal, SAMPLE_RATE);
+        let low_magnitude = analysis.magnitude(frequency - 1.0);
+        let center_magnitude = analysis.magnitude(frequency);
+        assert!(center_magnitude > low_magnitude);
+
+        let treshold = low_magnitude / center_magnitude;
+
+        let lowest_peak = analysis.lowest_peak(treshold);
+        assert_relative_eq!(lowest_peak, frequency);
+    }
+
+    #[test]
+    fn find_lowest_peak_index_without_slope() {
+        let data = [0.0, 0.0, 0.0, 9.0, 0.0, 10.0];
+        let peak_index = lowest_peak_index(&data, 0.5);
+        assert_eq!(peak_index, 3);
+    }
+
+    #[test]
+    fn find_lowest_peak_index_with_slope() {
+        let data = [0.0, 3.0, 6.0, 9.0, 0.0, 10.0];
+        let peak_index = lowest_peak_index(&data, 0.5);
+        assert_eq!(peak_index, 3);
+    }
+
+    #[test]
+    #[should_panic]
+    fn panic_lowest_peak_index_treshold_below_zero() {
+        let data = [0.0, 1.0];
+        let _peak_index = lowest_peak_index(&data, -1.0);
+    }
+
+    #[test]
+    #[should_panic]
+    fn panic_lowest_peak_index_treshold_over_one() {
+        let data = [0.0, 1.0];
+        let _peak_index = lowest_peak_index(&data, 2.0);
+    }
+
+    #[test]
+    fn trash_records() {
+        const SAMPLE_RATE: u32 = 100;
+
+        const SIGNAL_LENGTH_IN_SECONDS: u32 = 1;
+        let mut signal = [0.0; SAMPLE_RATE as usize * SIGNAL_LENGTH_IN_SECONDS as usize];
+        noise::white_noise(&mut signal);
+
+        let mut analysis = SpectralAnalysis::analyze(&signal, SAMPLE_RATE);
+        analysis.trash_range(0.0, 50.0);
+
+        let mean_magnitude = analysis.mean_magnitude(0.0, 50.0);
+        assert_relative_eq!(mean_magnitude, 0.0);
+    }
+
+    #[test]
+    #[should_panic]
+    fn trash_panics_when_bottom_is_below_zero() {
+        const SAMPLE_RATE: u32 = 100;
+        let signal = [0.0; 10];
+
+        let mut analysis = SpectralAnalysis::analyze(&signal, SAMPLE_RATE);
+
+        analysis.trash_range(-1.0, 50.0);
+    }
+
+    #[test]
+    #[should_panic]
+    fn trash_panics_when_bottom_is_above_top() {
+        const SAMPLE_RATE: u32 = 100;
+        let signal = [0.0; 10];
+
+        let mut analysis = SpectralAnalysis::analyze(&signal, SAMPLE_RATE);
+
+        analysis.trash_range(10.0, 5.0);
     }
 }

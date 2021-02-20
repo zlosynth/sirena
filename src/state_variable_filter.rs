@@ -39,6 +39,18 @@ impl StateVariableFilter {
         self
     }
 
+    pub fn process(&mut self, signal: &mut [f32]) {
+        for x in signal.iter_mut() {
+            *x = self.tick(*x);
+        }
+    }
+
+    pub fn pass(&mut self, signal: &[f32]) {
+        for x in signal.iter() {
+            self.tick(*x);
+        }
+    }
+
     // https://www.earlevel.com/main/2003/03/02/the-digital-state-variable-filter/
     //
     //             +----------------------------------------------------------+
@@ -54,27 +66,25 @@ impl StateVariableFilter {
     //      |                                                                      |
     //      +----------------------------------------------------------------------+
     //
-    pub fn process(&mut self, signal: &mut [f32]) {
-        for x in signal.iter_mut() {
-            let sum_3 = self.delay_1 * self.f + self.delay_2;
-            let sum_1 = *x - sum_3 - self.delay_1 * self.q;
-            let sum_2 = sum_1 * self.f + self.delay_1;
+    fn tick(&mut self, value: f32) -> f32 {
+        let sum_3 = self.delay_1 * self.f + self.delay_2;
+        let sum_1 = value - sum_3 - self.delay_1 * self.q;
+        let sum_2 = sum_1 * self.f + self.delay_1;
 
-            match self.bandform {
-                LowPass => *x = sum_3,
-                HighPass => *x = sum_1,
-                BandPass => *x = sum_2,
-                BandReject => {
-                    let sum_4 = sum_1 + sum_3;
-                    *x = sum_4;
-                }
-            };
+        let value = match self.bandform {
+            LowPass => sum_3,
+            HighPass => sum_1,
+            BandPass => sum_2,
+            BandReject => {
+                let sum_4 = sum_1 + sum_3;
+                sum_4
+            }
+        };
 
-            self.delay_1 = sum_2;
-            self.delay_2 = sum_3;
+        self.delay_1 = sum_2;
+        self.delay_2 = sum_3;
 
-            *x = f32::max(f32::min(*x, 1.0), -1.0);
-        }
+        f32::max(f32::min(value, 1.0), -1.0)
     }
 }
 
@@ -191,5 +201,26 @@ mod tests {
 
         assert!(low_mean_magnitude / center_mean_magnitude > 2.0);
         assert!(high_mean_magnitude / center_mean_magnitude > 2.0);
+    }
+
+    #[test]
+    fn dry_pass_does_not_change_signal() {
+        const SAMPLE_RATE: u32 = 1200;
+
+        const SIGNAL_LENGTH_IN_SECONDS: u32 = 1;
+        let mut signal = [0.0; SAMPLE_RATE as usize * SIGNAL_LENGTH_IN_SECONDS as usize];
+        noise::white_noise(&mut signal);
+
+        let analysis = SpectralAnalysis::analyze(&signal, SAMPLE_RATE);
+        let original_mean_magnitude = analysis.mean_magnitude(0.0, 200.0);
+
+        let mut filter = StateVariableFilter::new(SAMPLE_RATE);
+        filter.set_bandform(LowPass).set_frequency(100.0);
+        filter.pass(&mut signal);
+
+        let analysis = SpectralAnalysis::analyze(&signal, SAMPLE_RATE);
+        let updated_mean_magnitude = analysis.mean_magnitude(0.0, 200.0);
+
+        assert_relative_eq!(original_mean_magnitude, updated_mean_magnitude);
     }
 }
