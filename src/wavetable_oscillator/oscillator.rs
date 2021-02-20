@@ -50,7 +50,7 @@ mod tests {
         let wavetable = Wavetable::new(sine(), SAMPLE_RATE);
         let mut wavetable_oscillator = WavetableOscillator::new(wavetable, SAMPLE_RATE);
 
-        assert_relative_eq!(wavetable_oscillator.tick(), 0.0);
+        assert_abs_diff_eq!(wavetable_oscillator.tick(), 0.0, epsilon = 0.01);
     }
 
     #[test]
