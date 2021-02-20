@@ -40,9 +40,11 @@ pub fn triangle() -> [f32; WAVETABLE_LENGTH * OVERSAMPLING] {
         *x = sin(i as f32, WAVETABLE_LENGTH * OVERSAMPLING);
         for j in 2..harmonics {
             if j % 4 == 3 {
-                *x -= sin(i as f32 * j as f32, WAVETABLE_LENGTH * OVERSAMPLING) / f32::powi(j as f32, 2);
+                *x -=
+                    sin(i as f32 * j as f32, WAVETABLE_LENGTH * OVERSAMPLING) / (j as f32).powi(2);
             } else if j % 4 == 1 {
-                *x += sin(i as f32 * j as f32, WAVETABLE_LENGTH * OVERSAMPLING) / f32::powi(j as f32, 2);
+                *x +=
+                    sin(i as f32 * j as f32, WAVETABLE_LENGTH * OVERSAMPLING) / (j as f32).powi(2);
             }
         }
     }
