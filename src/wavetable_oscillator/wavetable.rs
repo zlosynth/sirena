@@ -31,7 +31,7 @@ impl Wavetable {
         let wavetable = {
             let oversampled_wavetable = sine();
             let mut undersampled = undersample(oversampled_wavetable);
-            undersampled.iter_mut().for_each(|x| *x *= 0.5);
+            undersampled.iter_mut().for_each(|x| *x *= 0.3);
             undersampled
         };
 
@@ -101,7 +101,6 @@ fn filter(
 
     let mut undersampled = undersample(oversampled_wavetable);
 
-    signal::center(&mut undersampled);
     signal::normalize(&mut undersampled);
 
     undersampled

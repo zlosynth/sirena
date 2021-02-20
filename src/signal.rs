@@ -1,14 +1,3 @@
-pub fn center(data: &mut [f32]) {
-    if data.is_empty() {
-        return;
-    }
-
-    let delta = data[0];
-    for x in data.iter_mut() {
-        *x -= delta;
-    }
-}
-
 pub fn normalize(data: &mut [f32]) {
     let ratio = normalization_ratio(data);
     for x in data.iter_mut() {
@@ -72,25 +61,5 @@ mod tests {
         let ratio = normalization_ratio(&data);
 
         assert_relative_eq!(ratio, 0.5);
-    }
-
-    #[test]
-    fn center_signal_based_on_the_first_sample() {
-        let mut data = [1.0, 5.0, -3.0];
-
-        center(&mut data);
-
-        assert_relative_eq!(data[0], 0.0);
-        assert_relative_eq!(data[1], 4.0);
-        assert_relative_eq!(data[2], -4.0);
-    }
-
-    #[test]
-    fn center_empty_signal() {
-        let mut data = [];
-
-        center(&mut data);
-
-        assert_eq!(data, []);
     }
 }
