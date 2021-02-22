@@ -1,56 +1,51 @@
+use super::consts::OVERSAMPLED_WAVETABLE_LENGTH;
 use super::waveshapes::sine;
 use crate::signal;
 use crate::state_variable_filter::{LowPass, StateVariableFilter};
 
-pub const WAVETABLE_LENGTH: usize = 2048;
-pub const OVERSAMPLING: usize = 4;
-
 pub struct Wavetable {
     sample_rate: u32,
-    wavetable: [f32; 2048],
-    wavetable_1_4th: [f32; 2048],
-    wavetable_1_8th: [f32; 2048],
-    wavetable_1_16th: [f32; 2048],
-    wavetable_1_32th: [f32; 2048],
-    wavetable_1_64th: [f32; 2048],
+    wavetable: [f32; 32],
+    wavetable_1_4th: [f32; 64],
+    wavetable_1_8th: [f32; 128],
+    wavetable_1_16th: [f32; 256],
+    wavetable_1_32th: [f32; 512],
+    wavetable_1_64th: [f32; 1024],
     wavetable_1_128th: [f32; 2048],
 }
 
 impl Wavetable {
     pub fn new(
-        oversampled_wavetable: [f32; WAVETABLE_LENGTH * OVERSAMPLING],
+        oversampled_wavetable: [f32; OVERSAMPLED_WAVETABLE_LENGTH],
         sample_rate: u32,
     ) -> Self {
-        let wavetable_1_128th = filter(&oversampled_wavetable, 1024.0);
-        let wavetable_1_64th = filter(&oversampled_wavetable, 256.0);
-        let wavetable_1_32th = filter(&oversampled_wavetable, 64.0);
-        let wavetable_1_16th = filter(&oversampled_wavetable, 16.0);
-        let wavetable_1_8th = filter(&oversampled_wavetable, 4.0);
-        let wavetable_1_4th = filter(&oversampled_wavetable, 1.0);
+        let wavetable_1_128th = filtered(&oversampled_wavetable, 1024.0);
+        let wavetable_1_64th = filtered(&oversampled_wavetable, 256.0);
+        let wavetable_1_32th = filtered(&oversampled_wavetable, 64.0);
+        let wavetable_1_16th = filtered(&oversampled_wavetable, 16.0);
+        let wavetable_1_8th = filtered(&oversampled_wavetable, 4.0);
+        let wavetable_1_4th = filtered(&oversampled_wavetable, 1.0);
 
         let wavetable = {
-            let oversampled_wavetable = sine();
-            let mut undersampled = undersample(oversampled_wavetable);
-            undersampled.iter_mut().for_each(|x| *x *= 0.3);
-            undersampled
+            let mut wavetable = sine();
+            wavetable.iter_mut().for_each(|x| *x *= 0.3);
+            wavetable
         };
 
         Wavetable {
             sample_rate,
-            wavetable,
-            wavetable_1_4th,
-            wavetable_1_8th,
-            wavetable_1_16th,
-            wavetable_1_32th,
-            wavetable_1_64th,
-            wavetable_1_128th,
+            wavetable: undersample_32(wavetable),
+            wavetable_1_4th: undersample_64(wavetable_1_4th),
+            wavetable_1_8th: undersample_128(wavetable_1_8th),
+            wavetable_1_16th: undersample_256(wavetable_1_16th),
+            wavetable_1_32th: undersample_512(wavetable_1_32th),
+            wavetable_1_64th: undersample_1024(wavetable_1_64th),
+            wavetable_1_128th: undersample_2048(wavetable_1_128th),
         }
     }
 
     pub fn read(&self, phase: f32, frequency: f32) -> f32 {
-        let position = phase * WAVETABLE_LENGTH as f32;
-
-        let (wavetable_a, wavetable_b, mix) = {
+        let (wavetable_a, wavetable_b, mix): (&[f32], &[f32], f32) = {
             let relative_position = frequency / (self.sample_rate as f32 / 2.0);
 
             if relative_position < 1.0 / 128.0 {
@@ -76,34 +71,38 @@ impl Wavetable {
             }
         };
 
-        let a = linear_interpolation(wavetable_a, position);
-        let b = linear_interpolation(wavetable_b, position);
+        let a = {
+            let position = phase * wavetable_a.len() as f32;
+            linear_interpolation(wavetable_a, position)
+        };
+        let b = {
+            let position = phase * wavetable_b.len() as f32;
+            linear_interpolation(wavetable_b, position)
+        };
 
         cross_fade(a, b, mix)
     }
 }
 
-fn filter(
-    oversampled_wavetable: &[f32; WAVETABLE_LENGTH * OVERSAMPLING],
+fn filtered(
+    wavetable: &[f32; OVERSAMPLED_WAVETABLE_LENGTH],
     frequency: f32,
-) -> [f32; WAVETABLE_LENGTH] {
-    let mut oversampled_wavetable = *oversampled_wavetable;
+) -> [f32; OVERSAMPLED_WAVETABLE_LENGTH] {
+    let mut wavetable = *wavetable;
 
-    let mut filter = StateVariableFilter::new((WAVETABLE_LENGTH * OVERSAMPLING * 2) as u32);
+    let mut filter = StateVariableFilter::new((OVERSAMPLED_WAVETABLE_LENGTH * 2) as u32);
     filter
         .set_bandform(LowPass)
         .set_frequency(frequency)
         .set_q_factor(0.7);
     for _ in 0..3 {
-        filter.pass(&oversampled_wavetable);
+        filter.pass(&wavetable);
     }
-    filter.process(&mut oversampled_wavetable);
+    filter.process(&mut wavetable);
 
-    let mut undersampled = undersample(oversampled_wavetable);
+    signal::normalize(&mut wavetable);
 
-    signal::normalize(&mut undersampled);
-
-    undersampled
+    wavetable
 }
 
 fn cross_fade(a: f32, b: f32, x: f32) -> f32 {
@@ -112,13 +111,31 @@ fn cross_fade(a: f32, b: f32, x: f32) -> f32 {
     a * (1.0 - x) + b * x
 }
 
-fn undersample(data: [f32; WAVETABLE_LENGTH * OVERSAMPLING]) -> [f32; WAVETABLE_LENGTH] {
-    let mut undersampled_data = [0.0; WAVETABLE_LENGTH];
-    for i in 0..WAVETABLE_LENGTH {
-        undersampled_data[i] = data[i * OVERSAMPLING];
-    }
-    undersampled_data
+macro_rules! fn_undersample {
+    ( $func_name:ident, $target_size:expr ) => {
+        fn $func_name(data: [f32; OVERSAMPLED_WAVETABLE_LENGTH]) -> [f32; $target_size] {
+            assert!(data.len() >= $target_size);
+            assert!(data.len() % $target_size == 0);
+
+            let ratio = data.len() / $target_size;
+
+            let mut undersampled_data = [0.0; $target_size];
+            for i in 0..$target_size {
+                undersampled_data[i] = data[i * ratio];
+            }
+
+            undersampled_data
+        }
+    };
 }
+
+fn_undersample!(undersample_2048, 2048);
+fn_undersample!(undersample_1024, 1024);
+fn_undersample!(undersample_512, 512);
+fn_undersample!(undersample_256, 256);
+fn_undersample!(undersample_128, 128);
+fn_undersample!(undersample_64, 64);
+fn_undersample!(undersample_32, 32);
 
 fn linear_interpolation(data: &[f32], position: f32) -> f32 {
     let index = position as usize;
@@ -170,17 +187,22 @@ mod tests {
     }
 
     #[test]
-    fn verify_undersampling() {
-        let mut data = [0.0; WAVETABLE_LENGTH * OVERSAMPLING];
-        for (i, x) in data.iter_mut().enumerate() {
-            *x = i as f32;
-        }
+    fn verify_undersampling_2048() {
+        let data = wavetable_ramp();
 
-        let undersampled_data = undersample(data);
+        let undersampled_data = undersample_2048(data);
 
         assert_relative_eq!(undersampled_data[0], 0.0);
         assert_relative_eq!(undersampled_data[1], 4.0);
         assert_relative_eq!(undersampled_data[2], 8.0);
+    }
+
+    fn wavetable_ramp() -> [f32; OVERSAMPLED_WAVETABLE_LENGTH] {
+        let mut data = [0.0; OVERSAMPLED_WAVETABLE_LENGTH];
+        for (i, x) in data.iter_mut().enumerate() {
+            *x = i as f32;
+        }
+        data
     }
 
     #[test]

@@ -94,7 +94,7 @@ impl WavetableOscillator {
 
 #[cfg(test)]
 mod tests {
-    use super::super::wavetable::{OVERSAMPLING, WAVETABLE_LENGTH};
+    use super::super::consts::OVERSAMPLED_WAVETABLE_LENGTH;
     use super::super::{digital_saw, saw, sine, triangle};
     use super::*;
     use crate::spectral_analysis::SpectralAnalysis;
@@ -348,9 +348,9 @@ mod tests {
     }
 
     fn dual_oscillator_single_cycle(
-        wavetable_0: [f32; WAVETABLE_LENGTH * OVERSAMPLING],
-        wavetable_x: [f32; WAVETABLE_LENGTH * OVERSAMPLING],
-        wavetable_y: [f32; WAVETABLE_LENGTH * OVERSAMPLING],
+        wavetable_0: [f32; OVERSAMPLED_WAVETABLE_LENGTH],
+        wavetable_x: [f32; OVERSAMPLED_WAVETABLE_LENGTH],
+        wavetable_y: [f32; OVERSAMPLED_WAVETABLE_LENGTH],
         x: f32,
         y: f32,
     ) -> [f32; 44100] {

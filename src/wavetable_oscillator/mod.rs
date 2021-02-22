@@ -1,3 +1,4 @@
+mod consts;
 pub mod oscillator;
 pub mod waveshapes;
 pub mod wavetable;

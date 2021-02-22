@@ -1,0 +1,1 @@
+pub const OVERSAMPLED_WAVETABLE_LENGTH: usize = 2048 * 4;

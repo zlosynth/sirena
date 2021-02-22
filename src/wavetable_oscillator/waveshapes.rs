@@ -2,27 +2,27 @@ use core::f32::consts::PI;
 
 use crate::signal;
 
-use super::wavetable::{OVERSAMPLING, WAVETABLE_LENGTH};
+use super::consts::OVERSAMPLED_WAVETABLE_LENGTH;
 
-pub fn sine() -> [f32; WAVETABLE_LENGTH * OVERSAMPLING] {
-    let mut wavetable = [0.0; WAVETABLE_LENGTH * OVERSAMPLING];
+pub fn sine() -> [f32; OVERSAMPLED_WAVETABLE_LENGTH] {
+    let mut wavetable = [0.0; OVERSAMPLED_WAVETABLE_LENGTH];
     for (i, x) in wavetable.iter_mut().enumerate() {
-        *x = sin(i as f32, WAVETABLE_LENGTH * OVERSAMPLING);
+        *x = sin(i as f32, OVERSAMPLED_WAVETABLE_LENGTH);
     }
     wavetable
 }
 
-pub fn saw() -> [f32; WAVETABLE_LENGTH * OVERSAMPLING] {
-    let harmonics = WAVETABLE_LENGTH / 4 - 1;
-    let mut wavetable = [0.0; WAVETABLE_LENGTH * OVERSAMPLING];
+pub fn saw() -> [f32; OVERSAMPLED_WAVETABLE_LENGTH] {
+    let harmonics = OVERSAMPLED_WAVETABLE_LENGTH / 4 / 4 - 1;
+    let mut wavetable = [0.0; OVERSAMPLED_WAVETABLE_LENGTH];
 
     for (i, x) in wavetable.iter_mut().enumerate() {
-        *x = sin(i as f32, WAVETABLE_LENGTH * OVERSAMPLING);
+        *x = sin(i as f32, OVERSAMPLED_WAVETABLE_LENGTH);
         for j in 2..harmonics {
             if j % 2 == 0 {
-                *x -= sin(i as f32 * j as f32, WAVETABLE_LENGTH * OVERSAMPLING) / j as f32;
+                *x -= sin(i as f32 * j as f32, OVERSAMPLED_WAVETABLE_LENGTH) / j as f32;
             } else {
-                *x += sin(i as f32 * j as f32, WAVETABLE_LENGTH * OVERSAMPLING) / j as f32;
+                *x += sin(i as f32 * j as f32, OVERSAMPLED_WAVETABLE_LENGTH) / j as f32;
             }
         }
     }
@@ -32,11 +32,11 @@ pub fn saw() -> [f32; WAVETABLE_LENGTH * OVERSAMPLING] {
     wavetable
 }
 
-pub fn digital_saw() -> [f32; WAVETABLE_LENGTH * OVERSAMPLING] {
-    let mut wavetable = [0.0; WAVETABLE_LENGTH * OVERSAMPLING];
+pub fn digital_saw() -> [f32; OVERSAMPLED_WAVETABLE_LENGTH] {
+    let mut wavetable = [0.0; OVERSAMPLED_WAVETABLE_LENGTH];
 
     for (i, x) in wavetable.iter_mut().enumerate() {
-        let phase = i as f32 / (WAVETABLE_LENGTH * OVERSAMPLING) as f32;
+        let phase = i as f32 / (OVERSAMPLED_WAVETABLE_LENGTH) as f32;
         if phase < 0.5 {
             *x = phase * 2.0;
         } else {
@@ -47,19 +47,17 @@ pub fn digital_saw() -> [f32; WAVETABLE_LENGTH * OVERSAMPLING] {
     wavetable
 }
 
-pub fn triangle() -> [f32; WAVETABLE_LENGTH * OVERSAMPLING] {
-    let harmonics = WAVETABLE_LENGTH / 4 - 1;
-    let mut wavetable = [0.0; WAVETABLE_LENGTH * OVERSAMPLING];
+pub fn triangle() -> [f32; OVERSAMPLED_WAVETABLE_LENGTH] {
+    let harmonics = OVERSAMPLED_WAVETABLE_LENGTH / 4 / 4 - 1;
+    let mut wavetable = [0.0; OVERSAMPLED_WAVETABLE_LENGTH];
 
     for (i, x) in wavetable.iter_mut().enumerate() {
-        *x = sin(i as f32, WAVETABLE_LENGTH * OVERSAMPLING);
+        *x = sin(i as f32, OVERSAMPLED_WAVETABLE_LENGTH);
         for j in 2..harmonics {
             if j % 4 == 3 {
-                *x -=
-                    sin(i as f32 * j as f32, WAVETABLE_LENGTH * OVERSAMPLING) / (j as f32).powi(2);
+                *x -= sin(i as f32 * j as f32, OVERSAMPLED_WAVETABLE_LENGTH) / (j as f32).powi(2);
             } else if j % 4 == 1 {
-                *x +=
-                    sin(i as f32 * j as f32, WAVETABLE_LENGTH * OVERSAMPLING) / (j as f32).powi(2);
+                *x += sin(i as f32 * j as f32, OVERSAMPLED_WAVETABLE_LENGTH) / (j as f32).powi(2);
             }
         }
     }
