@@ -36,13 +36,13 @@ impl DoubleWavetableOscillator {
     }
 
     pub fn set_x(&mut self, x: f32) -> &mut Self {
-        assert!(x >= 0.0 && x <= 1.0);
+        assert!((0.0..=1.0).contains(&x));
         self.x = x;
         self
     }
 
     pub fn set_y(&mut self, y: f32) -> &mut Self {
-        assert!(y >= 0.0 && y <= 1.0);
+        assert!((0.0..=1.0).contains(&y));
         self.y = y;
         self
     }
