@@ -20,6 +20,16 @@ impl Cartesian {
         self
     }
 
+    pub fn set_x(&mut self, x: f32) -> &mut Self {
+        self.oscillator.set_x(x);
+        self
+    }
+
+    pub fn set_y(&mut self, y: f32) -> &mut Self {
+        self.oscillator.set_y(y);
+        self
+    }
+
     pub fn tick(&mut self) -> f32 {
         self.oscillator.tick()
     }
@@ -28,6 +38,7 @@ impl Cartesian {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::f32::consts::PI;
 
     #[test]
     fn initialize() {
@@ -77,5 +88,74 @@ mod tests {
             delta_two_ticks_frequency_100,
             max_relative = 0.001
         );
+    }
+
+    #[test]
+    fn use_zero_wavetable() {
+        const SAMPLE_RATE: u32 = 48000;
+        let mut cartesian = Cartesian::new(SAMPLE_RATE);
+        cartesian.set_frequency(1.0).set_x(0.0).set_y(0.0);
+
+        for _ in 0..SAMPLE_RATE / 8 - 1 {
+            cartesian.tick();
+        }
+        let value = cartesian.tick();
+        assert_relative_eq!(value, f32::sin(0.125 * 2.0 * PI), max_relative = 0.01);
+
+        for _ in 0..SAMPLE_RATE / 8 - 1 {
+            cartesian.tick();
+        }
+        let value = cartesian.tick();
+        assert_relative_eq!(value, f32::sin(0.25 * 2.0 * PI), max_relative = 0.01);
+
+        for _ in 0..SAMPLE_RATE / 4 - 1 {
+            cartesian.tick();
+        }
+        let value = cartesian.tick();
+        assert_relative_eq!(value, 0.0, epsilon = 0.01);
+    }
+
+    #[test]
+    fn use_x_wavetable() {
+        const SAMPLE_RATE: u32 = 48000;
+        let mut cartesian = Cartesian::new(SAMPLE_RATE);
+        cartesian.set_frequency(1.0).set_x(1.0).set_y(0.0);
+
+        for _ in 0..SAMPLE_RATE / 8 - 1 {
+            cartesian.tick();
+        }
+        let value = cartesian.tick();
+        assert_relative_eq!(value, 0.5, max_relative = 0.01);
+
+        for _ in 0..SAMPLE_RATE / 8 - 1 {
+            cartesian.tick();
+        }
+        let value = cartesian.tick();
+        assert_relative_eq!(value, 1.0, max_relative = 0.01);
+
+        for _ in 0..SAMPLE_RATE / 4 - 1 {
+            cartesian.tick();
+        }
+        let value = cartesian.tick();
+        assert_relative_eq!(value, 0.0, epsilon = 0.01);
+    }
+
+    #[test]
+    fn use_y_wavetable() {
+        const SAMPLE_RATE: u32 = 48000;
+        let mut cartesian = Cartesian::new(SAMPLE_RATE);
+        cartesian.set_frequency(1.0).set_x(0.0).set_y(1.0);
+
+        for _ in 0..SAMPLE_RATE / 4 - 1 {
+            cartesian.tick();
+        }
+        let value = cartesian.tick();
+        assert_relative_eq!(value, 0.5, epsilon = 0.1);
+
+        for _ in 0..SAMPLE_RATE / 4 - 20 {
+            cartesian.tick();
+        }
+        let value = cartesian.tick();
+        assert_relative_eq!(value, 1.0, max_relative = 0.05);
     }
 }
