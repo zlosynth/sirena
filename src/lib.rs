@@ -7,6 +7,7 @@
 extern crate approx;
 
 pub mod all_pass_filter;
+pub mod cartesian;
 pub mod comb_filter;
 pub mod delay;
 pub mod ring_buffer;
