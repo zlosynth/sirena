@@ -1,7 +1,7 @@
 use crate::wavetable_oscillator::{DoubleWavetableOscillator, Wavetable};
 
 pub struct Cartesian<'a> {
-    oscillator: DoubleWavetableOscillator<'a>,
+    oscillators: [DoubleWavetableOscillator<'a>; 7],
 }
 
 impl<'a> Cartesian<'a> {
@@ -11,29 +11,36 @@ impl<'a> Cartesian<'a> {
         wavetable_c: &'a Wavetable,
         sample_rate: u32,
     ) -> Self {
-        let oscillator =
-            DoubleWavetableOscillator::new(wavetable_a, wavetable_b, wavetable_c, sample_rate);
-
-        Self { oscillator }
+        Self {
+            oscillators: [
+                DoubleWavetableOscillator::new(wavetable_a, wavetable_b, wavetable_c, sample_rate),
+                DoubleWavetableOscillator::new(wavetable_a, wavetable_b, wavetable_c, sample_rate),
+                DoubleWavetableOscillator::new(wavetable_a, wavetable_b, wavetable_c, sample_rate),
+                DoubleWavetableOscillator::new(wavetable_a, wavetable_b, wavetable_c, sample_rate),
+                DoubleWavetableOscillator::new(wavetable_a, wavetable_b, wavetable_c, sample_rate),
+                DoubleWavetableOscillator::new(wavetable_a, wavetable_b, wavetable_c, sample_rate),
+                DoubleWavetableOscillator::new(wavetable_a, wavetable_b, wavetable_c, sample_rate),
+            ],
+        }
     }
 
     pub fn set_frequency(&mut self, frequency: f32) -> &mut Self {
-        self.oscillator.set_frequency(frequency);
+        self.oscillators[0].set_frequency(frequency);
         self
     }
 
     pub fn set_x(&mut self, x: f32) -> &mut Self {
-        self.oscillator.set_x(x);
+        self.oscillators[0].set_x(x);
         self
     }
 
     pub fn set_y(&mut self, y: f32) -> &mut Self {
-        self.oscillator.set_y(y);
+        self.oscillators[0].set_y(y);
         self
     }
 
     pub fn tick(&mut self) -> f32 {
-        self.oscillator.tick()
+        self.oscillators[0].tick()
     }
 }
 
