@@ -1,9 +1,9 @@
 use super::wavetable::Wavetable;
 
-pub struct DoubleWavetableOscillator {
-    wavetable_a: Wavetable,
-    wavetable_b: Wavetable,
-    wavetable_c: Wavetable,
+pub struct DoubleWavetableOscillator<'a> {
+    wavetable_a: &'a Wavetable,
+    wavetable_b: &'a Wavetable,
+    wavetable_c: &'a Wavetable,
     sample_rate: u32,
     frequency: f32,
     phase: f32,
@@ -11,11 +11,11 @@ pub struct DoubleWavetableOscillator {
     y: f32,
 }
 
-impl DoubleWavetableOscillator {
+impl<'a> DoubleWavetableOscillator<'a> {
     pub fn new(
-        wavetable_a: Wavetable,
-        wavetable_b: Wavetable,
-        wavetable_c: Wavetable,
+        wavetable_a: &'a Wavetable,
+        wavetable_b: &'a Wavetable,
+        wavetable_c: &'a Wavetable,
         sample_rate: u32,
     ) -> Self {
         Self {
@@ -61,15 +61,15 @@ impl DoubleWavetableOscillator {
     }
 }
 
-pub struct WavetableOscillator {
-    wavetable: Wavetable,
+pub struct WavetableOscillator<'a> {
+    wavetable: &'a Wavetable,
     sample_rate: u32,
     frequency: f32,
     phase: f32,
 }
 
-impl WavetableOscillator {
-    pub fn new(wavetable: Wavetable, sample_rate: u32) -> Self {
+impl<'a> WavetableOscillator<'a> {
+    pub fn new(wavetable: &'a Wavetable, sample_rate: u32) -> Self {
         Self {
             wavetable,
             sample_rate,
@@ -103,14 +103,14 @@ mod tests {
     fn initialize_wavetable_oscillator() {
         const SAMPLE_RATE: u32 = 441000;
         let wavetable = Wavetable::new(sine(), SAMPLE_RATE);
-        let _wavetable_oscillator = WavetableOscillator::new(wavetable, SAMPLE_RATE);
+        let _wavetable_oscillator = WavetableOscillator::new(&wavetable, SAMPLE_RATE);
     }
 
     #[test]
     fn get_first_sample() {
         const SAMPLE_RATE: u32 = 441000;
         let wavetable = Wavetable::new(sine(), SAMPLE_RATE);
-        let mut wavetable_oscillator = WavetableOscillator::new(wavetable, SAMPLE_RATE);
+        let mut wavetable_oscillator = WavetableOscillator::new(&wavetable, SAMPLE_RATE);
 
         assert_abs_diff_eq!(wavetable_oscillator.tick(), 0.0, epsilon = 0.01);
     }
@@ -119,7 +119,7 @@ mod tests {
     fn get_multiple_samples() {
         const SAMPLE_RATE: u32 = 8;
         let wavetable = Wavetable::new(sine(), SAMPLE_RATE);
-        let mut wavetable_oscillator = WavetableOscillator::new(wavetable, 8);
+        let mut wavetable_oscillator = WavetableOscillator::new(&wavetable, 8);
         wavetable_oscillator.set_frequency(1.0);
 
         let first = wavetable_oscillator.tick();
@@ -132,7 +132,7 @@ mod tests {
         let three_ticks_frequency_1 = {
             const SAMPLE_RATE: u32 = 8;
             let wavetable = Wavetable::new(sine(), SAMPLE_RATE);
-            let mut wavetable_oscillator = WavetableOscillator::new(wavetable, SAMPLE_RATE);
+            let mut wavetable_oscillator = WavetableOscillator::new(&wavetable, SAMPLE_RATE);
             wavetable_oscillator.set_frequency(1.0);
             wavetable_oscillator.tick();
             wavetable_oscillator.tick();
@@ -142,7 +142,7 @@ mod tests {
         let two_ticks_frequency_2 = {
             const SAMPLE_RATE: u32 = 8;
             let wavetable = Wavetable::new(sine(), SAMPLE_RATE);
-            let mut wavetable_oscillator = WavetableOscillator::new(wavetable, SAMPLE_RATE);
+            let mut wavetable_oscillator = WavetableOscillator::new(&wavetable, SAMPLE_RATE);
             wavetable_oscillator.set_frequency(2.0);
             wavetable_oscillator.tick();
             wavetable_oscillator.tick()
@@ -156,7 +156,7 @@ mod tests {
         let two_ticks_sample_rate_1000 = {
             const SAMPLE_RATE: u32 = 1000;
             let wavetable = Wavetable::new(sine(), SAMPLE_RATE);
-            let mut wavetable_oscillator = WavetableOscillator::new(wavetable, SAMPLE_RATE);
+            let mut wavetable_oscillator = WavetableOscillator::new(&wavetable, SAMPLE_RATE);
             wavetable_oscillator.set_frequency(4.0);
             wavetable_oscillator.tick();
             wavetable_oscillator.tick()
@@ -165,7 +165,7 @@ mod tests {
         let two_ticks_sample_rate_1100 = {
             const SAMPLE_RATE: u32 = 1100;
             let wavetable = Wavetable::new(sine(), SAMPLE_RATE);
-            let mut wavetable_oscillator = WavetableOscillator::new(wavetable, SAMPLE_RATE);
+            let mut wavetable_oscillator = WavetableOscillator::new(&wavetable, SAMPLE_RATE);
             wavetable_oscillator.set_frequency(4.0);
             wavetable_oscillator.tick();
             wavetable_oscillator.tick()
@@ -191,7 +191,7 @@ mod tests {
     fn check_note_for_aliasing(frequency: f32) {
         const SAMPLE_RATE: u32 = 44100;
         let wavetable = Wavetable::new(saw(), SAMPLE_RATE);
-        let mut wavetable_oscillator = WavetableOscillator::new(wavetable, SAMPLE_RATE);
+        let mut wavetable_oscillator = WavetableOscillator::new(&wavetable, SAMPLE_RATE);
         wavetable_oscillator.set_frequency(frequency);
 
         let mut signal = [0.0; SAMPLE_RATE as usize];
@@ -361,7 +361,7 @@ mod tests {
         let wavetable_y = Wavetable::new(wavetable_y, SAMPLE_RATE);
 
         let mut wavetable_oscillator =
-            DoubleWavetableOscillator::new(wavetable_0, wavetable_x, wavetable_y, SAMPLE_RATE);
+            DoubleWavetableOscillator::new(&wavetable_0, &wavetable_x, &wavetable_y, SAMPLE_RATE);
 
         wavetable_oscillator.set_frequency(1.0);
         wavetable_oscillator.set_x(x);

@@ -1917,6 +1917,7 @@ name = "sirena-pd"
 version = "0.0.1"
 dependencies = [
  "field-offset",
+ "lazy_static",
  "pd-sys",
  "sirena",
 ]

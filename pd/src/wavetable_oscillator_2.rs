@@ -5,10 +5,28 @@ use crate::log;
 
 static mut WAVETABLE_OSCILLATOR_2_CLASS: Option<*mut pd_sys::_class> = None;
 
+lazy_static! {
+    static ref WAVETABLE_A: sirena::wavetable_oscillator::Wavetable = {
+        let sample_rate = unsafe { pd_sys::sys_getsr() as u32 };
+        let saw_wave = sirena::wavetable_oscillator::saw();
+        sirena::wavetable_oscillator::Wavetable::new(saw_wave, sample_rate)
+    };
+    static ref WAVETABLE_B: sirena::wavetable_oscillator::Wavetable = {
+        let sample_rate = unsafe { pd_sys::sys_getsr() as u32 };
+        let saw_wave = sirena::wavetable_oscillator::triangle();
+        sirena::wavetable_oscillator::Wavetable::new(saw_wave, sample_rate)
+    };
+    static ref WAVETABLE_C: sirena::wavetable_oscillator::Wavetable = {
+        let sample_rate = unsafe { pd_sys::sys_getsr() as u32 };
+        let saw_wave = sirena::wavetable_oscillator::saw();
+        sirena::wavetable_oscillator::Wavetable::new(saw_wave, sample_rate)
+    };
+}
+
 #[repr(C)]
-struct WavetableOscillator2 {
+struct WavetableOscillator2<'a> {
     pd_obj: pd_sys::t_object,
-    oscillator_module: sirena::wavetable_oscillator::DoubleWavetableOscillator,
+    oscillator_module: sirena::wavetable_oscillator::DoubleWavetableOscillator<'a>,
     signal_dummy: f32,
 }
 
@@ -55,20 +73,10 @@ unsafe extern "C" fn new(
         pd_sys::pd_new(WAVETABLE_OSCILLATOR_2_CLASS.unwrap()) as *mut WavetableOscillator2;
 
     let sample_rate = pd_sys::sys_getsr() as u32;
-
-    let sine_wave = sirena::wavetable_oscillator::sine();
-    let wavetable_a = sirena::wavetable_oscillator::Wavetable::new(sine_wave, sample_rate);
-
-    let triangle_wave = sirena::wavetable_oscillator::triangle();
-    let wavetable_b = sirena::wavetable_oscillator::Wavetable::new(triangle_wave, sample_rate);
-
-    let saw_wave = sirena::wavetable_oscillator::saw();
-    let wavetable_c = sirena::wavetable_oscillator::Wavetable::new(saw_wave, sample_rate);
-
     let mut oscillator = sirena::wavetable_oscillator::DoubleWavetableOscillator::new(
-        wavetable_a,
-        wavetable_b,
-        wavetable_c,
+        &WAVETABLE_A,
+        &WAVETABLE_B,
+        &WAVETABLE_C,
         sample_rate,
     );
 

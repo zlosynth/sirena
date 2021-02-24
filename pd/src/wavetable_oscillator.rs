@@ -5,10 +5,18 @@ use crate::log;
 
 static mut WAVETABLE_OSCILLATOR_CLASS: Option<*mut pd_sys::_class> = None;
 
+lazy_static! {
+    static ref WAVETABLE: sirena::wavetable_oscillator::Wavetable = {
+        let sample_rate = unsafe { pd_sys::sys_getsr() as u32 };
+        let saw_wave = sirena::wavetable_oscillator::saw();
+        sirena::wavetable_oscillator::Wavetable::new(saw_wave, sample_rate)
+    };
+}
+
 #[repr(C)]
-struct WavetableOscillator {
+struct WavetableOscillator<'a> {
     pd_obj: pd_sys::t_object,
-    oscillator_module: sirena::wavetable_oscillator::WavetableOscillator,
+    oscillator_module: sirena::wavetable_oscillator::WavetableOscillator<'a>,
     signal_dummy: f32,
 }
 
@@ -37,10 +45,8 @@ unsafe extern "C" fn new(initial_frequency: pd_sys::t_float) -> *mut c_void {
         pd_sys::pd_new(WAVETABLE_OSCILLATOR_CLASS.unwrap()) as *mut WavetableOscillator;
 
     let sample_rate = pd_sys::sys_getsr() as u32;
-    let saw_wave = sirena::wavetable_oscillator::saw();
-    let wavetable = sirena::wavetable_oscillator::Wavetable::new(saw_wave, sample_rate);
     let mut oscillator =
-        sirena::wavetable_oscillator::WavetableOscillator::new(wavetable, sample_rate);
+        sirena::wavetable_oscillator::WavetableOscillator::new(&WAVETABLE, sample_rate);
     oscillator.set_frequency(initial_frequency);
     (*wavetable_oscillator).oscillator_module = oscillator;
 

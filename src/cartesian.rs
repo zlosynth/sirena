@@ -1,16 +1,18 @@
-use crate::wavetable_oscillator::{saw, sine, triangle, DoubleWavetableOscillator, Wavetable};
+use crate::wavetable_oscillator::{DoubleWavetableOscillator, Wavetable};
 
-pub struct Cartesian {
-    oscillator: DoubleWavetableOscillator,
+pub struct Cartesian<'a> {
+    oscillator: DoubleWavetableOscillator<'a>,
 }
 
-impl Cartesian {
-    pub fn new(sample_rate: u32) -> Self {
-        let wavetable_1 = Wavetable::new(sine(), sample_rate);
-        let wavetable_2 = Wavetable::new(triangle(), sample_rate);
-        let wavetable_3 = Wavetable::new(saw(), sample_rate);
+impl<'a> Cartesian<'a> {
+    pub fn new(
+        wavetable_a: &'a Wavetable,
+        wavetable_b: &'a Wavetable,
+        wavetable_c: &'a Wavetable,
+        sample_rate: u32,
+    ) -> Self {
         let oscillator =
-            DoubleWavetableOscillator::new(wavetable_1, wavetable_2, wavetable_3, sample_rate);
+            DoubleWavetableOscillator::new(wavetable_a, wavetable_b, wavetable_c, sample_rate);
 
         Self { oscillator }
     }
@@ -38,18 +40,25 @@ impl Cartesian {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::wavetable_oscillator::{saw, sine, triangle};
     use std::f32::consts::PI;
 
     #[test]
     fn initialize() {
         const SAMPLE_RATE: u32 = 48000;
-        let _cartesian = Cartesian::new(SAMPLE_RATE);
+        let wavetable_a = Wavetable::new(sine(), SAMPLE_RATE);
+        let wavetable_b = Wavetable::new(triangle(), SAMPLE_RATE);
+        let wavetable_c = Wavetable::new(saw(), SAMPLE_RATE);
+        let _cartesian = Cartesian::new(&wavetable_a, &wavetable_b, &wavetable_c, SAMPLE_RATE);
     }
 
     #[test]
     fn tick() {
         const SAMPLE_RATE: u32 = 48000;
-        let mut cartesian = Cartesian::new(SAMPLE_RATE);
+        let wavetable_a = Wavetable::new(sine(), SAMPLE_RATE);
+        let wavetable_b = Wavetable::new(triangle(), SAMPLE_RATE);
+        let wavetable_c = Wavetable::new(saw(), SAMPLE_RATE);
+        let mut cartesian = Cartesian::new(&wavetable_a, &wavetable_b, &wavetable_c, SAMPLE_RATE);
 
         let value_1 = cartesian.tick();
         let value_2 = cartesian.tick();
@@ -63,7 +72,11 @@ mod tests {
         const SAMPLE_RATE: u32 = 48000;
 
         let delta_one_tick_frequency_200 = {
-            let mut cartesian = Cartesian::new(SAMPLE_RATE);
+            let wavetable_a = Wavetable::new(sine(), SAMPLE_RATE);
+            let wavetable_b = Wavetable::new(triangle(), SAMPLE_RATE);
+            let wavetable_c = Wavetable::new(saw(), SAMPLE_RATE);
+            let mut cartesian =
+                Cartesian::new(&wavetable_a, &wavetable_b, &wavetable_c, SAMPLE_RATE);
             cartesian.set_frequency(200.0);
 
             let original = cartesian.tick();
@@ -73,7 +86,11 @@ mod tests {
         };
 
         let delta_two_ticks_frequency_100 = {
-            let mut cartesian = Cartesian::new(SAMPLE_RATE);
+            let wavetable_a = Wavetable::new(sine(), SAMPLE_RATE);
+            let wavetable_b = Wavetable::new(triangle(), SAMPLE_RATE);
+            let wavetable_c = Wavetable::new(saw(), SAMPLE_RATE);
+            let mut cartesian =
+                Cartesian::new(&wavetable_a, &wavetable_b, &wavetable_c, SAMPLE_RATE);
             cartesian.set_frequency(100.0);
 
             let original = cartesian.tick();
@@ -93,7 +110,10 @@ mod tests {
     #[test]
     fn use_zero_wavetable() {
         const SAMPLE_RATE: u32 = 48000;
-        let mut cartesian = Cartesian::new(SAMPLE_RATE);
+        let wavetable_a = Wavetable::new(sine(), SAMPLE_RATE);
+        let wavetable_b = Wavetable::new(triangle(), SAMPLE_RATE);
+        let wavetable_c = Wavetable::new(saw(), SAMPLE_RATE);
+        let mut cartesian = Cartesian::new(&wavetable_a, &wavetable_b, &wavetable_c, SAMPLE_RATE);
         cartesian.set_frequency(1.0).set_x(0.0).set_y(0.0);
 
         for _ in 0..SAMPLE_RATE / 8 - 1 {
@@ -118,7 +138,10 @@ mod tests {
     #[test]
     fn use_x_wavetable() {
         const SAMPLE_RATE: u32 = 48000;
-        let mut cartesian = Cartesian::new(SAMPLE_RATE);
+        let wavetable_a = Wavetable::new(sine(), SAMPLE_RATE);
+        let wavetable_b = Wavetable::new(triangle(), SAMPLE_RATE);
+        let wavetable_c = Wavetable::new(saw(), SAMPLE_RATE);
+        let mut cartesian = Cartesian::new(&wavetable_a, &wavetable_b, &wavetable_c, SAMPLE_RATE);
         cartesian.set_frequency(1.0).set_x(1.0).set_y(0.0);
 
         for _ in 0..SAMPLE_RATE / 8 - 1 {
@@ -143,7 +166,10 @@ mod tests {
     #[test]
     fn use_y_wavetable() {
         const SAMPLE_RATE: u32 = 48000;
-        let mut cartesian = Cartesian::new(SAMPLE_RATE);
+        let wavetable_a = Wavetable::new(sine(), SAMPLE_RATE);
+        let wavetable_b = Wavetable::new(triangle(), SAMPLE_RATE);
+        let wavetable_c = Wavetable::new(saw(), SAMPLE_RATE);
+        let mut cartesian = Cartesian::new(&wavetable_a, &wavetable_b, &wavetable_c, SAMPLE_RATE);
         cartesian.set_frequency(1.0).set_x(0.0).set_y(1.0);
 
         for _ in 0..SAMPLE_RATE / 4 - 1 {

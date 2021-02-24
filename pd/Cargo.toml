@@ -12,3 +12,4 @@ crate-type = ["cdylib"]
 pd-sys = "0.1.0"
 sirena = { path = "../" }
 field-offset = "0.3"
+lazy_static = "1.4"
