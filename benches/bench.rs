@@ -21,7 +21,7 @@ fn criterion_benchmark(c: &mut Criterion) {
             .set_frequency(440.0)
             .set_enabled_voices(7)
             .set_detune(2.0);
-        let mut buffer = [0.0; SAMPLE_RATE as usize];
+        let mut buffer = [0.0; 64];
         b.iter(|| cartesian_play(black_box(&mut cartesian), black_box(&mut buffer)));
     });
 }
