@@ -16,14 +16,15 @@ cargo bench
 
 # profiling example
 rm -f target/release/deps/bench-* callgrind.out.*
-cargo bench --no-run
+RUSTFLAGS="-g" cargo bench --no-run
 BENCH=$(find target/release/deps -type f -executable -name 'bench-*')
+TEST=cartesian
 valgrind \
     --tool=callgrind \
     --dump-instr=yes \
     --collect-jumps=yes \
     --simulate-cache=yes \
-    ${BENCH} --bench --profile-time 10
+    ${BENCH} --bench --profile-time 10 ${TEST}
 kcachegrind callgrind.out.*
 ```
 
