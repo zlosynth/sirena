@@ -11,6 +11,7 @@ extern crate lazy_static;
 mod wrapper;
 
 pub mod all_pass_filter;
+pub mod cartesian;
 pub mod comb_filter;
 pub mod counter;
 pub mod delay;
@@ -55,6 +56,7 @@ pub unsafe extern "C" fn sirena_setup() {
     wavetable_oscillator::setup();
     wavetable_oscillator_2::setup();
     state_variable_filter::setup();
+    cartesian::setup();
 }
 
 unsafe fn create_class() -> *mut pd_sys::_class {
