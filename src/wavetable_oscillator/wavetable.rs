@@ -44,7 +44,7 @@ impl Wavetable {
         }
     }
 
-    pub fn read(&self, phase: f32, frequency: f32) -> f32 {
+    pub fn band(&self, frequency: f32) -> BandWavetable {
         let (wavetable_a, wavetable_b, mix): (&[f32], &[f32], f32) = {
             let relative_position = frequency / (self.sample_rate as f32 / 2.0);
 
@@ -71,16 +71,37 @@ impl Wavetable {
             }
         };
 
+        BandWavetable::new(wavetable_a, wavetable_b, mix)
+    }
+
+    pub fn read(&self, phase: f32, frequency: f32) -> f32 {
+        let band_wavetable = self.band(frequency);
+        band_wavetable.read(phase)
+    }
+}
+
+pub struct BandWavetable<'a> {
+    lower: &'a [f32],
+    higher: &'a [f32],
+    mix: f32,
+}
+
+impl<'a> BandWavetable<'a> {
+    fn new(lower: &'a [f32], higher: &'a [f32], mix: f32) -> Self {
+        Self { lower, higher, mix }
+    }
+
+    pub fn read(&self, phase: f32) -> f32 {
         let a = {
-            let position = phase * wavetable_a.len() as f32;
-            linear_interpolation(wavetable_a, position)
+            let position = phase * self.lower.len() as f32;
+            linear_interpolation(self.lower, position)
         };
         let b = {
-            let position = phase * wavetable_b.len() as f32;
-            linear_interpolation(wavetable_b, position)
+            let position = phase * self.higher.len() as f32;
+            linear_interpolation(self.higher, position)
         };
 
-        cross_fade(a, b, mix)
+        cross_fade(a, b, self.mix)
     }
 }
 

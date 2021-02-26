@@ -5,9 +5,7 @@ use sirena::wavetable_oscillator::Wavetable;
 use sirena::wavetable_oscillator::{saw, sine, triangle};
 
 pub fn cartesian_play(cartesian: &mut Cartesian, buffer: &mut [f32]) {
-    for x in buffer.iter_mut() {
-        *x = cartesian.tick();
-    }
+    cartesian.populate(buffer);
 }
 
 fn criterion_benchmark(c: &mut Criterion) {

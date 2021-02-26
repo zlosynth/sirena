@@ -26,9 +26,9 @@ fn perform(
     _inlets: &[&mut [pd_sys::t_float]],
     outlets: &mut [&mut [pd_sys::t_float]],
 ) {
-    for x in outlets[0].iter_mut() {
-        *x = wavetable_oscillator.oscillator_module.tick();
-    }
+    wavetable_oscillator
+        .oscillator_module
+        .populate(&mut outlets[0]);
 }
 
 unsafe extern "C" fn set_frequency(

@@ -47,17 +47,42 @@ impl<'a> DoubleWavetableOscillator<'a> {
         self
     }
 
-    pub fn tick(&mut self) -> f32 {
-        let interval_in_samples = self.frequency / self.sample_rate as f32;
-        let sample_a = self.wavetable_a.read(self.phase, self.frequency);
-        let sample_b = self.wavetable_b.read(self.phase, self.frequency);
-        let sample_c = self.wavetable_c.read(self.phase, self.frequency);
-        self.phase += interval_in_samples;
-        self.phase %= 1.0;
+    pub fn add(&mut self, buffer: &mut [f32]) {
+        self.fill(buffer, FillMethod::Add);
+    }
 
-        let zero_magnitude = f32::max(0.0, 1.0 - f32::sqrt(self.x + self.y));
-        (sample_a * zero_magnitude + sample_b * self.x + sample_c * self.y)
-            / (zero_magnitude + self.x + self.y)
+    pub fn populate(&mut self, buffer: &mut [f32]) {
+        self.fill(buffer, FillMethod::Overwrite);
+    }
+
+    pub fn dry(&mut self, buffer: &mut [f32]) {
+        self.fill(buffer, FillMethod::Dry);
+    }
+
+    fn fill(&mut self, buffer: &mut [f32], method: FillMethod) {
+        let band_wavetable_a = self.wavetable_a.band(self.frequency);
+        let band_wavetable_b = self.wavetable_b.band(self.frequency);
+        let band_wavetable_c = self.wavetable_c.band(self.frequency);
+        let interval_in_samples = self.frequency / self.sample_rate as f32;
+
+        for x in buffer.iter_mut() {
+            let sample_a = band_wavetable_a.read(self.phase);
+            let sample_b = band_wavetable_b.read(self.phase);
+            let sample_c = band_wavetable_c.read(self.phase);
+
+            let zero_magnitude = f32::max(0.0, 1.0 - f32::sqrt(self.x + self.y));
+            let sample = (sample_a * zero_magnitude + sample_b * self.x + sample_c * self.y)
+                / (zero_magnitude + self.x + self.y);
+
+            match method {
+                FillMethod::Overwrite => *x = sample,
+                FillMethod::Add => *x += sample,
+                FillMethod::Dry => (),
+            }
+
+            self.phase += interval_in_samples;
+            self.phase %= 1.0;
+        }
     }
 }
 
@@ -83,13 +108,39 @@ impl<'a> WavetableOscillator<'a> {
         self
     }
 
-    pub fn tick(&mut self) -> f32 {
-        let interval_in_samples = self.frequency / self.sample_rate as f32;
-        let sample = self.wavetable.read(self.phase, self.frequency);
-        self.phase += interval_in_samples;
-        self.phase %= 1.0;
-        sample
+    pub fn add(&mut self, buffer: &mut [f32]) {
+        self.fill(buffer, FillMethod::Add);
     }
+
+    pub fn populate(&mut self, buffer: &mut [f32]) {
+        self.fill(buffer, FillMethod::Overwrite);
+    }
+
+    pub fn dry(&mut self, buffer: &mut [f32]) {
+        self.fill(buffer, FillMethod::Dry);
+    }
+
+    fn fill(&mut self, buffer: &mut [f32], method: FillMethod) {
+        let band_wavetable = self.wavetable.band(self.frequency);
+        let interval_in_samples = self.frequency / self.sample_rate as f32;
+
+        for x in buffer.iter_mut() {
+            match method {
+                FillMethod::Overwrite => *x = band_wavetable.read(self.phase),
+                FillMethod::Add => *x += band_wavetable.read(self.phase),
+                FillMethod::Dry => (),
+            }
+
+            self.phase += interval_in_samples;
+            self.phase %= 1.0;
+        }
+    }
+}
+
+enum FillMethod {
+    Overwrite,
+    Add,
+    Dry,
 }
 
 #[cfg(test)]
@@ -112,7 +163,10 @@ mod tests {
         let wavetable = Wavetable::new(sine(), SAMPLE_RATE);
         let mut wavetable_oscillator = WavetableOscillator::new(&wavetable, SAMPLE_RATE);
 
-        assert_abs_diff_eq!(wavetable_oscillator.tick(), 0.0, epsilon = 0.01);
+        let mut buffer = [0.0];
+        wavetable_oscillator.populate(&mut buffer);
+
+        assert_abs_diff_eq!(buffer[0], 0.0, epsilon = 0.01);
     }
 
     #[test]
@@ -122,9 +176,10 @@ mod tests {
         let mut wavetable_oscillator = WavetableOscillator::new(&wavetable, 8);
         wavetable_oscillator.set_frequency(1.0);
 
-        let first = wavetable_oscillator.tick();
-        let second = wavetable_oscillator.tick();
-        assert!(second > first);
+        let mut buffer = [0.0; 2];
+        wavetable_oscillator.populate(&mut buffer);
+
+        assert!(buffer[1] > buffer[0]);
     }
 
     #[test]
@@ -134,9 +189,9 @@ mod tests {
             let wavetable = Wavetable::new(sine(), SAMPLE_RATE);
             let mut wavetable_oscillator = WavetableOscillator::new(&wavetable, SAMPLE_RATE);
             wavetable_oscillator.set_frequency(1.0);
-            wavetable_oscillator.tick();
-            wavetable_oscillator.tick();
-            wavetable_oscillator.tick()
+            let mut buffer = [0.0; 3];
+            wavetable_oscillator.populate(&mut buffer);
+            buffer[2]
         };
 
         let two_ticks_frequency_2 = {
@@ -144,8 +199,9 @@ mod tests {
             let wavetable = Wavetable::new(sine(), SAMPLE_RATE);
             let mut wavetable_oscillator = WavetableOscillator::new(&wavetable, SAMPLE_RATE);
             wavetable_oscillator.set_frequency(2.0);
-            wavetable_oscillator.tick();
-            wavetable_oscillator.tick()
+            let mut buffer = [0.0; 2];
+            wavetable_oscillator.populate(&mut buffer);
+            buffer[1]
         };
 
         assert_relative_eq!(three_ticks_frequency_1, two_ticks_frequency_2);
@@ -158,8 +214,9 @@ mod tests {
             let wavetable = Wavetable::new(sine(), SAMPLE_RATE);
             let mut wavetable_oscillator = WavetableOscillator::new(&wavetable, SAMPLE_RATE);
             wavetable_oscillator.set_frequency(4.0);
-            wavetable_oscillator.tick();
-            wavetable_oscillator.tick()
+            let mut buffer = [0.0; 2];
+            wavetable_oscillator.populate(&mut buffer);
+            buffer[1]
         };
 
         let two_ticks_sample_rate_1100 = {
@@ -167,8 +224,9 @@ mod tests {
             let wavetable = Wavetable::new(sine(), SAMPLE_RATE);
             let mut wavetable_oscillator = WavetableOscillator::new(&wavetable, SAMPLE_RATE);
             wavetable_oscillator.set_frequency(4.0);
-            wavetable_oscillator.tick();
-            wavetable_oscillator.tick()
+            let mut buffer = [0.0; 2];
+            wavetable_oscillator.populate(&mut buffer);
+            buffer[1]
         };
 
         assert!(two_ticks_sample_rate_1000 > two_ticks_sample_rate_1100);
@@ -195,9 +253,7 @@ mod tests {
         wavetable_oscillator.set_frequency(frequency);
 
         let mut signal = [0.0; SAMPLE_RATE as usize];
-        for x in signal.iter_mut() {
-            *x = wavetable_oscillator.tick();
-        }
+        wavetable_oscillator.populate(&mut signal);
 
         let mut analysis = SpectralAnalysis::analyze(&signal, SAMPLE_RATE);
         analysis.trash_range(0.0, 1.0);
@@ -368,9 +424,7 @@ mod tests {
         wavetable_oscillator.set_y(y);
 
         let mut signal = [0.0; SAMPLE_RATE as usize];
-        for x in signal.iter_mut() {
-            *x = wavetable_oscillator.tick();
-        }
+        wavetable_oscillator.populate(&mut signal);
 
         signal
     }

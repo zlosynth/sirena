@@ -78,15 +78,20 @@ impl<'a> Cartesian<'a> {
         self
     }
 
-    pub fn tick(&mut self) -> f32 {
-        let mut sum = 0.0;
-        for (i, voice) in self.voices.iter_mut().enumerate() {
-            let value = voice.oscillator.tick();
-            if i < self.enabled_voices as usize {
-                sum += value;
+    pub fn populate(&mut self, buffer: &mut [f32]) {
+        self.voices[0].oscillator.populate(buffer);
+
+        for (i, voice) in self.voices[1..].iter_mut().enumerate() {
+            if (i + 1) < self.enabled_voices as usize {
+                voice.oscillator.add(buffer);
+            } else {
+                voice.oscillator.dry(buffer);
             }
         }
-        sum / self.enabled_voices as f32
+
+        for x in buffer.iter_mut() {
+            *x /= self.enabled_voices as f32;
+        }
     }
 }
 
@@ -164,18 +169,18 @@ mod tests {
     }
 
     #[test]
-    fn tick() {
+    fn populate() {
         const SAMPLE_RATE: u32 = 48000;
         let wavetable_a = Wavetable::new(sine(), SAMPLE_RATE);
         let wavetable_b = Wavetable::new(triangle(), SAMPLE_RATE);
         let wavetable_c = Wavetable::new(saw(), SAMPLE_RATE);
         let mut cartesian = Cartesian::new(&wavetable_a, &wavetable_b, &wavetable_c, SAMPLE_RATE);
 
-        let value_1 = cartesian.tick();
-        let value_2 = cartesian.tick();
+        let mut buffer = [0.0; 2];
+        cartesian.populate(&mut buffer);
 
-        assert_relative_eq!(value_1, 0.0, epsilon = 0.1);
-        assert!(value_2 > value_1);
+        assert_relative_eq!(buffer[0], 0.0, epsilon = 0.1);
+        assert!(buffer[1] > buffer[0]);
     }
 
     #[test]
@@ -190,10 +195,10 @@ mod tests {
                 Cartesian::new(&wavetable_a, &wavetable_b, &wavetable_c, SAMPLE_RATE);
             cartesian.set_frequency(200.0);
 
-            let original = cartesian.tick();
-            let updated = cartesian.tick();
+            let mut buffer = [0.0; 2];
+            cartesian.populate(&mut buffer);
 
-            updated - original
+            buffer[1] - buffer[0]
         };
 
         let delta_two_ticks_frequency_100 = {
@@ -204,11 +209,10 @@ mod tests {
                 Cartesian::new(&wavetable_a, &wavetable_b, &wavetable_c, SAMPLE_RATE);
             cartesian.set_frequency(100.0);
 
-            let original = cartesian.tick();
-            cartesian.tick();
-            let updated = cartesian.tick();
+            let mut buffer = [0.0; 3];
+            cartesian.populate(&mut buffer);
 
-            updated - original
+            buffer[2] - buffer[0]
         };
 
         assert_relative_eq!(
@@ -227,22 +231,19 @@ mod tests {
         let mut cartesian = Cartesian::new(&wavetable_a, &wavetable_b, &wavetable_c, SAMPLE_RATE);
         cartesian.set_frequency(1.0).set_x(0.0).set_y(0.0);
 
-        for _ in 0..SAMPLE_RATE / 8 - 1 {
-            cartesian.tick();
-        }
-        let value = cartesian.tick();
+        let mut buffer = [0.0; SAMPLE_RATE as usize / 8];
+        cartesian.populate(&mut buffer);
+        let value = buffer[buffer.len() - 1];
         assert_relative_eq!(value, f32::sin(0.125 * 2.0 * PI), max_relative = 0.01);
 
-        for _ in 0..SAMPLE_RATE / 8 - 1 {
-            cartesian.tick();
-        }
-        let value = cartesian.tick();
+        let mut buffer = [0.0; SAMPLE_RATE as usize / 8];
+        cartesian.populate(&mut buffer);
+        let value = buffer[buffer.len() - 1];
         assert_relative_eq!(value, f32::sin(0.25 * 2.0 * PI), max_relative = 0.01);
 
-        for _ in 0..SAMPLE_RATE / 4 - 1 {
-            cartesian.tick();
-        }
-        let value = cartesian.tick();
+        let mut buffer = [0.0; SAMPLE_RATE as usize / 4];
+        cartesian.populate(&mut buffer);
+        let value = buffer[buffer.len() - 1];
         assert_relative_eq!(value, 0.0, epsilon = 0.01);
     }
 
@@ -255,22 +256,19 @@ mod tests {
         let mut cartesian = Cartesian::new(&wavetable_a, &wavetable_b, &wavetable_c, SAMPLE_RATE);
         cartesian.set_frequency(1.0).set_x(1.0).set_y(0.0);
 
-        for _ in 0..SAMPLE_RATE / 8 - 1 {
-            cartesian.tick();
-        }
-        let value = cartesian.tick();
+        let mut buffer = [0.0; SAMPLE_RATE as usize / 8];
+        cartesian.populate(&mut buffer);
+        let value = buffer[buffer.len() - 1];
         assert_relative_eq!(value, 0.5, max_relative = 0.01);
 
-        for _ in 0..SAMPLE_RATE / 8 - 1 {
-            cartesian.tick();
-        }
-        let value = cartesian.tick();
+        let mut buffer = [0.0; SAMPLE_RATE as usize / 8];
+        cartesian.populate(&mut buffer);
+        let value = buffer[buffer.len() - 1];
         assert_relative_eq!(value, 1.0, max_relative = 0.01);
 
-        for _ in 0..SAMPLE_RATE / 4 - 1 {
-            cartesian.tick();
-        }
-        let value = cartesian.tick();
+        let mut buffer = [0.0; SAMPLE_RATE as usize / 4];
+        cartesian.populate(&mut buffer);
+        let value = buffer[buffer.len() - 1];
         assert_relative_eq!(value, 0.0, epsilon = 0.01);
     }
 
@@ -283,16 +281,14 @@ mod tests {
         let mut cartesian = Cartesian::new(&wavetable_a, &wavetable_b, &wavetable_c, SAMPLE_RATE);
         cartesian.set_frequency(1.0).set_x(0.0).set_y(1.0);
 
-        for _ in 0..SAMPLE_RATE / 4 - 1 {
-            cartesian.tick();
-        }
-        let value = cartesian.tick();
+        let mut buffer = [0.0; SAMPLE_RATE as usize / 4];
+        cartesian.populate(&mut buffer);
+        let value = buffer[buffer.len() - 1];
         assert_relative_eq!(value, 0.5, epsilon = 0.1);
 
-        for _ in 0..SAMPLE_RATE / 4 - 20 {
-            cartesian.tick();
-        }
-        let value = cartesian.tick();
+        let mut buffer = [0.0; SAMPLE_RATE as usize / 4 - 19];
+        cartesian.populate(&mut buffer);
+        let value = buffer[buffer.len() - 1];
         assert_relative_eq!(value, 1.0, max_relative = 0.05);
     }
 
@@ -312,9 +308,7 @@ mod tests {
         let higher_frequency = 1000.0 * f32::powf(2.0, 2.0 / 12.0);
 
         let mut signal = [0.0; SAMPLE_RATE as usize];
-        for x in signal.iter_mut() {
-            *x = cartesian.tick();
-        }
+        cartesian.populate(&mut signal);
 
         let analysis = SpectralAnalysis::analyze(&signal, SAMPLE_RATE);
         let center_magnitude = analysis.magnitude(1000.0);
@@ -341,9 +335,7 @@ mod tests {
         let off_frequency = (lower_frequency + higher_frequency) / 2.0;
 
         let mut signal = [0.0; SAMPLE_RATE as usize];
-        for x in signal.iter_mut() {
-            *x = cartesian.tick();
-        }
+        cartesian.populate(&mut signal);
 
         let analysis = SpectralAnalysis::analyze(&signal, SAMPLE_RATE);
         let center_magnitude = analysis.magnitude(1000.0);
