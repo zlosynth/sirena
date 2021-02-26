@@ -23,7 +23,6 @@ approx = "0.4"
 [workspace]
 members = [
   "pd",
-  "ui",
 ]
 
 [profile.release]
