@@ -33,6 +33,8 @@ members = [
 [profile.release]
 lto = true
 panic = "abort"
+opt-level = 3
 
 [profile.bench]
 debug = true
+opt-level = 3
