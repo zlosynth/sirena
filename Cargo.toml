@@ -19,6 +19,11 @@ rand = { version = "0.8", optional = true }
 
 [dev-dependencies]
 approx = "0.4"
+criterion = "0.3"
+
+[[bench]]
+name = "bench"
+harness = false
 
 [workspace]
 members = [
@@ -28,3 +33,6 @@ members = [
 [profile.release]
 lto = true
 panic = "abort"
+
+[profile.bench]
+debug = true
