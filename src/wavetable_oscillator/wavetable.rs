@@ -139,7 +139,7 @@ fn_undersample!(undersample_32, 32);
 
 fn linear_interpolation(data: &[f32], position: f32) -> f32 {
     let index = position as usize;
-    let remainder = position % 1.0;
+    let remainder = position.fract();
 
     let value = data[index];
     let delta_to_next = if index == (data.len() - 1) {
