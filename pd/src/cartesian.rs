@@ -55,7 +55,9 @@ unsafe extern "C" fn set_y(cartesian: *mut Cartesian, value: pd_sys::t_float) {
 
 unsafe extern "C" fn set_enabled_voices(cartesian: *mut Cartesian, value: pd_sys::t_float) {
     let enabled_voices = f32::max(f32::min(value, 7.0), 1.0) as u32;
-    (*cartesian).cartesian_module.set_enabled_voices(enabled_voices);
+    (*cartesian)
+        .cartesian_module
+        .set_enabled_voices(enabled_voices);
 }
 
 unsafe extern "C" fn set_detune(cartesian: *mut Cartesian, value: pd_sys::t_float) {
