@@ -28,4 +28,3 @@ valgrind \
     ${BENCH} --bench --profile-time 10 ${TEST}
 kcachegrind callgrind.out.*
 ```
-
