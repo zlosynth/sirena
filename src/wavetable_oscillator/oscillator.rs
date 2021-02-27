@@ -36,13 +36,13 @@ impl<'a> DoubleWavetableOscillator<'a> {
     }
 
     pub fn set_x(&mut self, x: f32) -> &mut Self {
-        assert!((0.0..=1.0).contains(&x));
+        assert!((-1.0..=1.0).contains(&x));
         self.x = x;
         self
     }
 
     pub fn set_y(&mut self, y: f32) -> &mut Self {
-        assert!((0.0..=1.0).contains(&y));
+        assert!((-1.0..=1.0).contains(&y));
         self.y = y;
         self
     }
@@ -64,7 +64,7 @@ impl<'a> DoubleWavetableOscillator<'a> {
         let band_wavetable_b = self.wavetable_b.band(self.frequency);
         let band_wavetable_c = self.wavetable_c.band(self.frequency);
         let interval_in_samples = self.frequency / self.sample_rate as f32;
-        let zero_magnitude = f32::max(0.0, 1.0 - f32::sqrt(self.x + self.y));
+        let zero_magnitude = f32::max(0.0, 1.0 - f32::sqrt(self.x.abs() + self.y.abs()));
 
         for x in buffer.iter_mut() {
             let sample_a = band_wavetable_a.read(self.phase);
@@ -72,7 +72,7 @@ impl<'a> DoubleWavetableOscillator<'a> {
             let sample_c = band_wavetable_c.read(self.phase);
 
             let sample = (sample_a * zero_magnitude + sample_b * self.x + sample_c * self.y)
-                / (zero_magnitude + self.x + self.y);
+                / (zero_magnitude + self.x.abs() + self.y.abs());
 
             match method {
                 FillMethod::Overwrite => *x = sample,
@@ -284,9 +284,44 @@ mod tests {
     }
 
     #[test]
+    fn dual_oscillator_negative_x() {
+        let signal = dual_oscillator_single_cycle(sine(), digital_saw(), triangle(), -1.0, 0.0);
+
+        // ignore the breaking point of the saw wave in the middle
+        let expected = {
+            let mut inverted_saw = digital_saw();
+            invert(&mut inverted_saw);
+            inverted_saw
+        };
+        assert_signal_eq(
+            &signal[0..(signal.len() as f32 * 0.49) as usize],
+            &expected[0..(expected.len() as f32 * 0.49) as usize],
+        );
+        assert_signal_eq(
+            &signal[(signal.len() as f32 * 0.51) as usize..signal.len() - 1],
+            &expected[(expected.len() as f32 * 0.51) as usize..expected.len() - 1],
+        );
+    }
+
+    #[test]
     fn dual_oscillator_y() {
         let signal = dual_oscillator_single_cycle(sine(), digital_saw(), triangle(), 0.0, 1.0);
         assert_signal_eq(&signal, &triangle());
+    }
+
+    #[test]
+    fn dual_oscillator_negative_y() {
+        let signal = dual_oscillator_single_cycle(sine(), digital_saw(), triangle(), 0.0, -1.0);
+        let expected = {
+            let mut inverted_triangle = triangle();
+            invert(&mut inverted_triangle);
+            inverted_triangle
+        };
+        assert_signal_eq(&signal, &expected);
+    }
+
+    fn invert(data: &mut [f32]) {
+        data.iter_mut().for_each(|x| *x *= -1.0);
     }
 
     fn assert_signal_eq(a: &[f32], b: &[f32]) {

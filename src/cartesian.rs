@@ -454,7 +454,7 @@ mod tests {
             .set_frequency(100.0)
             .set_enabled_voices(voices)
             .set_detune(21.0)
-            .set_x(1.0);
+            .set_y(1.0);
 
         let mut signal = [0.0; SAMPLE_RATE as usize];
         cartesian.populate(&mut signal);
