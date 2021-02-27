@@ -64,13 +64,13 @@ impl<'a> DoubleWavetableOscillator<'a> {
         let band_wavetable_b = self.wavetable_b.band(self.frequency);
         let band_wavetable_c = self.wavetable_c.band(self.frequency);
         let interval_in_samples = self.frequency / self.sample_rate as f32;
+        let zero_magnitude = f32::max(0.0, 1.0 - f32::sqrt(self.x + self.y));
 
         for x in buffer.iter_mut() {
             let sample_a = band_wavetable_a.read(self.phase);
             let sample_b = band_wavetable_b.read(self.phase);
             let sample_c = band_wavetable_c.read(self.phase);
 
-            let zero_magnitude = f32::max(0.0, 1.0 - f32::sqrt(self.x + self.y));
             let sample = (sample_a * zero_magnitude + sample_b * self.x + sample_c * self.y)
                 / (zero_magnitude + self.x + self.y);
 

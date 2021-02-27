@@ -12,12 +12,12 @@ make
 make SLOW=1
 
 # run benchmark
-cargo bench
+cargo bench --bench bench
 
 # profiling example
 rm -f target/release/deps/bench-*
 rm -f callgrind.out.*
-RUSTFLAGS="-g" cargo bench --no-run
+RUSTFLAGS="-g" cargo bench --bench bench --no-run
 BENCH=$(find target/release/deps -type f -executable -name 'bench-*')
 TEST=cartesian
 valgrind \
