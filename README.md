@@ -15,7 +15,8 @@ make SLOW=1
 cargo bench
 
 # profiling example
-rm -f target/release/deps/bench-* callgrind.out.*
+rm -f target/release/deps/bench-*
+rm -f callgrind.out.*
 RUSTFLAGS="-g" cargo bench --no-run
 BENCH=$(find target/release/deps -type f -executable -name 'bench-*')
 TEST=cartesian
