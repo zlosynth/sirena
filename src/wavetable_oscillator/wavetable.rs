@@ -127,7 +127,7 @@ fn filtered(
 }
 
 fn cross_fade(a: f32, b: f32, x: f32) -> f32 {
-    assert!((0.0..=1.0).contains(&x));
+    debug_assert!((0.0..=1.0).contains(&x));
 
     a * (1.0 - x) + b * x
 }
