@@ -436,4 +436,31 @@ mod tests {
 
         assert_relative_eq!(detuned, B4, epsilon = 0.001);
     }
+
+    #[test]
+    fn no_clipping() {
+        assert_no_clipping(1);
+        assert_no_clipping(4);
+        assert_no_clipping(7);
+    }
+
+    fn assert_no_clipping(voices: u32) {
+        const SAMPLE_RATE: u32 = 48000;
+        let wavetable_a = Wavetable::new(sine(), SAMPLE_RATE);
+        let wavetable_b = Wavetable::new(triangle(), SAMPLE_RATE);
+        let wavetable_c = Wavetable::new(saw(), SAMPLE_RATE);
+        let mut cartesian = Cartesian::new(&wavetable_a, &wavetable_b, &wavetable_c, SAMPLE_RATE);
+        cartesian
+            .set_frequency(100.0)
+            .set_enabled_voices(voices)
+            .set_detune(21.0)
+            .set_x(1.0);
+
+        let mut signal = [0.0; SAMPLE_RATE as usize];
+        cartesian.populate(&mut signal);
+
+        let max = signal.iter().fold(0.0, |a, b| f32::max(a, b.abs()));
+
+        assert!(max < 1.0);
+    }
 }
