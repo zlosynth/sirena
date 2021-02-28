@@ -635,6 +635,7 @@ version = "0.0.1"
 dependencies = [
  "approx",
  "criterion",
+ "lazy_static",
  "rand",
  "rustfft",
 ]

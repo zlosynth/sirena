@@ -6,6 +6,10 @@
 #[macro_use]
 extern crate approx;
 
+#[cfg(test)]
+#[macro_use]
+extern crate lazy_static;
+
 pub mod all_pass_filter;
 pub mod cartesian;
 pub mod comb_filter;

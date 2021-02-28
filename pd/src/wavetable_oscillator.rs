@@ -1,3 +1,4 @@
+use sirena::wavetable_oscillator::Oscillator;
 use std::os::raw::{c_int, c_void};
 
 use crate::cstr;
