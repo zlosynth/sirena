@@ -6,6 +6,7 @@ pub struct DoubleWavetableOscillator<'a> {
     wavetable_c: &'a Wavetable,
     sample_rate: u32,
     frequency: f32,
+    amplitude: f32,
     phase: f32,
     x: f32,
     y: f32,
@@ -24,6 +25,7 @@ impl<'a> DoubleWavetableOscillator<'a> {
             wavetable_c,
             sample_rate,
             frequency: 440.0,
+            amplitude: 1.0,
             phase: 0.0,
             x: 0.0,
             y: 0.0,
@@ -32,6 +34,15 @@ impl<'a> DoubleWavetableOscillator<'a> {
 
     pub fn set_frequency(&mut self, frequency: f32) -> &mut Self {
         self.frequency = frequency;
+        self
+    }
+
+    pub fn frequency(&self) -> f32 {
+        self.frequency
+    }
+
+    pub fn set_amplitude(&mut self, amplitude: f32) -> &mut Self {
+        self.amplitude = amplitude;
         self
     }
 
@@ -75,8 +86,8 @@ impl<'a> DoubleWavetableOscillator<'a> {
                 / (zero_magnitude + self.x.abs() + self.y.abs());
 
             match method {
-                FillMethod::Overwrite => *x = sample,
-                FillMethod::Add => *x += sample,
+                FillMethod::Overwrite => *x = sample * self.amplitude,
+                FillMethod::Add => *x += sample * self.amplitude,
                 FillMethod::Dry => (),
             }
 
@@ -90,6 +101,7 @@ pub struct WavetableOscillator<'a> {
     wavetable: &'a Wavetable,
     sample_rate: u32,
     frequency: f32,
+    amplitude: f32,
     phase: f32,
 }
 
@@ -99,12 +111,22 @@ impl<'a> WavetableOscillator<'a> {
             wavetable,
             sample_rate,
             frequency: 440.0,
+            amplitude: 1.0,
             phase: 0.0,
         }
     }
 
     pub fn set_frequency(&mut self, frequency: f32) -> &mut Self {
         self.frequency = frequency;
+        self
+    }
+
+    pub fn frequency(&self) -> f32 {
+        self.frequency
+    }
+
+    pub fn set_amplitude(&mut self, amplitude: f32) -> &mut Self {
+        self.amplitude = amplitude;
         self
     }
 
@@ -126,8 +148,8 @@ impl<'a> WavetableOscillator<'a> {
 
         for x in buffer.iter_mut() {
             match method {
-                FillMethod::Overwrite => *x = band_wavetable.read(self.phase),
-                FillMethod::Add => *x += band_wavetable.read(self.phase),
+                FillMethod::Overwrite => *x = band_wavetable.read(self.phase) * self.amplitude,
+                FillMethod::Add => *x += band_wavetable.read(self.phase) * self.amplitude,
                 FillMethod::Dry => (),
             }
 
@@ -152,14 +174,14 @@ mod tests {
 
     #[test]
     fn initialize_wavetable_oscillator() {
-        const SAMPLE_RATE: u32 = 441000;
+        const SAMPLE_RATE: u32 = 44100;
         let wavetable = Wavetable::new(sine(), SAMPLE_RATE);
         let _wavetable_oscillator = WavetableOscillator::new(&wavetable, SAMPLE_RATE);
     }
 
     #[test]
     fn get_first_sample() {
-        const SAMPLE_RATE: u32 = 441000;
+        const SAMPLE_RATE: u32 = 44100;
         let wavetable = Wavetable::new(sine(), SAMPLE_RATE);
         let mut wavetable_oscillator = WavetableOscillator::new(&wavetable, SAMPLE_RATE);
 
@@ -205,6 +227,16 @@ mod tests {
         };
 
         assert_relative_eq!(three_ticks_frequency_1, two_ticks_frequency_2);
+    }
+
+    #[test]
+    fn get_frequency() {
+        const SAMPLE_RATE: u32 = 8;
+        let wavetable = Wavetable::new(sine(), SAMPLE_RATE);
+        let mut wavetable_oscillator = WavetableOscillator::new(&wavetable, SAMPLE_RATE);
+        wavetable_oscillator.set_frequency(110.0);
+
+        assert_eq!(wavetable_oscillator.frequency(), 110.0);
     }
 
     #[test]
@@ -462,5 +494,25 @@ mod tests {
         wavetable_oscillator.populate(&mut signal);
 
         signal
+    }
+
+    #[test]
+    fn set_amplitude() {
+        const SAMPLE_RATE: u32 = 44100;
+        let wavetable = Wavetable::new(sine(), SAMPLE_RATE);
+        let mut wavetable_oscillator = WavetableOscillator::new(&wavetable, SAMPLE_RATE);
+        wavetable_oscillator.set_frequency(1.0);
+
+        let mut buffer = [0.0; SAMPLE_RATE as usize];
+
+        wavetable_oscillator.set_amplitude(2.0);
+        wavetable_oscillator.populate(&mut buffer);
+        let max = buffer.iter().fold(0.0, |a, b| f32::max(a, b.abs()));
+        assert_relative_eq!(max, 2.0, max_relative = 0.001);
+
+        wavetable_oscillator.set_amplitude(3.0);
+        wavetable_oscillator.populate(&mut buffer);
+        let max = buffer.iter().fold(0.0, |a, b| f32::max(a, b.abs()));
+        assert_relative_eq!(max, 3.0, max_relative = 0.001);
     }
 }
