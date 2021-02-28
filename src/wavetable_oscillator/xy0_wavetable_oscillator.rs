@@ -1,9 +1,9 @@
 use super::wavetable::Wavetable;
 
-pub struct DoubleWavetableOscillator<'a> {
-    wavetable_a: &'a Wavetable,
-    wavetable_b: &'a Wavetable,
-    wavetable_c: &'a Wavetable,
+pub struct XY0WavetableOscillator<'a> {
+    wavetable_0: &'a Wavetable,
+    wavetable_x: &'a Wavetable,
+    wavetable_y: &'a Wavetable,
     sample_rate: u32,
     frequency: f32,
     amplitude: f32,
@@ -12,17 +12,17 @@ pub struct DoubleWavetableOscillator<'a> {
     y: f32,
 }
 
-impl<'a> DoubleWavetableOscillator<'a> {
+impl<'a> XY0WavetableOscillator<'a> {
     pub fn new(
-        wavetable_a: &'a Wavetable,
-        wavetable_b: &'a Wavetable,
-        wavetable_c: &'a Wavetable,
+        wavetable_0: &'a Wavetable,
+        wavetable_x: &'a Wavetable,
+        wavetable_y: &'a Wavetable,
         sample_rate: u32,
     ) -> Self {
         Self {
-            wavetable_a,
-            wavetable_b,
-            wavetable_c,
+            wavetable_0,
+            wavetable_x,
+            wavetable_y,
             sample_rate,
             frequency: 440.0,
             amplitude: 1.0,
@@ -71,16 +71,16 @@ impl<'a> DoubleWavetableOscillator<'a> {
     }
 
     fn fill(&mut self, buffer: &mut [f32], method: FillMethod) {
-        let band_wavetable_a = self.wavetable_a.band(self.frequency);
-        let band_wavetable_b = self.wavetable_b.band(self.frequency);
-        let band_wavetable_c = self.wavetable_c.band(self.frequency);
+        let band_wavetable_0 = self.wavetable_0.band(self.frequency);
+        let band_wavetable_x = self.wavetable_x.band(self.frequency);
+        let band_wavetable_y = self.wavetable_y.band(self.frequency);
         let interval_in_samples = self.frequency / self.sample_rate as f32;
         let zero_magnitude = f32::max(0.0, 1.0 - f32::sqrt(self.x.abs() + self.y.abs()));
 
         for x in buffer.iter_mut() {
-            let sample_a = band_wavetable_a.read(self.phase);
-            let sample_b = band_wavetable_b.read(self.phase);
-            let sample_c = band_wavetable_c.read(self.phase);
+            let sample_a = band_wavetable_0.read(self.phase);
+            let sample_b = band_wavetable_x.read(self.phase);
+            let sample_c = band_wavetable_y.read(self.phase);
 
             let sample = (sample_a * zero_magnitude + sample_b * self.x + sample_c * self.y)
                 / (zero_magnitude + self.x.abs() + self.y.abs());
@@ -113,21 +113,21 @@ mod tests {
     #[test]
     fn initialize() {
         const SAMPLE_RATE: u32 = 44100;
-        let wavetable_a = Wavetable::new(sine(), SAMPLE_RATE);
-        let wavetable_b = Wavetable::new(triangle(), SAMPLE_RATE);
-        let wavetable_c = Wavetable::new(saw(), SAMPLE_RATE);
+        let wavetable_0 = Wavetable::new(sine(), SAMPLE_RATE);
+        let wavetable_x = Wavetable::new(triangle(), SAMPLE_RATE);
+        let wavetable_y = Wavetable::new(saw(), SAMPLE_RATE);
         let _wavetable_oscillator =
-            DoubleWavetableOscillator::new(&wavetable_a, &wavetable_b, &wavetable_c, SAMPLE_RATE);
+            XY0WavetableOscillator::new(&wavetable_0, &wavetable_x, &wavetable_y, SAMPLE_RATE);
     }
 
     #[test]
     fn get_first_sample() {
         const SAMPLE_RATE: u32 = 44100;
-        let wavetable_a = Wavetable::new(sine(), SAMPLE_RATE);
-        let wavetable_b = Wavetable::new(triangle(), SAMPLE_RATE);
-        let wavetable_c = Wavetable::new(saw(), SAMPLE_RATE);
+        let wavetable_0 = Wavetable::new(sine(), SAMPLE_RATE);
+        let wavetable_x = Wavetable::new(triangle(), SAMPLE_RATE);
+        let wavetable_y = Wavetable::new(saw(), SAMPLE_RATE);
         let mut wavetable_oscillator =
-            DoubleWavetableOscillator::new(&wavetable_a, &wavetable_b, &wavetable_c, SAMPLE_RATE);
+            XY0WavetableOscillator::new(&wavetable_0, &wavetable_x, &wavetable_y, SAMPLE_RATE);
         wavetable_oscillator
             .set_frequency(100.0)
             .set_x(0.5)
@@ -142,11 +142,11 @@ mod tests {
     #[test]
     fn get_multiple_samples() {
         const SAMPLE_RATE: u32 = 8;
-        let wavetable_a = Wavetable::new(sine(), SAMPLE_RATE);
-        let wavetable_b = Wavetable::new(triangle(), SAMPLE_RATE);
-        let wavetable_c = Wavetable::new(saw(), SAMPLE_RATE);
+        let wavetable_0 = Wavetable::new(sine(), SAMPLE_RATE);
+        let wavetable_x = Wavetable::new(triangle(), SAMPLE_RATE);
+        let wavetable_y = Wavetable::new(saw(), SAMPLE_RATE);
         let mut wavetable_oscillator =
-            DoubleWavetableOscillator::new(&wavetable_a, &wavetable_b, &wavetable_c, SAMPLE_RATE);
+            XY0WavetableOscillator::new(&wavetable_0, &wavetable_x, &wavetable_y, SAMPLE_RATE);
         wavetable_oscillator
             .set_frequency(1.0)
             .set_x(0.5)
@@ -164,7 +164,7 @@ mod tests {
             const SAMPLE_RATE: u32 = 8;
             let wavetable = Wavetable::new(sine(), SAMPLE_RATE);
             let mut wavetable_oscillator =
-                DoubleWavetableOscillator::new(&wavetable, &wavetable, &wavetable, SAMPLE_RATE);
+                XY0WavetableOscillator::new(&wavetable, &wavetable, &wavetable, SAMPLE_RATE);
             wavetable_oscillator.set_frequency(1.0);
             let mut buffer = [0.0; 3];
             wavetable_oscillator.populate(&mut buffer);
@@ -175,7 +175,7 @@ mod tests {
             const SAMPLE_RATE: u32 = 8;
             let wavetable = Wavetable::new(sine(), SAMPLE_RATE);
             let mut wavetable_oscillator =
-                DoubleWavetableOscillator::new(&wavetable, &wavetable, &wavetable, SAMPLE_RATE);
+                XY0WavetableOscillator::new(&wavetable, &wavetable, &wavetable, SAMPLE_RATE);
             wavetable_oscillator.set_frequency(2.0);
             let mut buffer = [0.0; 2];
             wavetable_oscillator.populate(&mut buffer);
@@ -190,7 +190,7 @@ mod tests {
         const SAMPLE_RATE: u32 = 8;
         let wavetable = Wavetable::new(sine(), SAMPLE_RATE);
         let mut wavetable_oscillator =
-            DoubleWavetableOscillator::new(&wavetable, &wavetable, &wavetable, SAMPLE_RATE);
+            XY0WavetableOscillator::new(&wavetable, &wavetable, &wavetable, SAMPLE_RATE);
         wavetable_oscillator.set_frequency(110.0);
 
         assert_eq!(wavetable_oscillator.frequency(), 110.0);
@@ -202,7 +202,7 @@ mod tests {
             const SAMPLE_RATE: u32 = 1000;
             let wavetable = Wavetable::new(sine(), SAMPLE_RATE);
             let mut wavetable_oscillator =
-                DoubleWavetableOscillator::new(&wavetable, &wavetable, &wavetable, SAMPLE_RATE);
+                XY0WavetableOscillator::new(&wavetable, &wavetable, &wavetable, SAMPLE_RATE);
             wavetable_oscillator.set_frequency(4.0);
             let mut buffer = [0.0; 2];
             wavetable_oscillator.populate(&mut buffer);
@@ -213,7 +213,7 @@ mod tests {
             const SAMPLE_RATE: u32 = 1100;
             let wavetable = Wavetable::new(sine(), SAMPLE_RATE);
             let mut wavetable_oscillator =
-                DoubleWavetableOscillator::new(&wavetable, &wavetable, &wavetable, SAMPLE_RATE);
+                XY0WavetableOscillator::new(&wavetable, &wavetable, &wavetable, SAMPLE_RATE);
             wavetable_oscillator.set_frequency(4.0);
             let mut buffer = [0.0; 2];
             wavetable_oscillator.populate(&mut buffer);
@@ -239,11 +239,11 @@ mod tests {
 
     fn check_note_for_aliasing(frequency: f32) {
         const SAMPLE_RATE: u32 = 44100;
-        let wavetable_a = Wavetable::new(sine(), SAMPLE_RATE);
-        let wavetable_b = Wavetable::new(triangle(), SAMPLE_RATE);
-        let wavetable_c = Wavetable::new(saw(), SAMPLE_RATE);
+        let wavetable_0 = Wavetable::new(sine(), SAMPLE_RATE);
+        let wavetable_x = Wavetable::new(triangle(), SAMPLE_RATE);
+        let wavetable_y = Wavetable::new(saw(), SAMPLE_RATE);
         let mut wavetable_oscillator =
-            DoubleWavetableOscillator::new(&wavetable_a, &wavetable_b, &wavetable_c, SAMPLE_RATE);
+            XY0WavetableOscillator::new(&wavetable_0, &wavetable_x, &wavetable_y, SAMPLE_RATE);
         wavetable_oscillator
             .set_frequency(frequency)
             .set_x(0.5)
@@ -260,13 +260,13 @@ mod tests {
 
     #[test]
     fn zero() {
-        let signal = dual_oscillator_single_cycle(sine(), digital_saw(), triangle(), 0.0, 0.0);
+        let signal = xy0_oscillator_single_cycle(sine(), digital_saw(), triangle(), 0.0, 0.0);
         assert_signal_eq(&signal, &sine());
     }
 
     #[test]
     fn x() {
-        let signal = dual_oscillator_single_cycle(sine(), digital_saw(), triangle(), 1.0, 0.0);
+        let signal = xy0_oscillator_single_cycle(sine(), digital_saw(), triangle(), 1.0, 0.0);
 
         // ignore the breaking point of the saw wave in the middle
         let expected = digital_saw();
@@ -282,7 +282,7 @@ mod tests {
 
     #[test]
     fn negative_x() {
-        let signal = dual_oscillator_single_cycle(sine(), digital_saw(), triangle(), -1.0, 0.0);
+        let signal = xy0_oscillator_single_cycle(sine(), digital_saw(), triangle(), -1.0, 0.0);
 
         // ignore the breaking point of the saw wave in the middle
         let expected = {
@@ -302,13 +302,13 @@ mod tests {
 
     #[test]
     fn y() {
-        let signal = dual_oscillator_single_cycle(sine(), digital_saw(), triangle(), 0.0, 1.0);
+        let signal = xy0_oscillator_single_cycle(sine(), digital_saw(), triangle(), 0.0, 1.0);
         assert_signal_eq(&signal, &triangle());
     }
 
     #[test]
     fn negative_y() {
-        let signal = dual_oscillator_single_cycle(sine(), digital_saw(), triangle(), 0.0, -1.0);
+        let signal = xy0_oscillator_single_cycle(sine(), digital_saw(), triangle(), 0.0, -1.0);
         let expected = {
             let mut inverted_triangle = triangle();
             invert(&mut inverted_triangle);
@@ -337,7 +337,7 @@ mod tests {
     #[test]
     fn blend_zero_and_x_equally() {
         let x = 3.0 / 2.0 - f32::sqrt(5.0) / 2.0;
-        let signal = dual_oscillator_single_cycle(sine(), digital_saw(), triangle(), x, 0.0);
+        let signal = xy0_oscillator_single_cycle(sine(), digital_saw(), triangle(), x, 0.0);
         let expected_a = sine();
         let expected_b = digital_saw();
 
@@ -357,13 +357,13 @@ mod tests {
     #[test]
     fn blend_zero_and_y_equally() {
         let y = 3.0 / 2.0 - f32::sqrt(5.0) / 2.0;
-        let signal = dual_oscillator_single_cycle(sine(), digital_saw(), triangle(), 0.0, y);
+        let signal = xy0_oscillator_single_cycle(sine(), digital_saw(), triangle(), 0.0, y);
         assert_equal_mix_of_two_signal_eq(&signal, &sine(), &triangle());
     }
 
     #[test]
     fn blend_x_and_y_equally() {
-        let signal = dual_oscillator_single_cycle(sine(), digital_saw(), triangle(), 1.0, 1.0);
+        let signal = xy0_oscillator_single_cycle(sine(), digital_saw(), triangle(), 1.0, 1.0);
         let expected_a = digital_saw();
         let expected_b = triangle();
 
@@ -399,7 +399,7 @@ mod tests {
     fn blend_all_three_equally() {
         let x = 2.0 - f32::sqrt(3.0);
         let y = x;
-        let signal = dual_oscillator_single_cycle(sine(), digital_saw(), triangle(), x, y);
+        let signal = xy0_oscillator_single_cycle(sine(), digital_saw(), triangle(), x, y);
         let expected_a = sine();
         let expected_b = digital_saw();
         let expected_c = triangle();
@@ -435,7 +435,7 @@ mod tests {
         });
     }
 
-    fn dual_oscillator_single_cycle(
+    fn xy0_oscillator_single_cycle(
         wavetable_0: [f32; OVERSAMPLED_WAVETABLE_LENGTH],
         wavetable_x: [f32; OVERSAMPLED_WAVETABLE_LENGTH],
         wavetable_y: [f32; OVERSAMPLED_WAVETABLE_LENGTH],
@@ -449,7 +449,7 @@ mod tests {
         let wavetable_y = Wavetable::new(wavetable_y, SAMPLE_RATE);
 
         let mut wavetable_oscillator =
-            DoubleWavetableOscillator::new(&wavetable_0, &wavetable_x, &wavetable_y, SAMPLE_RATE);
+            XY0WavetableOscillator::new(&wavetable_0, &wavetable_x, &wavetable_y, SAMPLE_RATE);
 
         wavetable_oscillator.set_frequency(1.0);
         wavetable_oscillator.set_x(x);
@@ -464,11 +464,11 @@ mod tests {
     #[test]
     fn set_amplitude() {
         const SAMPLE_RATE: u32 = 44100;
-        let wavetable_a = Wavetable::new(sine(), SAMPLE_RATE);
-        let wavetable_b = Wavetable::new(triangle(), SAMPLE_RATE);
-        let wavetable_c = Wavetable::new(saw(), SAMPLE_RATE);
+        let wavetable_0 = Wavetable::new(sine(), SAMPLE_RATE);
+        let wavetable_x = Wavetable::new(triangle(), SAMPLE_RATE);
+        let wavetable_y = Wavetable::new(saw(), SAMPLE_RATE);
         let mut wavetable_oscillator =
-            DoubleWavetableOscillator::new(&wavetable_a, &wavetable_b, &wavetable_c, SAMPLE_RATE);
+            XY0WavetableOscillator::new(&wavetable_0, &wavetable_x, &wavetable_y, SAMPLE_RATE);
         wavetable_oscillator.set_frequency(1.0).set_x(1.0);
 
         let mut buffer = [0.0; SAMPLE_RATE as usize];

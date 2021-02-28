@@ -1,4 +1,4 @@
-use crate::wavetable_oscillator::{DoubleWavetableOscillator, Wavetable};
+use crate::wavetable_oscillator::{Wavetable, XY0WavetableOscillator};
 
 const MAX_VOICES: u32 = 7;
 
@@ -96,7 +96,7 @@ impl<'a> Cartesian<'a> {
 }
 
 struct Voice<'a> {
-    pub oscillator: DoubleWavetableOscillator<'a>,
+    pub oscillator: XY0WavetableOscillator<'a>,
 }
 
 impl<'a> Voice<'a> {
@@ -107,7 +107,7 @@ impl<'a> Voice<'a> {
         sample_rate: u32,
     ) -> Self {
         Self {
-            oscillator: DoubleWavetableOscillator::new(
+            oscillator: XY0WavetableOscillator::new(
                 wavetable_a,
                 wavetable_b,
                 wavetable_c,
