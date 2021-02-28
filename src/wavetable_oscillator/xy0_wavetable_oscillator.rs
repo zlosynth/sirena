@@ -112,7 +112,6 @@ enum FillMethod {
 
 #[cfg(test)]
 mod tests {
-    use super::super::consts::OVERSAMPLED_WAVETABLE_LENGTH;
     use super::super::tests::{self, SAMPLE_RATE};
     use super::super::{digital_saw, sine, triangle};
     use super::*;

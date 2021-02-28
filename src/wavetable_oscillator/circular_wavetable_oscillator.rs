@@ -5,7 +5,7 @@ pub struct CircularWavetableOscillator<'a> {
     sample_rate: u32,
     frequency: f32,
     amplitude: f32,
-    wavetable: f32,
+    _wavetable: f32,
     phase: f32,
     wavetables: [&'a Wavetable; 8],
 }
@@ -16,7 +16,7 @@ impl<'a> CircularWavetableOscillator<'a> {
             sample_rate,
             frequency: 440.0,
             amplitude: 1.0,
-            wavetable: 0.0,
+            _wavetable: 0.0,
             phase: 0.0,
             wavetables,
         }
