@@ -16,7 +16,7 @@ lazy_static! {
 #[repr(C)]
 struct WavetableOscillator<'a> {
     pd_obj: pd_sys::t_object,
-    oscillator_module: sirena::wavetable_oscillator::WavetableOscillator<'a>,
+    oscillator_module: sirena::wavetable_oscillator::SimpleWavetableOscillator<'a>,
     signal_dummy: f32,
 }
 
@@ -46,7 +46,7 @@ unsafe extern "C" fn new(initial_frequency: pd_sys::t_float) -> *mut c_void {
 
     let sample_rate = pd_sys::sys_getsr() as u32;
     let mut oscillator =
-        sirena::wavetable_oscillator::WavetableOscillator::new(&WAVETABLE, sample_rate);
+        sirena::wavetable_oscillator::SimpleWavetableOscillator::new(&WAVETABLE, sample_rate);
     oscillator.set_frequency(initial_frequency);
     (*wavetable_oscillator).oscillator_module = oscillator;
 
