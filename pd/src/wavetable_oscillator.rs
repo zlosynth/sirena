@@ -1,4 +1,4 @@
-use sirena::wavetable_oscillator::Oscillator;
+use sirena::wavetable_oscillator::Oscillator as _;
 use std::os::raw::{c_int, c_void};
 
 use crate::cstr;

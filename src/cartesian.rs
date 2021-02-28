@@ -1,4 +1,4 @@
-use crate::wavetable_oscillator::{Wavetable, XY0WavetableOscillator};
+use crate::wavetable_oscillator::{Oscillator, Wavetable, XY0WavetableOscillator};
 
 const MAX_VOICES: u32 = 7;
 

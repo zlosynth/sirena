@@ -75,15 +75,19 @@ pub fn set_amplitude(oscillator: &mut impl Oscillator) {
 
     let mut buffer = [0.0; SAMPLE_RATE as usize];
 
+    oscillator.set_amplitude(1.0);
+    oscillator.populate(&mut buffer);
+    let original = buffer.iter().fold(0.0, |a, b| f32::max(a, b.abs()));
+
     oscillator.set_amplitude(2.0);
     oscillator.populate(&mut buffer);
     let max = buffer.iter().fold(0.0, |a, b| f32::max(a, b.abs()));
-    assert_relative_eq!(max, 2.0, max_relative = 0.001);
+    assert_relative_eq!(max, original * 2.0, max_relative = 0.001);
 
     oscillator.set_amplitude(3.0);
     oscillator.populate(&mut buffer);
     let max = buffer.iter().fold(0.0, |a, b| f32::max(a, b.abs()));
-    assert_relative_eq!(max, 3.0, max_relative = 0.001);
+    assert_relative_eq!(max, original * 3.0, max_relative = 0.001);
 }
 
 pub fn get_amplitude(oscillator: &mut impl Oscillator) {
