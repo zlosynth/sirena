@@ -18,6 +18,7 @@ pub mod delay;
 pub mod state_variable_filter;
 pub mod wavetable_oscillator;
 pub mod wavetable_oscillator_2;
+pub mod wavetable_oscillator_3;
 pub mod xfade;
 
 mod cstr;
@@ -55,6 +56,7 @@ pub unsafe extern "C" fn sirena_setup() {
     all_pass_filter::setup();
     wavetable_oscillator::setup();
     wavetable_oscillator_2::setup();
+    wavetable_oscillator_3::setup();
     state_variable_filter::setup();
     cartesian::setup();
 }
