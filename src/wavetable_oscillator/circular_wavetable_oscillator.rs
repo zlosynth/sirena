@@ -25,7 +25,7 @@ impl<'a> CircularWavetableOscillator<'a> {
     }
 
     fn fill(&mut self, buffer: &mut [f32], method: FillMethod) {
-        let wavetable_index = (self.wavetable + 0.5) as usize;
+        let wavetable_index = self.wavetable as usize;
         let band_wavetable = self.wavetables[wavetable_index].band(self.frequency);
         let interval_in_samples = self.frequency / self.sample_rate as f32;
 

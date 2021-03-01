@@ -51,13 +51,31 @@ unsafe extern "C" fn set_frequency(
         .set_frequency(value);
 }
 
+unsafe extern "C" fn set_wavetable(
+    wavetable_oscillator: *mut WavetableOscillator3,
+    value: pd_sys::t_float,
+) {
+    (*wavetable_oscillator)
+        .oscillator_module
+        .set_wavetable(value);
+}
+
 unsafe extern "C" fn new(initial_frequency: pd_sys::t_float) -> *mut c_void {
     let wavetable_oscillator =
         pd_sys::pd_new(WAVETABLE_OSCILLATOR_2_CLASS.unwrap()) as *mut WavetableOscillator3;
 
     let sample_rate = pd_sys::sys_getsr() as u32;
     let mut oscillator = sirena::wavetable_oscillator::CircularWavetableOscillator::new(
-        [&WAVETABLE_A; 8],
+        [
+            &WAVETABLE_A,
+            &WAVETABLE_B,
+            &WAVETABLE_C,
+            &WAVETABLE_A,
+            &WAVETABLE_A,
+            &WAVETABLE_A,
+            &WAVETABLE_A,
+            &WAVETABLE_A,
+        ],
         sample_rate,
     );
     oscillator.set_frequency(initial_frequency);
@@ -82,7 +100,8 @@ pub unsafe extern "C" fn setup() {
         callback = perform
     );
 
-    register_set_frequency_method(class)
+    register_set_frequency_method(class);
+    register_set_wavetable_method(class);
 }
 
 unsafe fn create_class() -> *mut pd_sys::_class {
@@ -110,6 +129,19 @@ unsafe fn register_set_frequency_method(class: *mut pd_sys::_class) {
             _,
         >(set_frequency)),
         &mut pd_sys::s_float,
+        pd_sys::t_atomtype::A_FLOAT,
+        0,
+    );
+}
+
+unsafe fn register_set_wavetable_method(class: *mut pd_sys::_class) {
+    pd_sys::class_addmethod(
+        class,
+        Some(std::mem::transmute::<
+            unsafe extern "C" fn(*mut WavetableOscillator3, pd_sys::t_float),
+            _,
+        >(set_wavetable)),
+        pd_sys::gensym(cstr::cstr("w").as_ptr()),
         pd_sys::t_atomtype::A_FLOAT,
         0,
     );
