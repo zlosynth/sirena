@@ -1,5 +1,5 @@
 use super::oscillator::Oscillator;
-use super::wavetable::Wavetable;
+use super::wavetable::{BandWavetable, Wavetable};
 
 const MAX_WAVETABLES: usize = 8;
 
@@ -25,14 +25,35 @@ impl<'a> CircularWavetableOscillator<'a> {
     }
 
     fn fill(&mut self, buffer: &mut [f32], method: FillMethod) {
-        let wavetable_index = self.wavetable as usize;
-        let band_wavetable = self.wavetables[wavetable_index].band(self.frequency);
+        let wavetable_a_index = self.wavetable as usize;
+        let wavetable_b_index = calculate_next_wavetable_index(wavetable_a_index);
+        let xfade = self.wavetable.fract();
+
+        let band_wavetable_a = self.wavetables[wavetable_a_index].band(self.frequency);
+        let band_wavetable_b = self.wavetables[wavetable_b_index].band(self.frequency);
+
         let interval_in_samples = self.frequency / self.sample_rate as f32;
 
         for x in buffer.iter_mut() {
             match method {
-                FillMethod::Overwrite => *x = band_wavetable.read(self.phase) * self.amplitude,
-                FillMethod::Add => *x += band_wavetable.read(self.phase) * self.amplitude,
+                FillMethod::Overwrite => {
+                    let value = mix_and_read_wavetables(
+                        &band_wavetable_a,
+                        &band_wavetable_b,
+                        xfade,
+                        self.phase,
+                    );
+                    *x = value * self.amplitude;
+                }
+                FillMethod::Add => {
+                    let value = mix_and_read_wavetables(
+                        &band_wavetable_a,
+                        &band_wavetable_b,
+                        xfade,
+                        self.phase,
+                    );
+                    *x += value * self.amplitude;
+                }
                 FillMethod::Dry => (),
             }
 
@@ -49,6 +70,25 @@ impl<'a> CircularWavetableOscillator<'a> {
     pub fn wavetable(&self) -> f32 {
         self.wavetable
     }
+}
+
+fn calculate_next_wavetable_index(wavetable_index: usize) -> usize {
+    if wavetable_index == MAX_WAVETABLES - 1 {
+        0
+    } else {
+        wavetable_index + 1
+    }
+}
+
+fn mix_and_read_wavetables(
+    band_wavetable_a: &BandWavetable,
+    band_wavetable_b: &BandWavetable,
+    xfade: f32,
+    phase: f32,
+) -> f32 {
+    let value_a = band_wavetable_a.read(phase);
+    let value_b = band_wavetable_b.read(phase);
+    value_a * (1.0 - xfade) + value_b * xfade
 }
 
 enum FillMethod {
@@ -230,5 +270,92 @@ mod tests {
             CircularWavetableOscillator::new([&SINE_WAVETABLE; MAX_WAVETABLES], SAMPLE_RATE);
         wavetable_oscillator.set_wavetable(9.0);
         assert_relative_eq!(wavetable_oscillator.wavetable(), 1.0);
+    }
+
+    #[test]
+    fn blend_between_wavetables() {
+        let mut wavetable_oscillator = CircularWavetableOscillator::new(
+            [
+                &SINE_WAVETABLE,
+                &TRIANGLE_WAVETABLE,
+                &SAW_WAVETABLE,
+                &SAW_WAVETABLE,
+                &SAW_WAVETABLE,
+                &SAW_WAVETABLE,
+                &SAW_WAVETABLE,
+                &SAW_WAVETABLE,
+            ],
+            SAMPLE_RATE,
+        );
+        wavetable_oscillator.set_frequency(1.0);
+        let mut signal = [0.0; SAMPLE_RATE as usize];
+
+        wavetable_oscillator.set_wavetable(0.5);
+        wavetable_oscillator.populate(&mut signal);
+        assert_equal_mix_of_two_signal_eq(&signal, &sine(), &triangle());
+    }
+
+    #[test]
+    fn blend_between_wavetables_over_top() {
+        let mut wavetable_oscillator = CircularWavetableOscillator::new(
+            [
+                &SINE_WAVETABLE,
+                &SAW_WAVETABLE,
+                &SAW_WAVETABLE,
+                &SAW_WAVETABLE,
+                &SAW_WAVETABLE,
+                &SAW_WAVETABLE,
+                &SAW_WAVETABLE,
+                &TRIANGLE_WAVETABLE,
+            ],
+            SAMPLE_RATE,
+        );
+        wavetable_oscillator.set_frequency(1.0);
+        let mut signal = [0.0; SAMPLE_RATE as usize];
+
+        wavetable_oscillator.set_wavetable(7.5);
+        wavetable_oscillator.populate(&mut signal);
+        assert_equal_mix_of_two_signal_eq(&signal, &sine(), &triangle());
+    }
+
+    fn assert_equal_mix_of_two_signal_eq(a: &[f32], b1: &[f32], b2: &[f32]) {
+        assert_eq!(b1.len(), b2.len());
+
+        let ratio = a.len() as f32 / b1.len() as f32;
+
+        (0..b1.len()).for_each(|i| {
+            assert_relative_eq!(
+                (b1[i] + b2[i]) / 2.0,
+                a[(i as f32 * ratio) as usize],
+                max_relative = 0.05,
+                epsilon = 0.01
+            )
+        });
+    }
+
+    #[test]
+    fn get_next_wavetable_index() {
+        let next_wavetable_index = calculate_next_wavetable_index(1);
+        assert_eq!(next_wavetable_index, 2);
+    }
+
+    #[test]
+    fn get_next_wavetable_index_over_edge() {
+        let next_wavetable_index = calculate_next_wavetable_index(MAX_WAVETABLES - 1);
+        assert_eq!(next_wavetable_index, 0);
+    }
+
+    #[test]
+    fn cross_fade_two_bandlimited_wavetables() {
+        let band_wavetable_a = SINE_WAVETABLE.band(1.0);
+        let band_wavetable_b = TRIANGLE_WAVETABLE.band(1.0);
+
+        let xfade = 0.3;
+        let phase = 0.1;
+        let value = mix_and_read_wavetables(&band_wavetable_a, &band_wavetable_b, xfade, phase);
+
+        let expected =
+            band_wavetable_a.read(phase) * (1.0 - xfade) + band_wavetable_b.read(phase) * xfade;
+        assert_relative_eq!(value, expected);
     }
 }
