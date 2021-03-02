@@ -22,6 +22,31 @@ lazy_static! {
         let saw_wave = sirena::wavetable_oscillator::saw();
         sirena::wavetable_oscillator::Wavetable::new(saw_wave, sample_rate)
     };
+    static ref WAVETABLE_D: sirena::wavetable_oscillator::Wavetable = {
+        let sample_rate = unsafe { pd_sys::sys_getsr() as u32 };
+        let pulse_wave = sirena::wavetable_oscillator::pulse(0.1);
+        sirena::wavetable_oscillator::Wavetable::new(pulse_wave, sample_rate)
+    };
+    static ref WAVETABLE_E: sirena::wavetable_oscillator::Wavetable = {
+        let sample_rate = unsafe { pd_sys::sys_getsr() as u32 };
+        let pulse_wave = sirena::wavetable_oscillator::pulse(0.2);
+        sirena::wavetable_oscillator::Wavetable::new(pulse_wave, sample_rate)
+    };
+    static ref WAVETABLE_F: sirena::wavetable_oscillator::Wavetable = {
+        let sample_rate = unsafe { pd_sys::sys_getsr() as u32 };
+        let pulse_wave = sirena::wavetable_oscillator::pulse(0.3);
+        sirena::wavetable_oscillator::Wavetable::new(pulse_wave, sample_rate)
+    };
+    static ref WAVETABLE_G: sirena::wavetable_oscillator::Wavetable = {
+        let sample_rate = unsafe { pd_sys::sys_getsr() as u32 };
+        let pulse_wave = sirena::wavetable_oscillator::pulse(0.4);
+        sirena::wavetable_oscillator::Wavetable::new(pulse_wave, sample_rate)
+    };
+    static ref WAVETABLE_H: sirena::wavetable_oscillator::Wavetable = {
+        let sample_rate = unsafe { pd_sys::sys_getsr() as u32 };
+        let pulse_wave = sirena::wavetable_oscillator::pulse(0.5);
+        sirena::wavetable_oscillator::Wavetable::new(pulse_wave, sample_rate)
+    };
 }
 
 #[repr(C)]
@@ -70,11 +95,11 @@ unsafe extern "C" fn new(initial_frequency: pd_sys::t_float) -> *mut c_void {
             &WAVETABLE_A,
             &WAVETABLE_B,
             &WAVETABLE_C,
-            &WAVETABLE_A,
-            &WAVETABLE_A,
-            &WAVETABLE_A,
-            &WAVETABLE_A,
-            &WAVETABLE_A,
+            &WAVETABLE_D,
+            &WAVETABLE_E,
+            &WAVETABLE_F,
+            &WAVETABLE_G,
+            &WAVETABLE_H,
         ],
         sample_rate,
     );
