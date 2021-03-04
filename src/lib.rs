@@ -11,9 +11,9 @@ extern crate approx;
 extern crate lazy_static;
 
 pub mod all_pass_filter;
-pub mod cartesian;
 pub mod comb_filter;
 pub mod delay;
+pub mod osc1;
 pub mod ring_buffer;
 mod signal;
 pub mod state_variable_filter;

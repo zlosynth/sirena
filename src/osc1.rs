@@ -2,21 +2,21 @@ use crate::wavetable_oscillator::{Oscillator, Wavetable, XY0WavetableOscillator}
 
 const MAX_VOICES: u32 = 7;
 
-pub struct Cartesian<'a> {
+pub struct Osc1<'a> {
     frequency: f32,
     detune: f32,
     enabled_voices: u32,
     voices: [Voice<'a>; MAX_VOICES as usize],
 }
 
-impl<'a> Cartesian<'a> {
+impl<'a> Osc1<'a> {
     pub fn new(
         wavetable_a: &'a Wavetable,
         wavetable_b: &'a Wavetable,
         wavetable_c: &'a Wavetable,
         sample_rate: u32,
     ) -> Self {
-        let mut cartesian = Self {
+        let mut osc1 = Self {
             frequency: 0.0,
             detune: 0.0,
             enabled_voices: 0,
@@ -30,11 +30,10 @@ impl<'a> Cartesian<'a> {
                 Voice::new(wavetable_a, wavetable_b, wavetable_c, sample_rate),
             ],
         };
-        cartesian
-            .set_enabled_voices(1)
+        osc1.set_enabled_voices(1)
             .set_frequency(440.0)
             .set_detune(0.0);
-        cartesian
+        osc1
     }
 
     pub fn set_enabled_voices(&mut self, enabled_voices: u32) -> &mut Self {
@@ -169,7 +168,7 @@ mod tests {
 
     #[test]
     fn initialize() {
-        let _cartesian = Cartesian::new(
+        let _osc1 = Osc1::new(
             &SINE_WAVETABLE,
             &TRIANGLE_WAVETABLE,
             &SAW_WAVETABLE,
@@ -179,7 +178,7 @@ mod tests {
 
     #[test]
     fn populate() {
-        let mut cartesian = Cartesian::new(
+        let mut osc1 = Osc1::new(
             &SINE_WAVETABLE,
             &TRIANGLE_WAVETABLE,
             &SAW_WAVETABLE,
@@ -187,7 +186,7 @@ mod tests {
         );
 
         let mut buffer = [0.0; 2];
-        cartesian.populate(&mut buffer);
+        osc1.populate(&mut buffer);
 
         assert_relative_eq!(buffer[0], 0.0, epsilon = 0.1);
         assert!(buffer[1] > buffer[0]);
@@ -196,31 +195,31 @@ mod tests {
     #[test]
     fn set_frequency() {
         let delta_one_tick_frequency_200 = {
-            let mut cartesian = Cartesian::new(
+            let mut osc1 = Osc1::new(
                 &SINE_WAVETABLE,
                 &TRIANGLE_WAVETABLE,
                 &SAW_WAVETABLE,
                 SAMPLE_RATE,
             );
-            cartesian.set_frequency(200.0);
+            osc1.set_frequency(200.0);
 
             let mut buffer = [0.0; 2];
-            cartesian.populate(&mut buffer);
+            osc1.populate(&mut buffer);
 
             buffer[1] - buffer[0]
         };
 
         let delta_two_ticks_frequency_100 = {
-            let mut cartesian = Cartesian::new(
+            let mut osc1 = Osc1::new(
                 &SINE_WAVETABLE,
                 &TRIANGLE_WAVETABLE,
                 &SAW_WAVETABLE,
                 SAMPLE_RATE,
             );
-            cartesian.set_frequency(100.0);
+            osc1.set_frequency(100.0);
 
             let mut buffer = [0.0; 3];
-            cartesian.populate(&mut buffer);
+            osc1.populate(&mut buffer);
 
             buffer[2] - buffer[0]
         };
@@ -234,87 +233,86 @@ mod tests {
 
     #[test]
     fn use_zero_wavetable() {
-        let mut cartesian = Cartesian::new(
+        let mut osc1 = Osc1::new(
             &SINE_WAVETABLE,
             &TRIANGLE_WAVETABLE,
             &SAW_WAVETABLE,
             SAMPLE_RATE,
         );
-        cartesian.set_frequency(1.0).set_x(0.0).set_y(0.0);
+        osc1.set_frequency(1.0).set_x(0.0).set_y(0.0);
 
         let mut buffer = [0.0; SAMPLE_RATE as usize / 8];
-        cartesian.populate(&mut buffer);
+        osc1.populate(&mut buffer);
         let value = buffer[buffer.len() - 1];
         assert_relative_eq!(value, f32::sin(0.125 * 2.0 * PI), max_relative = 0.01);
 
         let mut buffer = [0.0; SAMPLE_RATE as usize / 8];
-        cartesian.populate(&mut buffer);
+        osc1.populate(&mut buffer);
         let value = buffer[buffer.len() - 1];
         assert_relative_eq!(value, f32::sin(0.25 * 2.0 * PI), max_relative = 0.01);
 
         let mut buffer = [0.0; SAMPLE_RATE as usize / 4];
-        cartesian.populate(&mut buffer);
+        osc1.populate(&mut buffer);
         let value = buffer[buffer.len() - 1];
         assert_relative_eq!(value, 0.0, epsilon = 0.01);
     }
 
     #[test]
     fn use_x_wavetable() {
-        let mut cartesian = Cartesian::new(
+        let mut osc1 = Osc1::new(
             &SINE_WAVETABLE,
             &TRIANGLE_WAVETABLE,
             &SAW_WAVETABLE,
             SAMPLE_RATE,
         );
-        cartesian.set_frequency(1.0).set_x(1.0).set_y(0.0);
+        osc1.set_frequency(1.0).set_x(1.0).set_y(0.0);
 
         let mut buffer = [0.0; SAMPLE_RATE as usize / 8];
-        cartesian.populate(&mut buffer);
+        osc1.populate(&mut buffer);
         let value = buffer[buffer.len() - 1];
         assert_relative_eq!(value, 0.5, max_relative = 0.01);
 
         let mut buffer = [0.0; SAMPLE_RATE as usize / 8];
-        cartesian.populate(&mut buffer);
+        osc1.populate(&mut buffer);
         let value = buffer[buffer.len() - 1];
         assert_relative_eq!(value, 1.0, max_relative = 0.01);
 
         let mut buffer = [0.0; SAMPLE_RATE as usize / 4];
-        cartesian.populate(&mut buffer);
+        osc1.populate(&mut buffer);
         let value = buffer[buffer.len() - 1];
         assert_relative_eq!(value, 0.0, epsilon = 0.01);
     }
 
     #[test]
     fn use_y_wavetable() {
-        let mut cartesian = Cartesian::new(
+        let mut osc1 = Osc1::new(
             &SINE_WAVETABLE,
             &TRIANGLE_WAVETABLE,
             &SAW_WAVETABLE,
             SAMPLE_RATE,
         );
-        cartesian.set_frequency(1.0).set_x(0.0).set_y(1.0);
+        osc1.set_frequency(1.0).set_x(0.0).set_y(1.0);
 
         let mut buffer = [0.0; SAMPLE_RATE as usize / 4];
-        cartesian.populate(&mut buffer);
+        osc1.populate(&mut buffer);
         let value = buffer[buffer.len() - 1];
         assert_relative_eq!(value, 0.5, epsilon = 0.1);
 
         let mut buffer = [0.0; SAMPLE_RATE as usize / 4 - 19];
-        cartesian.populate(&mut buffer);
+        osc1.populate(&mut buffer);
         let value = buffer[buffer.len() - 1];
         assert_relative_eq!(value, 1.0, max_relative = 0.05);
     }
 
     #[test]
     fn two_voices() {
-        let mut cartesian = Cartesian::new(
+        let mut osc1 = Osc1::new(
             &SINE_WAVETABLE,
             &TRIANGLE_WAVETABLE,
             &SAW_WAVETABLE,
             SAMPLE_RATE,
         );
-        cartesian
-            .set_frequency(1000.0)
+        osc1.set_frequency(1000.0)
             .set_enabled_voices(2)
             .set_detune(2.0);
 
@@ -322,7 +320,7 @@ mod tests {
         let higher_frequency = 1000.0 * f32::powf(2.0, 2.0 / 12.0);
 
         let mut signal = [0.0; SAMPLE_RATE as usize];
-        cartesian.populate(&mut signal);
+        osc1.populate(&mut signal);
 
         let analysis = SpectralAnalysis::analyze(&signal, SAMPLE_RATE);
         let center_magnitude = analysis.magnitude(1000.0);
@@ -334,14 +332,13 @@ mod tests {
 
     #[test]
     fn three_voices() {
-        let mut cartesian = Cartesian::new(
+        let mut osc1 = Osc1::new(
             &SINE_WAVETABLE,
             &TRIANGLE_WAVETABLE,
             &SAW_WAVETABLE,
             SAMPLE_RATE,
         );
-        cartesian
-            .set_frequency(1000.0)
+        osc1.set_frequency(1000.0)
             .set_enabled_voices(3)
             .set_detune(2.0);
 
@@ -350,7 +347,7 @@ mod tests {
         let off_frequency = (lower_frequency + higher_frequency) / 2.0;
 
         let mut signal = [0.0; SAMPLE_RATE as usize];
-        cartesian.populate(&mut signal);
+        osc1.populate(&mut signal);
 
         let analysis = SpectralAnalysis::analyze(&signal, SAMPLE_RATE);
         let center_magnitude = analysis.magnitude(1000.0);
@@ -365,25 +362,25 @@ mod tests {
     #[test]
     #[should_panic]
     fn voices_over_limit() {
-        let mut cartesian = Cartesian::new(
+        let mut osc1 = Osc1::new(
             &SINE_WAVETABLE,
             &TRIANGLE_WAVETABLE,
             &SAW_WAVETABLE,
             SAMPLE_RATE,
         );
-        cartesian.set_enabled_voices(20);
+        osc1.set_enabled_voices(20);
     }
 
     #[test]
     #[should_panic]
     fn voices_under_limit() {
-        let mut cartesian = Cartesian::new(
+        let mut osc1 = Osc1::new(
             &SINE_WAVETABLE,
             &TRIANGLE_WAVETABLE,
             &SAW_WAVETABLE,
             SAMPLE_RATE,
         );
-        cartesian.set_enabled_voices(0);
+        osc1.set_enabled_voices(0);
     }
 
     #[test]
@@ -462,20 +459,19 @@ mod tests {
     }
 
     fn assert_no_clipping(voices: u32) {
-        let mut cartesian = Cartesian::new(
+        let mut osc1 = Osc1::new(
             &SINE_WAVETABLE,
             &TRIANGLE_WAVETABLE,
             &SAW_WAVETABLE,
             SAMPLE_RATE,
         );
-        cartesian
-            .set_frequency(100.0)
+        osc1.set_frequency(100.0)
             .set_enabled_voices(voices)
             .set_detune(21.0)
             .set_y(1.0);
 
         let mut signal = [0.0; SAMPLE_RATE as usize];
-        cartesian.populate(&mut signal);
+        osc1.populate(&mut signal);
 
         let max = signal.iter().fold(0.0, |a, b| f32::max(a, b.abs()));
 
