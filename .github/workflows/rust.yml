@@ -37,6 +37,45 @@ jobs:
           command: build
           args: --examples --all
 
+  build-benches:
+    name: Build Benches
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+      - uses: actions-rs/cargo@v1
+        with:
+          command: build
+          args: --benches --all
+
+  check-libraries:
+    name: Check Libraries
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+      - uses: actions-rs/cargo@v1
+        with:
+          command: check
+          args: --all
+
+  check-benches:
+    name: Check Libraries
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+      - uses: actions-rs/cargo@v1
+        with:
+          command: check
+          args: --benches --all
+
   test:
     name: Test
     runs-on: ubuntu-latest
