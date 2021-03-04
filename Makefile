@@ -16,9 +16,7 @@ check:
 
 .PHONY: test
 test:
+	cargo test --all
 ifdef SLOW
-	cargo test --all
 	cargo test --all -- --ignored
-else
-	cargo test --all
 endif
