@@ -14,6 +14,7 @@ pub mod all_pass_filter;
 pub mod comb_filter;
 pub mod delay;
 pub mod osc1;
+pub mod osc2;
 pub mod ring_buffer;
 mod signal;
 pub mod state_variable_filter;
