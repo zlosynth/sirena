@@ -12,7 +12,6 @@ lint:
 .PHONY: check
 check:
 	cargo check --all
-	cargo check --examples --all
 	cargo check --benches --all
 
 .PHONY: test
