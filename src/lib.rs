@@ -18,6 +18,7 @@ pub mod osc2;
 pub mod ring_buffer;
 mod signal;
 pub mod state_variable_filter;
+mod tone;
 pub mod wavetable_oscillator;
 
 #[cfg(feature = "std")]

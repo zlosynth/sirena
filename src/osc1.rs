@@ -1,3 +1,4 @@
+use crate::tone;
 use crate::wavetable_oscillator::{Oscillator, Wavetable, XY0WavetableOscillator};
 
 const MAX_VOICES: u32 = 7;
@@ -58,7 +59,7 @@ impl<'a> Osc1<'a> {
     fn tune_voices(&mut self) {
         let detune_amounts = distribute_detune(self.detune, self.enabled_voices);
         for (i, voice) in self.voices.iter_mut().enumerate() {
-            let detuned_frequency = detune_frequency(self.frequency, detune_amounts[i]);
+            let detuned_frequency = tone::detune_frequency(self.frequency, detune_amounts[i]);
             voice.oscillator.set_frequency(detuned_frequency);
         }
     }
@@ -145,10 +146,6 @@ fn distribute_detune(detune: f32, enabled_voices: u32) -> [f32; MAX_VOICES as us
     }
 
     detunes
-}
-
-fn detune_frequency(frequency: f32, amount: f32) -> f32 {
-    frequency * f32::powf(2.0, amount / 12.0)
 }
 
 #[cfg(test)]
@@ -420,35 +417,6 @@ mod tests {
         assert_relative_eq!(detunes[4], 2.0);
         assert_relative_eq!(detunes[5], 3.0);
         assert_relative_eq!(detunes[6], -3.0);
-    }
-
-    #[test]
-    fn detune_frequency_by_zero() {
-        const A4: f32 = 440.0;
-
-        let detuned = detune_frequency(A4, 0.0);
-
-        assert_relative_eq!(detuned, A4, epsilon = 0.001);
-    }
-
-    #[test]
-    fn detune_frequency_down() {
-        const G4: f32 = 391.995;
-        const A4: f32 = 440.0;
-
-        let detuned = detune_frequency(A4, -2.0);
-
-        assert_relative_eq!(detuned, G4, epsilon = 0.001);
-    }
-
-    #[test]
-    fn detune_frequency_up() {
-        const A4: f32 = 440.0;
-        const B4: f32 = 493.883;
-
-        let detuned = detune_frequency(A4, 2.0);
-
-        assert_relative_eq!(detuned, B4, epsilon = 0.001);
     }
 
     #[test]
