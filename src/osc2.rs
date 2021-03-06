@@ -1,34 +1,46 @@
 use crate::wavetable_oscillator::{CircularWavetableOscillator, Oscillator, Wavetable};
 
 pub struct Osc2<'a> {
-    oscillator: CircularWavetableOscillator<'a>,
+    voice: Voice<'a>,
 }
 
 impl<'a> Osc2<'a> {
     pub fn new(wavetables: [&'a Wavetable; 8], sample_rate: u32) -> Self {
         Self {
-            oscillator: CircularWavetableOscillator::new(wavetables, sample_rate),
+            voice: Voice::new(wavetables, sample_rate),
         }
     }
 
     pub fn populate(&mut self, buffer: &mut [f32]) {
-        self.oscillator.populate(buffer);
+        self.voice.oscillator.populate(buffer);
     }
 
     pub fn set_frequency(&mut self, frequency: f32) {
-        self.oscillator.set_frequency(frequency);
+        self.voice.oscillator.set_frequency(frequency);
     }
 
     pub fn frequency(&self) -> f32 {
-        self.oscillator.frequency()
+        self.voice.oscillator.frequency()
     }
 
     pub fn set_wavetable(&mut self, wavetable: f32) {
-        self.oscillator.set_wavetable(wavetable);
+        self.voice.oscillator.set_wavetable(wavetable);
     }
 
     pub fn wavetable(&self) -> f32 {
-        self.oscillator.wavetable()
+        self.voice.oscillator.wavetable()
+    }
+}
+
+struct Voice<'a> {
+    oscillator: CircularWavetableOscillator<'a>,
+}
+
+impl<'a> Voice<'a> {
+    pub fn new(wavetables: [&'a Wavetable; 8], sample_rate: u32) -> Self {
+        Self {
+            oscillator: CircularWavetableOscillator::new(wavetables, sample_rate),
+        }
     }
 }
 
