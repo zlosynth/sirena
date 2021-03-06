@@ -1,11 +1,14 @@
+use crate::wavetable_oscillator::circular_wavetable_oscillator;
 use crate::wavetable_oscillator::{CircularWavetableOscillator, Oscillator, Wavetable};
+
+pub const WAVETABLES_LEN: usize = circular_wavetable_oscillator::MAX_WAVETABLES;
 
 pub struct Osc2<'a> {
     voice: Voice<'a>,
 }
 
 impl<'a> Osc2<'a> {
-    pub fn new(wavetables: [&'a Wavetable; 8], sample_rate: u32) -> Self {
+    pub fn new(wavetables: [&'a Wavetable; WAVETABLES_LEN], sample_rate: u32) -> Self {
         Self {
             voice: Voice::new(wavetables, sample_rate),
         }
@@ -37,7 +40,7 @@ struct Voice<'a> {
 }
 
 impl<'a> Voice<'a> {
-    pub fn new(wavetables: [&'a Wavetable; 8], sample_rate: u32) -> Self {
+    pub fn new(wavetables: [&'a Wavetable; WAVETABLES_LEN], sample_rate: u32) -> Self {
         Self {
             oscillator: CircularWavetableOscillator::new(wavetables, sample_rate),
         }
@@ -58,7 +61,7 @@ mod tests {
         static ref PULSE_WAVETABLE: Wavetable = Wavetable::new(pulse(0.5), SAMPLE_RATE);
     }
 
-    fn wavetables() -> [&'static Wavetable; 8] {
+    fn wavetables() -> [&'static Wavetable; WAVETABLES_LEN] {
         [
             &SINE_WAVETABLE,
             &TRIANGLE_WAVETABLE,

@@ -1,7 +1,7 @@
 use super::oscillator::Oscillator;
 use super::wavetable::{BandWavetable, Wavetable};
 
-const MAX_WAVETABLES: usize = 8;
+pub const MAX_WAVETABLES: usize = 8;
 
 pub struct CircularWavetableOscillator<'a> {
     sample_rate: u32,
