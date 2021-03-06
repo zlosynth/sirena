@@ -3,35 +3,58 @@ use crate::wavetable_oscillator::{CircularWavetableOscillator, Oscillator, Wavet
 
 pub const WAVETABLES_LEN: usize = circular_wavetable_oscillator::MAX_WAVETABLES;
 
+const VOICES_LEN: usize = 5;
+const CENTER_VOICE: usize = 2;
+
 pub struct Osc2<'a> {
-    voice: Voice<'a>,
+    voices: [Voice<'a>; VOICES_LEN],
 }
 
 impl<'a> Osc2<'a> {
     pub fn new(wavetables: [&'a Wavetable; WAVETABLES_LEN], sample_rate: u32) -> Self {
         Self {
-            voice: Voice::new(wavetables, sample_rate),
+            voices: [
+                Voice::new(wavetables, sample_rate),
+                Voice::new(wavetables, sample_rate),
+                Voice::new(wavetables, sample_rate),
+                Voice::new(wavetables, sample_rate),
+                Voice::new(wavetables, sample_rate),
+            ],
         }
     }
 
-    pub fn populate(&mut self, buffer: &mut [f32]) {
-        self.voice.oscillator.populate(buffer);
-    }
-
     pub fn set_frequency(&mut self, frequency: f32) {
-        self.voice.oscillator.set_frequency(frequency);
+        self.voices.iter_mut().for_each(|v| {
+            v.oscillator.set_frequency(frequency);
+        });
     }
 
     pub fn frequency(&self) -> f32 {
-        self.voice.oscillator.frequency()
+        self.voices[CENTER_VOICE].oscillator.frequency()
     }
 
     pub fn set_wavetable(&mut self, wavetable: f32) {
-        self.voice.oscillator.set_wavetable(wavetable);
+        self.voices.iter_mut().for_each(|v| {
+            v.oscillator.set_wavetable(wavetable);
+        });
     }
 
     pub fn wavetable(&self) -> f32 {
-        self.voice.oscillator.wavetable()
+        self.voices[CENTER_VOICE].oscillator.wavetable()
+    }
+
+    pub fn populate(&mut self, buffer: &mut [f32]) {
+        self.voices[CENTER_VOICE].oscillator.populate(buffer);
+
+        for (i, voice) in self.voices.iter_mut().enumerate() {
+            if i != CENTER_VOICE {
+                voice.oscillator.add(buffer);
+            }
+        }
+
+        for x in buffer.iter_mut() {
+            *x /= VOICES_LEN as f32;
+        }
     }
 }
 
