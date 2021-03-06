@@ -12,6 +12,7 @@ pub struct Osc2<'a> {
     frequency: f32,
     breadth: f32,
     breadth_mode: BreadthMode,
+    total_amplitude: f32,
     voices: [Voice<'a>; VOICES_LEN],
 }
 
@@ -33,6 +34,7 @@ impl<'a> Osc2<'a> {
             frequency: 0.0,
             breadth: 0.0,
             breadth_mode: BreadthMode::default(),
+            total_amplitude: 0.0,
             voices: [
                 Voice::new(wavetables, sample_rate),
                 Voice::new(wavetables, sample_rate),
@@ -97,9 +99,12 @@ impl<'a> Osc2<'a> {
         let breadths = match self.breadth_mode {
             BreadthMode::Sequential => distribute_sequential_breadth(self.breadth),
         };
+
         self.voices.iter_mut().enumerate().for_each(|(i, v)| {
             v.oscillator.set_amplitude(breadths[i]);
         });
+
+        self.total_amplitude = calculate_total_amplitude(&breadths);
     }
 
     pub fn set_wavetable(&mut self, wavetable: f32) {
@@ -122,8 +127,17 @@ impl<'a> Osc2<'a> {
         }
 
         for x in buffer.iter_mut() {
-            *x /= VOICES_LEN as f32;
+            *x /= self.total_amplitude;
         }
+    }
+}
+
+fn calculate_total_amplitude(amplitudes: &[f32]) -> f32 {
+    let amplitudes_sum = amplitudes.iter().fold(0.0, |a, b| a + b);
+    if amplitudes_sum > VOICES_LEN as f32 {
+        VOICES_LEN as f32
+    } else {
+        amplitudes_sum + (VOICES_LEN as f32 - amplitudes_sum) * 0.8
     }
 }
 
@@ -384,6 +398,20 @@ mod tests {
         assert_relative_eq!(breadths[CENTER_VOICE], 1.0);
         assert_relative_eq!(breadths[3], 1.0);
         assert_relative_eq!(breadths[4], 1.0);
+    }
+
+    #[test]
+    fn total_amplitude_single_voice() {
+        let breadths = [0.0, 0.0, 1.0, 0.0, 0.0];
+        let amplitude = calculate_total_amplitude(&breadths);
+        assert_relative_eq!(amplitude, 1.0 + 0.8 * 4.0);
+    }
+
+    #[test]
+    fn total_amplitude_over_limit() {
+        let breadths = [2.0, 2.0, 1.0, 2.0, 2.0];
+        let amplitude = calculate_total_amplitude(&breadths);
+        assert_relative_eq!(amplitude, VOICES_LEN as f32);
     }
 
     #[derive(Debug)]
