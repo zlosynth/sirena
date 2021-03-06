@@ -109,6 +109,7 @@ mod tests {
     use super::*;
     use crate::spectral_analysis::SpectralAnalysis;
     use crate::wavetable_oscillator::{pulse, saw, sine, triangle};
+    use proptest::prelude::*;
 
     const SAMPLE_RATE: u32 = 48000;
 
@@ -219,5 +220,44 @@ mod tests {
         assert!(lower_magnitude_2 / off_magnitude > 10.0);
         assert!(higher_magnitude_1 / off_magnitude > 10.0);
         assert!(higher_magnitude_2 / off_magnitude > 10.0);
+    }
+
+    #[derive(Debug)]
+    struct Osc2Config {
+        frequency: f32,
+        detune: f32,
+        wavetable: f32,
+    }
+
+    prop_compose! {
+        fn arbitrary_config()
+            (
+                frequency in 0.0f32..24000.0,
+                detune in -100.0f32..100.0,
+                wavetable in -16.0f32..16.0,
+            )
+            -> Osc2Config
+        {
+            Osc2Config { frequency, detune, wavetable }
+        }
+    }
+
+    proptest! {
+        #[test]
+        #[ignore] // too slow for regular execution
+        fn no_clipping(config in arbitrary_config()) {
+            let mut osc2 = Osc2::new(wavetables(), SAMPLE_RATE);
+            osc2
+                .set_frequency(config.frequency)
+                .set_detune(config.detune)
+                .set_wavetable(config.wavetable);
+
+            let mut buffer = [0.0; SAMPLE_RATE as usize];
+            osc2.populate(&mut buffer);
+
+            prop_assert!(buffer
+                .iter()
+                .find(|x| **x > 1.0).is_none());
+        }
     }
 }

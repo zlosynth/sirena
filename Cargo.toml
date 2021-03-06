@@ -21,6 +21,7 @@ rand = { version = "0.8", optional = true }
 approx = "0.4"
 criterion = "0.3"
 lazy_static = "1.4"
+proptest = "1"
 
 [[bench]]
 name = "bench"
