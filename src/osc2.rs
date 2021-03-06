@@ -10,7 +10,19 @@ const CENTER_VOICE: usize = 2;
 pub struct Osc2<'a> {
     detune: f32,
     frequency: f32,
+    breadth_mode: BreadthMode,
     voices: [Voice<'a>; VOICES_LEN],
+}
+
+#[derive(Clone, Copy, PartialEq, Debug)]
+pub enum BreadthMode {
+    Sequential,
+}
+
+impl Default for BreadthMode {
+    fn default() -> Self {
+        Self::Sequential
+    }
 }
 
 impl<'a> Osc2<'a> {
@@ -18,6 +30,7 @@ impl<'a> Osc2<'a> {
         let mut osc2 = Self {
             detune: 0.0,
             frequency: 0.0,
+            breadth_mode: BreadthMode::default(),
             voices: [
                 Voice::new(wavetables, sample_rate),
                 Voice::new(wavetables, sample_rate),
@@ -55,6 +68,15 @@ impl<'a> Osc2<'a> {
         self.voices.iter_mut().enumerate().for_each(|(i, v)| {
             v.oscillator.set_frequency(detunes[i]);
         });
+    }
+
+    pub fn set_breadth_mode(&mut self, breadth_mode: BreadthMode) -> &mut Self {
+        self.breadth_mode = breadth_mode;
+        self
+    }
+
+    pub fn breadth_mode(&self) -> BreadthMode {
+        self.breadth_mode
     }
 
     pub fn set_wavetable(&mut self, wavetable: f32) {
@@ -171,6 +193,13 @@ mod tests {
         let mut osc2 = Osc2::new(wavetables(), SAMPLE_RATE);
         osc2.set_detune(2.0);
         assert_eq!(osc2.detune(), 2.0);
+    }
+
+    #[test]
+    fn set_breadth_mode() {
+        let mut osc2 = Osc2::new(wavetables(), SAMPLE_RATE);
+        osc2.set_breadth_mode(BreadthMode::Sequential);
+        assert_eq!(osc2.breadth_mode(), BreadthMode::Sequential);
     }
 
     #[test]
