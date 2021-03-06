@@ -8,12 +8,16 @@ const VOICES_LEN: usize = 5;
 const CENTER_VOICE: usize = 2;
 
 pub struct Osc2<'a> {
+    detune: f32,
+    frequency: f32,
     voices: [Voice<'a>; VOICES_LEN],
 }
 
 impl<'a> Osc2<'a> {
     pub fn new(wavetables: [&'a Wavetable; WAVETABLES_LEN], sample_rate: u32) -> Self {
-        Self {
+        let mut osc2 = Self {
+            detune: 0.0,
+            frequency: 0.0,
             voices: [
                 Voice::new(wavetables, sample_rate),
                 Voice::new(wavetables, sample_rate),
@@ -21,18 +25,36 @@ impl<'a> Osc2<'a> {
                 Voice::new(wavetables, sample_rate),
                 Voice::new(wavetables, sample_rate),
             ],
-        }
+        };
+        osc2.tune_voices();
+        osc2
     }
 
-    pub fn set_frequency(&mut self, frequency: f32) {
-        let detunes = distribute_detune(frequency);
-        self.voices.iter_mut().enumerate().for_each(|(i, v)| {
-            v.oscillator.set_frequency(detunes[i]);
-        });
+    pub fn set_frequency(&mut self, frequency: f32) -> &mut Self {
+        self.frequency = frequency;
+        self.tune_voices();
+        self
     }
 
     pub fn frequency(&self) -> f32 {
-        self.voices[CENTER_VOICE].oscillator.frequency()
+        self.frequency
+    }
+
+    pub fn set_detune(&mut self, detune: f32) -> &mut Self {
+        self.detune = detune;
+        self.tune_voices();
+        self
+    }
+
+    pub fn detune(&self) -> f32 {
+        self.detune
+    }
+
+    fn tune_voices(&mut self) {
+        let detunes = distribute_detune(self.frequency, self.detune);
+        self.voices.iter_mut().enumerate().for_each(|(i, v)| {
+            v.oscillator.set_frequency(detunes[i]);
+        });
     }
 
     pub fn set_wavetable(&mut self, wavetable: f32) {
@@ -60,13 +82,13 @@ impl<'a> Osc2<'a> {
     }
 }
 
-fn distribute_detune(frequency: f32) -> [f32; VOICES_LEN] {
+fn distribute_detune(frequency: f32, detune: f32) -> [f32; VOICES_LEN] {
     [
-        tone::detune_frequency(frequency, 2.0),
-        tone::detune_frequency(frequency, -1.0),
+        tone::detune_frequency(frequency, detune),
+        tone::detune_frequency(frequency, -detune / 2.0),
         frequency,
-        tone::detune_frequency(frequency, 1.0),
-        tone::detune_frequency(frequency, -2.0),
+        tone::detune_frequency(frequency, detune / 2.0),
+        tone::detune_frequency(frequency, -detune),
     ]
 }
 
@@ -118,6 +140,7 @@ mod tests {
     #[test]
     fn populate_buffer() {
         let mut osc2 = Osc2::new(wavetables(), SAMPLE_RATE);
+        osc2.set_frequency(440.0);
 
         let mut buffer = [0.0; 8];
         osc2.populate(&mut buffer);
@@ -143,6 +166,13 @@ mod tests {
     }
 
     #[test]
+    fn set_detune() {
+        let mut osc2 = Osc2::new(wavetables(), SAMPLE_RATE);
+        osc2.set_detune(2.0);
+        assert_eq!(osc2.detune(), 2.0);
+    }
+
+    #[test]
     fn equal_detune_distribution() {
         const G4: f32 = 391.995;
         const G_SHARP_4: f32 = 415.305;
@@ -150,7 +180,8 @@ mod tests {
         const A_SHARP_4: f32 = 466.164;
         const B4: f32 = 493.883;
 
-        let detuned = distribute_detune(A4);
+        let detune = 2.0;
+        let detuned = distribute_detune(A4, detune);
 
         assert_relative_eq!(detuned[0], B4, epsilon = 0.001);
         assert_relative_eq!(detuned[1], G_SHARP_4, epsilon = 0.001);
@@ -168,7 +199,7 @@ mod tests {
         let higher_frequency_2 = center_frequency * f32::powf(2.0, 2.0 / 12.0);
 
         let mut osc2 = Osc2::new(wavetables(), SAMPLE_RATE);
-        osc2.set_frequency(center_frequency);
+        osc2.set_frequency(center_frequency).set_detune(2.0);
 
         let off_frequency = (lower_frequency_1 + lower_frequency_2) / 2.0;
 

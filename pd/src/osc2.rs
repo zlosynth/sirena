@@ -48,6 +48,10 @@ unsafe extern "C" fn set_frequency(osc2: *mut Osc2, value: pd_sys::t_float) {
     (*osc2).osc2_module.set_frequency(value);
 }
 
+unsafe extern "C" fn set_detune(osc2: *mut Osc2, value: pd_sys::t_float) {
+    (*osc2).osc2_module.set_detune(value);
+}
+
 unsafe extern "C" fn set_wavetable(osc2: *mut Osc2, value: pd_sys::t_float) {
     (*osc2).osc2_module.set_wavetable(value);
 }
@@ -92,6 +96,7 @@ pub unsafe extern "C" fn setup() {
     );
 
     register_set_frequency_method(class);
+    register_set_detune_method(class);
     register_set_wavetable_method(class);
 }
 
@@ -119,6 +124,19 @@ unsafe fn register_set_frequency_method(class: *mut pd_sys::_class) {
             _,
         >(set_frequency)),
         &mut pd_sys::s_float,
+        pd_sys::t_atomtype::A_FLOAT,
+        0,
+    );
+}
+
+unsafe fn register_set_detune_method(class: *mut pd_sys::_class) {
+    pd_sys::class_addmethod(
+        class,
+        Some(std::mem::transmute::<
+            unsafe extern "C" fn(*mut Osc2, pd_sys::t_float),
+            _,
+        >(set_detune)),
+        pd_sys::gensym(cstr::cstr("d").as_ptr()),
         pd_sys::t_atomtype::A_FLOAT,
         0,
     );
