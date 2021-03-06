@@ -66,8 +66,11 @@ impl Wavetable {
             } else if relative_position < 1.0 / 4.0 {
                 let mix = (relative_position - 1.0 / 8.0) / (1.0 / 8.0);
                 (&self.wavetable_1_4th, &self.wavetable, mix)
-            } else {
+            } else if relative_position < 3.0 / 4.0 {
                 (&self.wavetable, &self.wavetable, 1.0)
+            } else {
+                let mix = (relative_position - 3.0 / 4.0) / (1.0 / 4.0);
+                (&self.wavetable, &[0.0], mix.min(1.0))
             }
         };
 
