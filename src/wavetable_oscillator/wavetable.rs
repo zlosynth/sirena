@@ -260,4 +260,14 @@ mod tests {
     fn cross_fade_panics_on_x_above_one() {
         cross_fade(8.0, 4.0, 2.0);
     }
+
+    #[test]
+    fn fade_out_top_frequencies() {
+        const SAMPLE_RATE: u32 = 44100;
+        let wavetable = Wavetable::new(sine(), SAMPLE_RATE);
+
+        let lower = wavetable.read(0.25, (SAMPLE_RATE / 2) as f32 * (6.0 / 8.0));
+        let higher = wavetable.read(0.25, (SAMPLE_RATE / 2) as f32 * (7.0 / 8.0));
+        assert_relative_eq!(lower, higher * 2.0);
+    }
 }
