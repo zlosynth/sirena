@@ -222,6 +222,35 @@ mod tests {
         assert!(higher_magnitude_2 / off_magnitude > 10.0);
     }
 
+    #[test]
+    fn no_aliasing_of_high_detuned_voices_with_sine() {
+        const FREQUENCY: f32 = 23400.0;
+        const DETUNE: f32 = 7.0;
+
+        let mut osc2 = Osc2::new(wavetables(), SAMPLE_RATE);
+        osc2.set_frequency(FREQUENCY).set_detune(DETUNE);
+
+        let lowest_expected = tone::detune_frequency(FREQUENCY, -DETUNE);
+
+        assert_no_aliasing(osc2, lowest_expected);
+    }
+
+    fn assert_no_aliasing(mut osc2: Osc2, lowest_expected: f32) {
+        let mut buffer = [0.0; SAMPLE_RATE as usize];
+        osc2.populate(&mut buffer);
+
+        let mut analysis = SpectralAnalysis::analyze(&buffer, SAMPLE_RATE);
+        analysis.trash_range(0.0, 1.0);
+
+        let lowest_peak = analysis.lowest_peak(0.04);
+        assert!(
+            lowest_peak >= lowest_expected - 1.0,
+            "expected >= {}, obtained {}",
+            lowest_expected,
+            lowest_peak
+        );
+    }
+
     #[derive(Debug)]
     struct Osc2Config {
         frequency: f32,
@@ -233,7 +262,7 @@ mod tests {
         fn arbitrary_config()
             (
                 frequency in 0.0f32..24000.0,
-                detune in -100.0f32..100.0,
+                detune in -13.0f32..13.0,
                 wavetable in -16.0f32..16.0,
             )
             -> Osc2Config
@@ -258,6 +287,23 @@ mod tests {
             prop_assert!(buffer
                 .iter()
                 .find(|x| **x > 1.0).is_none());
+        }
+
+        #[test]
+        #[ignore] // too slow for regular execution
+        fn no_aliasing(config in arbitrary_config()) {
+            let mut osc2 = Osc2::new(wavetables(), SAMPLE_RATE);
+            osc2
+                .set_frequency(config.frequency)
+                .set_detune(config.detune)
+                .set_wavetable(config.wavetable);
+
+            let lowest_expected = tone::detune_frequency(config.frequency, -config.detune.abs());
+            if lowest_expected < 0.0 {
+                return Err(TestCaseError::Reject("voices go below zero hz".into()));
+            }
+
+            assert_no_aliasing(osc2, lowest_expected);
         }
     }
 }
