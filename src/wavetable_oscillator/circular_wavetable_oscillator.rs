@@ -63,7 +63,7 @@ impl<'a> CircularWavetableOscillator<'a> {
     }
 
     pub fn set_wavetable(&mut self, wavetable: f32) -> &mut Self {
-        self.wavetable = wavetable % MAX_WAVETABLES as f32;
+        self.wavetable = wavetable.rem_euclid(MAX_WAVETABLES as f32);
         self
     }
 
@@ -260,6 +260,7 @@ mod tests {
     fn get_wavetable() {
         let mut wavetable_oscillator =
             CircularWavetableOscillator::new([&SINE_WAVETABLE; MAX_WAVETABLES], SAMPLE_RATE);
+        assert!(3.0 < MAX_WAVETABLES as f32, "invalid test parameter");
         wavetable_oscillator.set_wavetable(3.0);
         assert_relative_eq!(wavetable_oscillator.wavetable(), 3.0);
     }
@@ -268,8 +269,20 @@ mod tests {
     fn roll_over_top_wavetable() {
         let mut wavetable_oscillator =
             CircularWavetableOscillator::new([&SINE_WAVETABLE; MAX_WAVETABLES], SAMPLE_RATE);
-        wavetable_oscillator.set_wavetable(9.0);
-        assert_relative_eq!(wavetable_oscillator.wavetable(), 1.0);
+        let set_wavetable = MAX_WAVETABLES as f32 + 1.0;
+        let expected_wavetable = 1.0;
+        wavetable_oscillator.set_wavetable(set_wavetable);
+        assert_relative_eq!(wavetable_oscillator.wavetable(), expected_wavetable);
+    }
+
+    #[test]
+    fn check_bellow_bottom_wavetable() {
+        let mut wavetable_oscillator =
+            CircularWavetableOscillator::new([&SINE_WAVETABLE; MAX_WAVETABLES], SAMPLE_RATE);
+        let set_wavetable = -1.0;
+        let expected_wavetable = MAX_WAVETABLES as f32 - 1.0;
+        wavetable_oscillator.set_wavetable(set_wavetable);
+        assert_relative_eq!(wavetable_oscillator.wavetable(), expected_wavetable);
     }
 
     #[test]
