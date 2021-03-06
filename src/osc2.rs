@@ -1,3 +1,4 @@
+use crate::tone;
 use crate::wavetable_oscillator::circular_wavetable_oscillator;
 use crate::wavetable_oscillator::{CircularWavetableOscillator, Oscillator, Wavetable};
 
@@ -24,8 +25,9 @@ impl<'a> Osc2<'a> {
     }
 
     pub fn set_frequency(&mut self, frequency: f32) {
-        self.voices.iter_mut().for_each(|v| {
-            v.oscillator.set_frequency(frequency);
+        let detunes = distribute_detune(frequency);
+        self.voices.iter_mut().enumerate().for_each(|(i, v)| {
+            v.oscillator.set_frequency(detunes[i]);
         });
     }
 
@@ -58,6 +60,16 @@ impl<'a> Osc2<'a> {
     }
 }
 
+fn distribute_detune(frequency: f32) -> [f32; VOICES_LEN] {
+    [
+        tone::detune_frequency(frequency, 2.0),
+        tone::detune_frequency(frequency, -1.0),
+        frequency,
+        tone::detune_frequency(frequency, 1.0),
+        tone::detune_frequency(frequency, -2.0),
+    ]
+}
+
 struct Voice<'a> {
     oscillator: CircularWavetableOscillator<'a>,
 }
@@ -73,6 +85,7 @@ impl<'a> Voice<'a> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::spectral_analysis::SpectralAnalysis;
     use crate::wavetable_oscillator::{pulse, saw, sine, triangle};
 
     const SAMPLE_RATE: u32 = 48000;
@@ -127,5 +140,53 @@ mod tests {
         let mut osc2 = Osc2::new(wavetables(), SAMPLE_RATE);
         osc2.set_wavetable(2.1);
         assert_eq!(osc2.wavetable(), 2.1);
+    }
+
+    #[test]
+    fn equal_detune_distribution() {
+        const G4: f32 = 391.995;
+        const G_SHARP_4: f32 = 415.305;
+        const A4: f32 = 440.0;
+        const A_SHARP_4: f32 = 466.164;
+        const B4: f32 = 493.883;
+
+        let detuned = distribute_detune(A4);
+
+        assert_relative_eq!(detuned[0], B4, epsilon = 0.001);
+        assert_relative_eq!(detuned[1], G_SHARP_4, epsilon = 0.001);
+        assert_relative_eq!(detuned[CENTER_VOICE], A4, epsilon = 0.001);
+        assert_relative_eq!(detuned[3], A_SHARP_4, epsilon = 0.001);
+        assert_relative_eq!(detuned[4], G4, epsilon = 0.001);
+    }
+
+    #[test]
+    fn detuned_voices() {
+        let center_frequency = 1000.0;
+        let lower_frequency_1 = center_frequency / f32::powf(2.0, 1.0 / 12.0);
+        let lower_frequency_2 = center_frequency / f32::powf(2.0, 2.0 / 12.0);
+        let higher_frequency_1 = center_frequency * f32::powf(2.0, 1.0 / 12.0);
+        let higher_frequency_2 = center_frequency * f32::powf(2.0, 2.0 / 12.0);
+
+        let mut osc2 = Osc2::new(wavetables(), SAMPLE_RATE);
+        osc2.set_frequency(center_frequency);
+
+        let off_frequency = (lower_frequency_1 + lower_frequency_2) / 2.0;
+
+        let mut signal = [0.0; SAMPLE_RATE as usize];
+        osc2.populate(&mut signal);
+
+        let analysis = SpectralAnalysis::analyze(&signal, SAMPLE_RATE);
+        let center_magnitude = analysis.magnitude(center_frequency);
+        let lower_magnitude_1 = analysis.magnitude(lower_frequency_1);
+        let lower_magnitude_2 = analysis.magnitude(lower_frequency_2);
+        let higher_magnitude_1 = analysis.magnitude(higher_frequency_1);
+        let higher_magnitude_2 = analysis.magnitude(higher_frequency_2);
+        let off_magnitude = analysis.magnitude(off_frequency);
+
+        assert!(center_magnitude / off_magnitude > 10.0);
+        assert!(lower_magnitude_1 / off_magnitude > 10.0);
+        assert!(lower_magnitude_2 / off_magnitude > 10.0);
+        assert!(higher_magnitude_1 / off_magnitude > 10.0);
+        assert!(higher_magnitude_2 / off_magnitude > 10.0);
     }
 }
