@@ -10,6 +10,7 @@ const CENTER_VOICE: usize = 2;
 pub struct Osc2<'a> {
     detune: f32,
     frequency: f32,
+    breadth: f32,
     breadth_mode: BreadthMode,
     voices: [Voice<'a>; VOICES_LEN],
 }
@@ -30,6 +31,7 @@ impl<'a> Osc2<'a> {
         let mut osc2 = Self {
             detune: 0.0,
             frequency: 0.0,
+            breadth: 0.0,
             breadth_mode: BreadthMode::default(),
             voices: [
                 Voice::new(wavetables, sample_rate),
@@ -40,6 +42,7 @@ impl<'a> Osc2<'a> {
             ],
         };
         osc2.tune_voices();
+        osc2.amplify_voices();
         osc2
     }
 
@@ -72,11 +75,31 @@ impl<'a> Osc2<'a> {
 
     pub fn set_breadth_mode(&mut self, breadth_mode: BreadthMode) -> &mut Self {
         self.breadth_mode = breadth_mode;
+        self.amplify_voices();
         self
     }
 
     pub fn breadth_mode(&self) -> BreadthMode {
         self.breadth_mode
+    }
+
+    pub fn set_breadth(&mut self, breadth: f32) -> &mut Self {
+        self.breadth = breadth;
+        self.amplify_voices();
+        self
+    }
+
+    pub fn breadth(&self) -> f32 {
+        self.breadth
+    }
+
+    fn amplify_voices(&mut self) {
+        let breadths = match self.breadth_mode {
+            BreadthMode::Sequential => distribute_sequential_breadth(self.breadth),
+        };
+        self.voices.iter_mut().enumerate().for_each(|(i, v)| {
+            v.oscillator.set_amplitude(breadths[i]);
+        });
     }
 
     pub fn set_wavetable(&mut self, wavetable: f32) {
@@ -111,6 +134,18 @@ fn distribute_detune(frequency: f32, detune: f32) -> [f32; VOICES_LEN] {
         frequency,
         tone::detune_frequency(frequency, detune / 2.0),
         tone::detune_frequency(frequency, -detune),
+    ]
+}
+
+fn distribute_sequential_breadth(breadth: f32) -> [f32; VOICES_LEN] {
+    let close_amplitude = (breadth / 0.5).min(1.0);
+    let far_amplitude = ((breadth - 0.5) / 0.5).min(1.0).max(0.0);
+    [
+        far_amplitude,
+        close_amplitude,
+        1.0,
+        close_amplitude,
+        far_amplitude,
     ]
 }
 
@@ -196,6 +231,13 @@ mod tests {
     }
 
     #[test]
+    fn set_breadth() {
+        let mut osc2 = Osc2::new(wavetables(), SAMPLE_RATE);
+        osc2.set_breadth(0.5);
+        assert_eq!(osc2.breadth(), 0.5);
+    }
+
+    #[test]
     fn set_breadth_mode() {
         let mut osc2 = Osc2::new(wavetables(), SAMPLE_RATE);
         osc2.set_breadth_mode(BreadthMode::Sequential);
@@ -221,34 +263,48 @@ mod tests {
     }
 
     #[test]
-    fn detuned_voices() {
-        let center_frequency = 1000.0;
-        let lower_frequency_1 = center_frequency / f32::powf(2.0, 1.0 / 12.0);
-        let lower_frequency_2 = center_frequency / f32::powf(2.0, 2.0 / 12.0);
-        let higher_frequency_1 = center_frequency * f32::powf(2.0, 1.0 / 12.0);
-        let higher_frequency_2 = center_frequency * f32::powf(2.0, 2.0 / 12.0);
-
+    fn detuned_voices_full_breadth() {
         let mut osc2 = Osc2::new(wavetables(), SAMPLE_RATE);
-        osc2.set_frequency(center_frequency).set_detune(2.0);
+        osc2.set_frequency(1000.0).set_detune(2.0).set_breadth(1.0);
 
-        let off_frequency = (lower_frequency_1 + lower_frequency_2) / 2.0;
+        let magnitudes = voice_magnitudes_linear_detune(&mut osc2);
+        assert!(magnitudes.lowest / magnitudes.off > 10.0);
+        assert!(magnitudes.lower / magnitudes.off > 10.0);
+        assert!(magnitudes.center / magnitudes.off > 10.0);
+        assert!(magnitudes.higher / magnitudes.off > 10.0);
+        assert!(magnitudes.highest / magnitudes.off > 10.0);
+    }
+
+    struct VoiceMagnitudes {
+        lowest: f32,
+        lower: f32,
+        center: f32,
+        higher: f32,
+        highest: f32,
+        off: f32,
+    }
+
+    fn voice_magnitudes_linear_detune(osc2: &mut Osc2) -> VoiceMagnitudes {
+        let center_frequency = osc2.frequency();
+        let lower_frequency = osc2.frequency() / f32::powf(2.0, (osc2.detune() / 2.0) / 12.0);
+        let lowest_frequency = osc2.frequency() / f32::powf(2.0, osc2.detune() / 12.0);
+        let higher_frequency = osc2.frequency() * f32::powf(2.0, (osc2.detune() / 2.0) / 12.0);
+        let highest_frequency = osc2.frequency() * f32::powf(2.0, osc2.detune() / 12.0);
+        let off_frequency = (lower_frequency + lowest_frequency) / 2.0;
 
         let mut signal = [0.0; SAMPLE_RATE as usize];
         osc2.populate(&mut signal);
 
         let analysis = SpectralAnalysis::analyze(&signal, SAMPLE_RATE);
-        let center_magnitude = analysis.magnitude(center_frequency);
-        let lower_magnitude_1 = analysis.magnitude(lower_frequency_1);
-        let lower_magnitude_2 = analysis.magnitude(lower_frequency_2);
-        let higher_magnitude_1 = analysis.magnitude(higher_frequency_1);
-        let higher_magnitude_2 = analysis.magnitude(higher_frequency_2);
-        let off_magnitude = analysis.magnitude(off_frequency);
 
-        assert!(center_magnitude / off_magnitude > 10.0);
-        assert!(lower_magnitude_1 / off_magnitude > 10.0);
-        assert!(lower_magnitude_2 / off_magnitude > 10.0);
-        assert!(higher_magnitude_1 / off_magnitude > 10.0);
-        assert!(higher_magnitude_2 / off_magnitude > 10.0);
+        VoiceMagnitudes {
+            center: analysis.magnitude(center_frequency),
+            lower: analysis.magnitude(lower_frequency),
+            lowest: analysis.magnitude(lowest_frequency),
+            higher: analysis.magnitude(higher_frequency),
+            highest: analysis.magnitude(highest_frequency),
+            off: analysis.magnitude(off_frequency),
+        }
     }
 
     #[test]
@@ -280,11 +336,63 @@ mod tests {
         );
     }
 
+    #[test]
+    fn sequential_breadth_on_center() {
+        let breadths = distribute_sequential_breadth(0.0);
+        assert_relative_eq!(breadths[0], 0.0);
+        assert_relative_eq!(breadths[1], 0.0);
+        assert_relative_eq!(breadths[CENTER_VOICE], 1.0);
+        assert_relative_eq!(breadths[3], 0.0);
+        assert_relative_eq!(breadths[4], 0.0);
+    }
+
+    #[test]
+    fn sequential_breadth_half_close_voice() {
+        let breadths = distribute_sequential_breadth(0.25);
+        assert_relative_eq!(breadths[0], 0.0);
+        assert_relative_eq!(breadths[1], 0.5);
+        assert_relative_eq!(breadths[CENTER_VOICE], 1.0);
+        assert_relative_eq!(breadths[3], 0.5);
+        assert_relative_eq!(breadths[4], 0.0);
+    }
+
+    #[test]
+    fn sequential_breadth_full_close_voice() {
+        let breadths = distribute_sequential_breadth(0.5);
+        assert_relative_eq!(breadths[0], 0.0);
+        assert_relative_eq!(breadths[1], 1.0);
+        assert_relative_eq!(breadths[CENTER_VOICE], 1.0);
+        assert_relative_eq!(breadths[3], 1.0);
+        assert_relative_eq!(breadths[4], 0.0);
+    }
+
+    #[test]
+    fn sequential_breadth_half_far_voice() {
+        let breadths = distribute_sequential_breadth(0.75);
+        assert_relative_eq!(breadths[0], 0.5);
+        assert_relative_eq!(breadths[1], 1.0);
+        assert_relative_eq!(breadths[CENTER_VOICE], 1.0);
+        assert_relative_eq!(breadths[3], 1.0);
+        assert_relative_eq!(breadths[4], 0.5);
+    }
+
+    #[test]
+    fn sequential_breadth_full_far_voice() {
+        let breadths = distribute_sequential_breadth(1.0);
+        assert_relative_eq!(breadths[0], 1.0);
+        assert_relative_eq!(breadths[1], 1.0);
+        assert_relative_eq!(breadths[CENTER_VOICE], 1.0);
+        assert_relative_eq!(breadths[3], 1.0);
+        assert_relative_eq!(breadths[4], 1.0);
+    }
+
     #[derive(Debug)]
     struct Osc2Config {
         frequency: f32,
         detune: f32,
         wavetable: f32,
+        breadth: f32,
+        breadth_mode: BreadthMode,
     }
 
     prop_compose! {
@@ -293,10 +401,17 @@ mod tests {
                 frequency in 0.0f32..24000.0,
                 detune in -13.0f32..13.0,
                 wavetable in -16.0f32..16.0,
+                breadth in 0.0f32..1.0,
             )
             -> Osc2Config
         {
-            Osc2Config { frequency, detune, wavetable }
+            Osc2Config {
+                frequency,
+                detune,
+                wavetable,
+                breadth,
+                breadth_mode: BreadthMode::Sequential
+            }
         }
     }
 
@@ -308,6 +423,8 @@ mod tests {
             osc2
                 .set_frequency(config.frequency)
                 .set_detune(config.detune)
+                .set_breadth(config.breadth)
+                .set_breadth_mode(config.breadth_mode)
                 .set_wavetable(config.wavetable);
 
             let mut buffer = [0.0; SAMPLE_RATE as usize];
@@ -325,6 +442,8 @@ mod tests {
             osc2
                 .set_frequency(config.frequency)
                 .set_detune(config.detune)
+                .set_breadth(config.breadth)
+                .set_breadth_mode(config.breadth_mode)
                 .set_wavetable(config.wavetable);
 
             let lowest_expected = tone::detune_frequency(config.frequency, -config.detune.abs());
