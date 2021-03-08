@@ -19,6 +19,7 @@ pub struct Osc2<'a> {
 #[derive(Clone, Copy, PartialEq, Debug)]
 pub enum BreadthMode {
     Sequential,
+    Linear,
 }
 
 impl Default for BreadthMode {
@@ -98,6 +99,7 @@ impl<'a> Osc2<'a> {
     fn amplify_voices(&mut self) {
         let breadths = match self.breadth_mode {
             BreadthMode::Sequential => distribute_sequential_breadth(self.breadth),
+            BreadthMode::Linear => distribute_linear_breadth(self.breadth),
         };
 
         self.voices.iter_mut().enumerate().for_each(|(i, v)| {
@@ -152,8 +154,21 @@ fn distribute_detune(frequency: f32, detune: f32) -> [f32; VOICES_LEN] {
 }
 
 fn distribute_sequential_breadth(breadth: f32) -> [f32; VOICES_LEN] {
-    let close_amplitude = (breadth / 0.5).min(1.0);
-    let far_amplitude = ((breadth - 0.5) / 0.5).min(1.0).max(0.0);
+    let close_amplitude = (breadth * 2.0).min(1.0);
+    let far_amplitude = ((breadth - 0.5) * 2.0).min(1.0).max(0.0);
+    [
+        far_amplitude,
+        close_amplitude,
+        1.0,
+        close_amplitude,
+        far_amplitude,
+    ]
+}
+
+fn distribute_linear_breadth(breadth: f32) -> [f32; VOICES_LEN] {
+    let anchor = breadth * 2.0 - 1.0;
+    let close_amplitude = (anchor + 1.0) / 2.0;
+    let far_amplitude = anchor.max(0.0);
     [
         far_amplitude,
         close_amplitude,
@@ -393,6 +408,46 @@ mod tests {
     #[test]
     fn sequential_breadth_full_far_voice() {
         let breadths = distribute_sequential_breadth(1.0);
+        assert_relative_eq!(breadths[0], 1.0);
+        assert_relative_eq!(breadths[1], 1.0);
+        assert_relative_eq!(breadths[CENTER_VOICE], 1.0);
+        assert_relative_eq!(breadths[3], 1.0);
+        assert_relative_eq!(breadths[4], 1.0);
+    }
+
+    #[test]
+    fn linear_breadth_on_center() {
+        let breadths = distribute_linear_breadth(0.0);
+        assert_relative_eq!(breadths[0], 0.0);
+        assert_relative_eq!(breadths[1], 0.0);
+        assert_relative_eq!(breadths[CENTER_VOICE], 1.0);
+        assert_relative_eq!(breadths[3], 0.0);
+        assert_relative_eq!(breadths[4], 0.0);
+    }
+
+    #[test]
+    fn linear_breadth_close_no_far() {
+        let breadths = distribute_linear_breadth(0.5);
+        assert_relative_eq!(breadths[0], 0.0);
+        assert_relative_eq!(breadths[1], 0.5);
+        assert_relative_eq!(breadths[CENTER_VOICE], 1.0);
+        assert_relative_eq!(breadths[3], 0.5);
+        assert_relative_eq!(breadths[4], 0.0);
+    }
+
+    #[test]
+    fn linear_breadth_close_and_far() {
+        let breadths = distribute_linear_breadth(0.6);
+        assert_relative_eq!(breadths[0], 0.2);
+        assert_relative_eq!(breadths[1], 0.6);
+        assert_relative_eq!(breadths[CENTER_VOICE], 1.0);
+        assert_relative_eq!(breadths[3], 0.6);
+        assert_relative_eq!(breadths[4], 0.2);
+    }
+
+    #[test]
+    fn linear_breadth_full_close_and_far() {
+        let breadths = distribute_linear_breadth(1.0);
         assert_relative_eq!(breadths[0], 1.0);
         assert_relative_eq!(breadths[1], 1.0);
         assert_relative_eq!(breadths[CENTER_VOICE], 1.0);
