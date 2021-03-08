@@ -11,21 +11,8 @@ pub struct Osc2<'a> {
     detune: f32,
     frequency: f32,
     breadth: f32,
-    breadth_mode: BreadthMode,
     total_amplitude: f32,
     voices: [Voice<'a>; VOICES_LEN],
-}
-
-#[derive(Clone, Copy, PartialEq, Debug)]
-pub enum BreadthMode {
-    Sequential,
-    Linear,
-}
-
-impl Default for BreadthMode {
-    fn default() -> Self {
-        Self::Sequential
-    }
 }
 
 impl<'a> Osc2<'a> {
@@ -34,7 +21,6 @@ impl<'a> Osc2<'a> {
             detune: 0.0,
             frequency: 0.0,
             breadth: 0.0,
-            breadth_mode: BreadthMode::default(),
             total_amplitude: 0.0,
             voices: [
                 Voice::new(wavetables, sample_rate),
@@ -76,16 +62,6 @@ impl<'a> Osc2<'a> {
         });
     }
 
-    pub fn set_breadth_mode(&mut self, breadth_mode: BreadthMode) -> &mut Self {
-        self.breadth_mode = breadth_mode;
-        self.amplify_voices();
-        self
-    }
-
-    pub fn breadth_mode(&self) -> BreadthMode {
-        self.breadth_mode
-    }
-
     pub fn set_breadth(&mut self, breadth: f32) -> &mut Self {
         self.breadth = breadth;
         self.amplify_voices();
@@ -97,10 +73,7 @@ impl<'a> Osc2<'a> {
     }
 
     fn amplify_voices(&mut self) {
-        let breadths = match self.breadth_mode {
-            BreadthMode::Sequential => distribute_sequential_breadth(self.breadth),
-            BreadthMode::Linear => distribute_linear_breadth(self.breadth),
-        };
+        let breadths = distribute_sequential_breadth(self.breadth);
 
         self.voices.iter_mut().enumerate().for_each(|(i, v)| {
             v.oscillator.set_amplitude(breadths[i]);
@@ -156,19 +129,6 @@ fn distribute_detune(frequency: f32, detune: f32) -> [f32; VOICES_LEN] {
 fn distribute_sequential_breadth(breadth: f32) -> [f32; VOICES_LEN] {
     let close_amplitude = (breadth * 2.0).min(1.0);
     let far_amplitude = ((breadth - 0.5) * 2.0).min(1.0).max(0.0);
-    [
-        far_amplitude,
-        close_amplitude,
-        1.0,
-        close_amplitude,
-        far_amplitude,
-    ]
-}
-
-fn distribute_linear_breadth(breadth: f32) -> [f32; VOICES_LEN] {
-    let anchor = breadth * 2.0 - 1.0;
-    let close_amplitude = (anchor + 1.0) / 2.0;
-    let far_amplitude = anchor.max(0.0);
     [
         far_amplitude,
         close_amplitude,
@@ -264,13 +224,6 @@ mod tests {
         let mut osc2 = Osc2::new(wavetables(), SAMPLE_RATE);
         osc2.set_breadth(0.5);
         assert_eq!(osc2.breadth(), 0.5);
-    }
-
-    #[test]
-    fn set_breadth_mode() {
-        let mut osc2 = Osc2::new(wavetables(), SAMPLE_RATE);
-        osc2.set_breadth_mode(BreadthMode::Sequential);
-        assert_eq!(osc2.breadth_mode(), BreadthMode::Sequential);
     }
 
     #[test]
@@ -416,46 +369,6 @@ mod tests {
     }
 
     #[test]
-    fn linear_breadth_on_center() {
-        let breadths = distribute_linear_breadth(0.0);
-        assert_relative_eq!(breadths[0], 0.0);
-        assert_relative_eq!(breadths[1], 0.0);
-        assert_relative_eq!(breadths[CENTER_VOICE], 1.0);
-        assert_relative_eq!(breadths[3], 0.0);
-        assert_relative_eq!(breadths[4], 0.0);
-    }
-
-    #[test]
-    fn linear_breadth_close_no_far() {
-        let breadths = distribute_linear_breadth(0.5);
-        assert_relative_eq!(breadths[0], 0.0);
-        assert_relative_eq!(breadths[1], 0.5);
-        assert_relative_eq!(breadths[CENTER_VOICE], 1.0);
-        assert_relative_eq!(breadths[3], 0.5);
-        assert_relative_eq!(breadths[4], 0.0);
-    }
-
-    #[test]
-    fn linear_breadth_close_and_far() {
-        let breadths = distribute_linear_breadth(0.6);
-        assert_relative_eq!(breadths[0], 0.2);
-        assert_relative_eq!(breadths[1], 0.6);
-        assert_relative_eq!(breadths[CENTER_VOICE], 1.0);
-        assert_relative_eq!(breadths[3], 0.6);
-        assert_relative_eq!(breadths[4], 0.2);
-    }
-
-    #[test]
-    fn linear_breadth_full_close_and_far() {
-        let breadths = distribute_linear_breadth(1.0);
-        assert_relative_eq!(breadths[0], 1.0);
-        assert_relative_eq!(breadths[1], 1.0);
-        assert_relative_eq!(breadths[CENTER_VOICE], 1.0);
-        assert_relative_eq!(breadths[3], 1.0);
-        assert_relative_eq!(breadths[4], 1.0);
-    }
-
-    #[test]
     fn total_amplitude_single_voice() {
         let breadths = [0.0, 0.0, 1.0, 0.0, 0.0];
         let amplitude = calculate_total_amplitude(&breadths);
@@ -475,7 +388,6 @@ mod tests {
         detune: f32,
         wavetable: f32,
         breadth: f32,
-        breadth_mode: BreadthMode,
     }
 
     prop_compose! {
@@ -493,7 +405,6 @@ mod tests {
                 detune,
                 wavetable,
                 breadth,
-                breadth_mode: BreadthMode::Sequential
             }
         }
     }
@@ -507,7 +418,6 @@ mod tests {
                 .set_frequency(config.frequency)
                 .set_detune(config.detune)
                 .set_breadth(config.breadth)
-                .set_breadth_mode(config.breadth_mode)
                 .set_wavetable(config.wavetable);
 
             let mut buffer = [0.0; SAMPLE_RATE as usize];
@@ -526,7 +436,6 @@ mod tests {
                 .set_frequency(config.frequency)
                 .set_detune(config.detune)
                 .set_breadth(config.breadth)
-                .set_breadth_mode(config.breadth_mode)
                 .set_wavetable(config.wavetable);
 
             let lowest_expected = tone::detune_frequency(config.frequency, -config.detune.abs());
