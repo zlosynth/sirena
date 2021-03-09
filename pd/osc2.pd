@@ -1,16 +1,16 @@
-#N canvas 2153 91 1480 952 12;
+#N canvas 2 79 1916 999 12;
 #X obj 37 37 sirena;
 #X obj 99 627 dac~;
 #X obj 60 565 *~ 0.05;
 #X obj 249 53 hsl 500 15 0 18000 0 0 empty empty empty -2 -8 0 10 -262144
--1 -1 1211 1;
+-1 -1 200 1;
 #X obj 106 108 mtof;
 #X msg 48 144 220;
 #X floatatom 230 456 5 0 0 0 - - -;
 #X msg 148 153 100;
 #X obj 127 567 *~ 0.05;
 #X floatatom 255 107 15 0 0 0 - - -;
-#X obj 310 223 tgl 25 0 empty empty empty 17 7 0 10 -262144 -1 -1 1
+#X obj 310 223 tgl 25 0 empty empty empty 17 7 0 10 -262144 -1 -1 0
 1;
 #X obj 276 302 tabwrite~ osc;
 #X obj 310 265 metro 200;
@@ -27,11 +27,11 @@
 #X coords 0 1 49 -1 300 210 1 0 0;
 #X restore 526 404 graph;
 #X obj 491 177 hsl 300 15 0 8 0 0 empty empty empty -2 -8 0 10 -262144
--1 -1 29615 1;
+-1 -1 11375 1;
 #X msg 474 206 w \$1;
 #X obj 769 281 snapshot~;
 #X floatatom 779 318 0 0 0 0 - - -;
-#X obj 765 210 tgl 15 0 empty empty empty 17 7 0 10 -262144 -1 -1 1
+#X obj 765 210 tgl 15 0 empty empty empty 17 7 0 10 -262144 -1 -1 0
 1;
 #X obj 766 245 metro 1;
 #X obj 997 470 snapshot~;
@@ -48,12 +48,12 @@
 #X text 756 50 frequency;
 #X text 796 174 wavetable;
 #X obj 384 86 hsl 300 15 0 8 0 0 empty empty empty -2 -8 0 10 -262144
--1 -1 29900 1;
+-1 -1 29400 1;
 #X text 689 82 detune;
 #X msg 387 114 d \$1;
 #X msg 28 99 23437;
-#X obj 442 121 hsl 300 15 0 1 0 0 empty empty empty -2 -8 0 10 -262144
--1 -1 22200 1;
+#X obj 442 121 hsl 300 15 0 2 0 0 empty empty empty -2 -8 0 10 -262144
+-1 -1 6550 1;
 #X text 746 118 breadth;
 #X msg 431 152 b \$1;
 #X obj 682 229 osc~ 0.02;

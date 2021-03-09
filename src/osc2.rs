@@ -63,6 +63,7 @@ impl<'a> Osc2<'a> {
     }
 
     pub fn set_breadth(&mut self, breadth: f32) -> &mut Self {
+        assert!(breadth >= 0.0);
         self.breadth = breadth;
         self.amplify_voices();
         self
@@ -73,7 +74,13 @@ impl<'a> Osc2<'a> {
     }
 
     fn amplify_voices(&mut self) {
-        let breadths = distribute_breadth_around_center(self.breadth);
+        let breadths = if (0.0..=1.0).contains(&self.breadth) {
+            distribute_breadth_around_center(self.breadth)
+        } else if (1.0..).contains(&self.breadth) {
+            distribute_breadth_around_edges(self.breadth - 1.0)
+        } else {
+            unreachable!("breadth is verified in its setter");
+        };
 
         self.voices.iter_mut().enumerate().for_each(|(i, v)| {
             v.oscillator.set_amplitude(breadths[i]);
@@ -136,6 +143,12 @@ fn distribute_breadth_around_center(breadth: f32) -> [f32; VOICES_LEN] {
         close_amplitude,
         far_amplitude,
     ]
+}
+
+fn distribute_breadth_around_edges(breadth: f32) -> [f32; VOICES_LEN] {
+    let center_amplitude = (1.0 - breadth * 2.0).max(0.0);
+    let close_amplitude = (1.0 - (breadth - 0.5) * 2.0).min(1.0).max(0.0);
+    [1.0, close_amplitude, center_amplitude, close_amplitude, 1.0]
 }
 
 struct Voice<'a> {
@@ -365,6 +378,56 @@ mod tests {
         assert_relative_eq!(breadths[1], 1.0);
         assert_relative_eq!(breadths[CENTER_VOICE], 1.0);
         assert_relative_eq!(breadths[3], 1.0);
+        assert_relative_eq!(breadths[4], 1.0);
+    }
+
+    #[test]
+    fn breadth_around_edges_full() {
+        let breadths = distribute_breadth_around_edges(0.0);
+        assert_relative_eq!(breadths[0], 1.0);
+        assert_relative_eq!(breadths[1], 1.0);
+        assert_relative_eq!(breadths[CENTER_VOICE], 1.0);
+        assert_relative_eq!(breadths[3], 1.0);
+        assert_relative_eq!(breadths[4], 1.0);
+    }
+
+    #[test]
+    fn breadth_around_edges_weaker_center() {
+        let breadths = distribute_breadth_around_edges(0.25);
+        assert_relative_eq!(breadths[0], 1.0);
+        assert_relative_eq!(breadths[1], 1.0);
+        assert_relative_eq!(breadths[CENTER_VOICE], 0.5);
+        assert_relative_eq!(breadths[3], 1.0);
+        assert_relative_eq!(breadths[4], 1.0);
+    }
+
+    #[test]
+    fn breadth_around_edges_no_center() {
+        let breadths = distribute_breadth_around_edges(0.5);
+        assert_relative_eq!(breadths[0], 1.0);
+        assert_relative_eq!(breadths[1], 1.0);
+        assert_relative_eq!(breadths[CENTER_VOICE], 0.0);
+        assert_relative_eq!(breadths[3], 1.0);
+        assert_relative_eq!(breadths[4], 1.0);
+    }
+
+    #[test]
+    fn breadth_around_edges_weaker_close() {
+        let breadths = distribute_breadth_around_edges(0.75);
+        assert_relative_eq!(breadths[0], 1.0);
+        assert_relative_eq!(breadths[1], 0.5);
+        assert_relative_eq!(breadths[CENTER_VOICE], 0.0);
+        assert_relative_eq!(breadths[3], 0.5);
+        assert_relative_eq!(breadths[4], 1.0);
+    }
+
+    #[test]
+    fn breadth_around_edges_no_close() {
+        let breadths = distribute_breadth_around_edges(1.0);
+        assert_relative_eq!(breadths[0], 1.0);
+        assert_relative_eq!(breadths[1], 0.0);
+        assert_relative_eq!(breadths[CENTER_VOICE], 0.0);
+        assert_relative_eq!(breadths[3], 0.0);
         assert_relative_eq!(breadths[4], 1.0);
     }
 
