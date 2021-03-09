@@ -7,6 +7,17 @@ pub const WAVETABLES_LEN: usize = circular_wavetable_oscillator::MAX_WAVETABLES;
 const VOICES_LEN: usize = 5;
 const CENTER_VOICE: usize = 2;
 
+const BREADTHS: [[f32; VOICES_LEN]; 5] = [
+    // start on the center voice
+    [0.0, 0.0, 1.0, 0.0, 0.0],
+    // extend around center
+    [0.0, 1.0, 1.0, 1.0, 0.0],
+    [1.0, 1.0, 1.0, 1.0, 1.0],
+    // stick around edges
+    [1.0, 1.0, 0.0, 1.0, 1.0],
+    [1.0, 0.0, 0.0, 0.0, 1.0],
+];
+
 pub struct Osc2<'a> {
     detune: f32,
     frequency: f32,
@@ -74,13 +85,7 @@ impl<'a> Osc2<'a> {
     }
 
     fn amplify_voices(&mut self) {
-        let breadths = if (0.0..=1.0).contains(&self.breadth) {
-            distribute_breadth_around_center(self.breadth)
-        } else if (1.0..).contains(&self.breadth) {
-            distribute_breadth_around_edges(self.breadth - 1.0)
-        } else {
-            unreachable!("breadth is verified in its setter");
-        };
+        let breadths = distribute_breadth(&BREADTHS, self.breadth);
 
         self.voices.iter_mut().enumerate().for_each(|(i, v)| {
             v.oscillator.set_amplitude(breadths[i]);
@@ -133,23 +138,28 @@ fn distribute_detune(frequency: f32, detune: f32) -> [f32; VOICES_LEN] {
     ]
 }
 
-fn distribute_breadth_around_center(breadth: f32) -> [f32; VOICES_LEN] {
-    let close_amplitude = (breadth * 2.0).min(1.0);
-    let far_amplitude = ((breadth - 0.5) * 2.0).min(1.0).max(0.0);
+fn distribute_breadth(breadths: &[[f32; VOICES_LEN]], breadth: f32) -> [f32; VOICES_LEN] {
+    let breadths_a = {
+        let index_a = (breadth as usize).min(breadths.len() - 1);
+        breadths[index_a]
+    };
+
+    let breadths_b = {
+        let index_b = (breadth as usize + 1).min(breadths.len() - 1);
+        breadths[index_b]
+    };
+
+    let xfade = breadth.fract();
+
     [
-        far_amplitude,
-        close_amplitude,
-        1.0,
-        close_amplitude,
-        far_amplitude,
+        breadths_a[0] * (1.0 - xfade) + breadths_b[0] * xfade,
+        breadths_a[1] * (1.0 - xfade) + breadths_b[1] * xfade,
+        breadths_a[2] * (1.0 - xfade) + breadths_b[2] * xfade,
+        breadths_a[3] * (1.0 - xfade) + breadths_b[3] * xfade,
+        breadths_a[4] * (1.0 - xfade) + breadths_b[4] * xfade,
     ]
 }
 
-fn distribute_breadth_around_edges(breadth: f32) -> [f32; VOICES_LEN] {
-    let center_amplitude = (1.0 - breadth * 2.0).max(0.0);
-    let close_amplitude = (1.0 - (breadth - 0.5) * 2.0).min(1.0).max(0.0);
-    [1.0, close_amplitude, center_amplitude, close_amplitude, 1.0]
-}
 
 struct Voice<'a> {
     oscillator: CircularWavetableOscillator<'a>,
@@ -260,7 +270,7 @@ mod tests {
     #[test]
     fn detuned_voices_full_breadth() {
         let mut osc2 = Osc2::new(wavetables(), SAMPLE_RATE);
-        osc2.set_frequency(1000.0).set_detune(2.0).set_breadth(1.0);
+        osc2.set_frequency(1000.0).set_detune(2.0).set_breadth(2.0);
 
         let magnitudes = voice_magnitudes_linear_detune(&mut osc2);
         assert!(magnitudes.lowest / magnitudes.off > 10.0);
@@ -332,39 +342,27 @@ mod tests {
     }
 
     #[test]
-    fn breadth_around_center() {
-        let breadths = distribute_breadth_around_center(0.0);
+    fn breadth_based_on_combinations() {
+        const COMBINATIONS: [[f32; 5]; 3] = [
+            [0.0, 0.0, 1.0, 0.0, 0.0],
+            [0.0, 1.0, 1.0, 1.0, 0.0],
+            [1.0, 0.0, 0.0, 0.0, 0.0],
+        ];
+
+        let breadths = distribute_breadth(&COMBINATIONS, 0.0);
         assert_breadths(breadths, 0.0, 0.0, 1.0, 0.0, 0.0);
 
-        let breadths = distribute_breadth_around_center(0.25);
+        let breadths = distribute_breadth(&COMBINATIONS, 0.5);
         assert_breadths(breadths, 0.0, 0.5, 1.0, 0.5, 0.0);
 
-        let breadths = distribute_breadth_around_center(0.5);
+        let breadths = distribute_breadth(&COMBINATIONS, 1.0);
         assert_breadths(breadths, 0.0, 1.0, 1.0, 1.0, 0.0);
 
-        let breadths = distribute_breadth_around_center(0.75);
-        assert_breadths(breadths, 0.5, 1.0, 1.0, 1.0, 0.5);
+        let breadths = distribute_breadth(&COMBINATIONS, 1.5);
+        assert_breadths(breadths, 0.5, 0.5, 0.5, 0.5, 0.0);
 
-        let breadths = distribute_breadth_around_center(1.0);
-        assert_breadths(breadths, 1.0, 1.0, 1.0, 1.0, 1.0);
-    }
-
-    #[test]
-    fn breadth_around_edges() {
-        let breadths = distribute_breadth_around_edges(0.0);
-        assert_breadths(breadths, 1.0, 1.0, 1.0, 1.0, 1.0);
-
-        let breadths = distribute_breadth_around_edges(0.25);
-        assert_breadths(breadths, 1.0, 1.0, 0.5, 1.0, 1.0);
-
-        let breadths = distribute_breadth_around_edges(0.5);
-        assert_breadths(breadths, 1.0, 1.0, 0.0, 1.0, 1.0);
-
-        let breadths = distribute_breadth_around_edges(0.75);
-        assert_breadths(breadths, 1.0, 0.5, 0.0, 0.5, 1.0);
-
-        let breadths = distribute_breadth_around_edges(1.0);
-        assert_breadths(breadths, 1.0, 0.0, 0.0, 0.0, 1.0);
+        let breadths = distribute_breadth(&COMBINATIONS, 2.0);
+        assert_breadths(breadths, 1.0, 0.0, 0.0, 0.0, 0.0);
     }
 
     fn assert_breadths(breadths: [f32; VOICES_LEN], b1: f32, b2: f32, b3: f32, b4: f32, b5: f32) {
