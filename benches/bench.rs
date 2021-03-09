@@ -1,6 +1,7 @@
 use criterion::{black_box, criterion_group, criterion_main, Criterion};
 
 use sirena::osc1::Osc1;
+use sirena::taper;
 use sirena::wavetable_oscillator::Wavetable;
 use sirena::wavetable_oscillator::{saw, sine, triangle};
 
@@ -20,6 +21,10 @@ fn criterion_benchmark(c: &mut Criterion) {
             .set_detune(2.0);
         let mut buffer = [0.0; 64];
         b.iter(|| osc1_play(black_box(&mut osc1), black_box(&mut buffer)));
+    });
+
+    c.bench_function("log_taper", |b| {
+        b.iter(|| taper::log(black_box(0.5)));
     });
 }
 

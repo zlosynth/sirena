@@ -2,6 +2,7 @@ use super::consts::OVERSAMPLED_WAVETABLE_LENGTH;
 use super::waveshapes::sine;
 use crate::signal;
 use crate::state_variable_filter::{LowPass, StateVariableFilter};
+use crate::xfade;
 
 pub struct Wavetable {
     sample_rate: u32,
@@ -104,7 +105,7 @@ impl<'a> BandWavetable<'a> {
             linear_interpolation(self.higher, position)
         };
 
-        cross_fade(a, b, self.mix)
+        xfade::lin(a, b, self.mix)
     }
 }
 
@@ -127,12 +128,6 @@ fn filtered(
     signal::normalize(&mut wavetable);
 
     wavetable
-}
-
-fn cross_fade(a: f32, b: f32, x: f32) -> f32 {
-    debug_assert!((0.0..=1.0).contains(&x));
-
-    a * (1.0 - x) + b * x
 }
 
 macro_rules! fn_undersample {
@@ -227,38 +222,6 @@ mod tests {
             *x = i as f32;
         }
         data
-    }
-
-    #[test]
-    fn cross_fade_even() {
-        assert_relative_eq!(cross_fade(8.0, 4.0, 0.5), 6.0);
-    }
-
-    #[test]
-    fn cross_fade_uneven() {
-        assert_relative_eq!(cross_fade(10.0, 20.0, 0.2), 12.0);
-    }
-
-    #[test]
-    fn cross_fade_left_side() {
-        assert_relative_eq!(cross_fade(8.0, 4.0, 0.0), 8.0);
-    }
-
-    #[test]
-    fn cross_fade_right_side() {
-        assert_relative_eq!(cross_fade(8.0, 4.0, 1.0), 4.0);
-    }
-
-    #[test]
-    #[should_panic]
-    fn cross_fade_panics_on_x_below_zero() {
-        cross_fade(8.0, 4.0, -1.0);
-    }
-
-    #[test]
-    #[should_panic]
-    fn cross_fade_panics_on_x_above_one() {
-        cross_fade(8.0, 4.0, 2.0);
     }
 
     #[test]

@@ -1,5 +1,6 @@
 use super::oscillator::Oscillator;
 use super::wavetable::{BandWavetable, Wavetable};
+use crate::xfade;
 
 pub const MAX_WAVETABLES: usize = 8;
 
@@ -88,7 +89,7 @@ fn mix_and_read_wavetables(
 ) -> f32 {
     let value_a = band_wavetable_a.read(phase);
     let value_b = band_wavetable_b.read(phase);
-    value_a * (1.0 - xfade) + value_b * xfade
+    xfade::lin(value_a, value_b, xfade)
 }
 
 enum FillMethod {

@@ -1,6 +1,7 @@
 use crate::tone;
 use crate::wavetable_oscillator::circular_wavetable_oscillator;
 use crate::wavetable_oscillator::{CircularWavetableOscillator, Oscillator, Wavetable};
+use crate::xfade;
 
 pub const WAVETABLES_LEN: usize = circular_wavetable_oscillator::MAX_WAVETABLES;
 
@@ -152,22 +153,12 @@ fn distribute_breadth(breadths: &[[f32; VOICES_LEN]], breadth: f32) -> [f32; VOI
     let xfade = breadth.fract();
 
     [
-        log_xfade(breadths_a[0], breadths_b[0], xfade),
-        log_xfade(breadths_a[1], breadths_b[1], xfade),
-        log_xfade(breadths_a[2], breadths_b[2], xfade),
-        log_xfade(breadths_a[3], breadths_b[3], xfade),
-        log_xfade(breadths_a[4], breadths_b[4], xfade),
+        xfade::log(breadths_a[0], breadths_b[0], xfade),
+        xfade::log(breadths_a[1], breadths_b[1], xfade),
+        xfade::log(breadths_a[2], breadths_b[2], xfade),
+        xfade::log(breadths_a[3], breadths_b[3], xfade),
+        xfade::log(breadths_a[4], breadths_b[4], xfade),
     ]
-}
-
-fn log_xfade(a: f32, b: f32, xfade: f32) -> f32 {
-    if a < b {
-        let blend = ((1.0 - xfade) * 9.0 + 1.0).log10();
-        a * blend + b * (1.0 - blend)
-    } else {
-        let blend = (xfade * 9.0 + 1.0).log10();
-        a * (1.0 - blend) + b * blend
-    }
 }
 
 struct Voice<'a> {
@@ -459,65 +450,5 @@ mod tests {
 
             assert_no_aliasing(osc2, lowest_expected);
         }
-    }
-
-    #[test]
-    fn logarithmic_xfade_in() {
-        let blended = log_xfade(0.0, 1.0, 0.0);
-        assert_relative_eq!(blended, 0.0);
-
-        let blended = log_xfade(0.0, 1.0, 0.1);
-        assert_relative_eq!(blended, 0.040958643);
-
-        let blended = log_xfade(0.0, 1.0, 0.2);
-        assert_relative_eq!(blended, 0.08618611);
-
-        let blended = log_xfade(0.0, 1.0, 0.5);
-        assert_relative_eq!(blended, 0.2596373);
-
-        let blended = log_xfade(0.0, 1.0, 0.8);
-        assert_relative_eq!(blended, 0.5528419);
-
-        let blended = log_xfade(0.0, 1.0, 0.9);
-        assert_relative_eq!(blended, 0.72124636);
-
-        let blended = log_xfade(0.0, 1.0, 1.0);
-        assert_relative_eq!(blended, 1.0);
-    }
-
-    #[test]
-    fn logarithmic_xfade_out() {
-        let blended = log_xfade(1.0, 0.0, 0.0);
-        assert_relative_eq!(blended, 1.0);
-
-        let blended = log_xfade(1.0, 0.0, 0.1);
-        assert_relative_eq!(blended, 0.72124636);
-
-        let blended = log_xfade(1.0, 0.0, 0.2);
-        assert_relative_eq!(blended, 0.5528419);
-
-        let blended = log_xfade(1.0, 0.0, 0.5);
-        assert_relative_eq!(blended, 0.2596373);
-
-        let blended = log_xfade(1.0, 0.0, 0.8);
-        assert_relative_eq!(blended, 0.08618611);
-
-        let blended = log_xfade(1.0, 0.0, 0.9);
-        assert_relative_eq!(blended, 0.040958643);
-
-        let blended = log_xfade(1.0, 0.0, 1.0);
-        assert_relative_eq!(blended, 0.0);
-    }
-
-    #[test]
-    fn logarithmic_xfade_equal() {
-        let blended = log_xfade(1.0, 1.0, 0.0);
-        assert_relative_eq!(blended, 1.0);
-
-        let blended = log_xfade(1.0, 1.0, 0.5);
-        assert_relative_eq!(blended, 1.0);
-
-        let blended = log_xfade(1.0, 1.0, 1.0);
-        assert_relative_eq!(blended, 1.0);
     }
 }

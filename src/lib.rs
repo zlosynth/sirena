@@ -18,8 +18,10 @@ pub mod osc2;
 pub mod ring_buffer;
 mod signal;
 pub mod state_variable_filter;
+pub mod taper;
 mod tone;
 pub mod wavetable_oscillator;
+pub mod xfade;
 
 #[cfg(feature = "std")]
 pub mod noise;
