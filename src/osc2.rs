@@ -332,103 +332,47 @@ mod tests {
     }
 
     #[test]
-    fn breadth_around_center_on_center() {
+    fn breadth_around_center() {
         let breadths = distribute_breadth_around_center(0.0);
-        assert_relative_eq!(breadths[0], 0.0);
-        assert_relative_eq!(breadths[1], 0.0);
-        assert_relative_eq!(breadths[CENTER_VOICE], 1.0);
-        assert_relative_eq!(breadths[3], 0.0);
-        assert_relative_eq!(breadths[4], 0.0);
-    }
+        assert_breadths(breadths, 0.0, 0.0, 1.0, 0.0, 0.0);
 
-    #[test]
-    fn breadth_around_center_half_close_voice() {
         let breadths = distribute_breadth_around_center(0.25);
-        assert_relative_eq!(breadths[0], 0.0);
-        assert_relative_eq!(breadths[1], 0.5);
-        assert_relative_eq!(breadths[CENTER_VOICE], 1.0);
-        assert_relative_eq!(breadths[3], 0.5);
-        assert_relative_eq!(breadths[4], 0.0);
-    }
+        assert_breadths(breadths, 0.0, 0.5, 1.0, 0.5, 0.0);
 
-    #[test]
-    fn breadth_around_center_full_close_voice() {
         let breadths = distribute_breadth_around_center(0.5);
-        assert_relative_eq!(breadths[0], 0.0);
-        assert_relative_eq!(breadths[1], 1.0);
-        assert_relative_eq!(breadths[CENTER_VOICE], 1.0);
-        assert_relative_eq!(breadths[3], 1.0);
-        assert_relative_eq!(breadths[4], 0.0);
-    }
+        assert_breadths(breadths, 0.0, 1.0, 1.0, 1.0, 0.0);
 
-    #[test]
-    fn breadth_around_center_half_far_voice() {
         let breadths = distribute_breadth_around_center(0.75);
-        assert_relative_eq!(breadths[0], 0.5);
-        assert_relative_eq!(breadths[1], 1.0);
-        assert_relative_eq!(breadths[CENTER_VOICE], 1.0);
-        assert_relative_eq!(breadths[3], 1.0);
-        assert_relative_eq!(breadths[4], 0.5);
-    }
+        assert_breadths(breadths, 0.5, 1.0, 1.0, 1.0, 0.5);
 
-    #[test]
-    fn breadth_around_center_full_far_voice() {
         let breadths = distribute_breadth_around_center(1.0);
-        assert_relative_eq!(breadths[0], 1.0);
-        assert_relative_eq!(breadths[1], 1.0);
-        assert_relative_eq!(breadths[CENTER_VOICE], 1.0);
-        assert_relative_eq!(breadths[3], 1.0);
-        assert_relative_eq!(breadths[4], 1.0);
+        assert_breadths(breadths, 1.0, 1.0, 1.0, 1.0, 1.0);
     }
 
     #[test]
-    fn breadth_around_edges_full() {
+    fn breadth_around_edges() {
         let breadths = distribute_breadth_around_edges(0.0);
-        assert_relative_eq!(breadths[0], 1.0);
-        assert_relative_eq!(breadths[1], 1.0);
-        assert_relative_eq!(breadths[CENTER_VOICE], 1.0);
-        assert_relative_eq!(breadths[3], 1.0);
-        assert_relative_eq!(breadths[4], 1.0);
-    }
+        assert_breadths(breadths, 1.0, 1.0, 1.0, 1.0, 1.0);
 
-    #[test]
-    fn breadth_around_edges_weaker_center() {
         let breadths = distribute_breadth_around_edges(0.25);
-        assert_relative_eq!(breadths[0], 1.0);
-        assert_relative_eq!(breadths[1], 1.0);
-        assert_relative_eq!(breadths[CENTER_VOICE], 0.5);
-        assert_relative_eq!(breadths[3], 1.0);
-        assert_relative_eq!(breadths[4], 1.0);
-    }
+        assert_breadths(breadths, 1.0, 1.0, 0.5, 1.0, 1.0);
 
-    #[test]
-    fn breadth_around_edges_no_center() {
         let breadths = distribute_breadth_around_edges(0.5);
-        assert_relative_eq!(breadths[0], 1.0);
-        assert_relative_eq!(breadths[1], 1.0);
-        assert_relative_eq!(breadths[CENTER_VOICE], 0.0);
-        assert_relative_eq!(breadths[3], 1.0);
-        assert_relative_eq!(breadths[4], 1.0);
-    }
+        assert_breadths(breadths, 1.0, 1.0, 0.0, 1.0, 1.0);
 
-    #[test]
-    fn breadth_around_edges_weaker_close() {
         let breadths = distribute_breadth_around_edges(0.75);
-        assert_relative_eq!(breadths[0], 1.0);
-        assert_relative_eq!(breadths[1], 0.5);
-        assert_relative_eq!(breadths[CENTER_VOICE], 0.0);
-        assert_relative_eq!(breadths[3], 0.5);
-        assert_relative_eq!(breadths[4], 1.0);
+        assert_breadths(breadths, 1.0, 0.5, 0.0, 0.5, 1.0);
+
+        let breadths = distribute_breadth_around_edges(1.0);
+        assert_breadths(breadths, 1.0, 0.0, 0.0, 0.0, 1.0);
     }
 
-    #[test]
-    fn breadth_around_edges_no_close() {
-        let breadths = distribute_breadth_around_edges(1.0);
-        assert_relative_eq!(breadths[0], 1.0);
-        assert_relative_eq!(breadths[1], 0.0);
-        assert_relative_eq!(breadths[CENTER_VOICE], 0.0);
-        assert_relative_eq!(breadths[3], 0.0);
-        assert_relative_eq!(breadths[4], 1.0);
+    fn assert_breadths(breadths: [f32; VOICES_LEN], b1: f32, b2: f32, b3: f32, b4: f32, b5: f32) {
+        assert_relative_eq!(breadths[0], b1);
+        assert_relative_eq!(breadths[1], b2);
+        assert_relative_eq!(breadths[CENTER_VOICE], b3);
+        assert_relative_eq!(breadths[3], b4);
+        assert_relative_eq!(breadths[4], b5);
     }
 
     #[test]
