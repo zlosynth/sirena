@@ -73,7 +73,7 @@ impl<'a> Osc2<'a> {
     }
 
     fn amplify_voices(&mut self) {
-        let breadths = distribute_sequential_breadth(self.breadth);
+        let breadths = distribute_breadth_around_center(self.breadth);
 
         self.voices.iter_mut().enumerate().for_each(|(i, v)| {
             v.oscillator.set_amplitude(breadths[i]);
@@ -126,7 +126,7 @@ fn distribute_detune(frequency: f32, detune: f32) -> [f32; VOICES_LEN] {
     ]
 }
 
-fn distribute_sequential_breadth(breadth: f32) -> [f32; VOICES_LEN] {
+fn distribute_breadth_around_center(breadth: f32) -> [f32; VOICES_LEN] {
     let close_amplitude = (breadth * 2.0).min(1.0);
     let far_amplitude = ((breadth - 0.5) * 2.0).min(1.0).max(0.0);
     [
@@ -319,8 +319,8 @@ mod tests {
     }
 
     #[test]
-    fn sequential_breadth_on_center() {
-        let breadths = distribute_sequential_breadth(0.0);
+    fn breadth_around_center_on_center() {
+        let breadths = distribute_breadth_around_center(0.0);
         assert_relative_eq!(breadths[0], 0.0);
         assert_relative_eq!(breadths[1], 0.0);
         assert_relative_eq!(breadths[CENTER_VOICE], 1.0);
@@ -329,8 +329,8 @@ mod tests {
     }
 
     #[test]
-    fn sequential_breadth_half_close_voice() {
-        let breadths = distribute_sequential_breadth(0.25);
+    fn breadth_around_center_half_close_voice() {
+        let breadths = distribute_breadth_around_center(0.25);
         assert_relative_eq!(breadths[0], 0.0);
         assert_relative_eq!(breadths[1], 0.5);
         assert_relative_eq!(breadths[CENTER_VOICE], 1.0);
@@ -339,8 +339,8 @@ mod tests {
     }
 
     #[test]
-    fn sequential_breadth_full_close_voice() {
-        let breadths = distribute_sequential_breadth(0.5);
+    fn breadth_around_center_full_close_voice() {
+        let breadths = distribute_breadth_around_center(0.5);
         assert_relative_eq!(breadths[0], 0.0);
         assert_relative_eq!(breadths[1], 1.0);
         assert_relative_eq!(breadths[CENTER_VOICE], 1.0);
@@ -349,8 +349,8 @@ mod tests {
     }
 
     #[test]
-    fn sequential_breadth_half_far_voice() {
-        let breadths = distribute_sequential_breadth(0.75);
+    fn breadth_around_center_half_far_voice() {
+        let breadths = distribute_breadth_around_center(0.75);
         assert_relative_eq!(breadths[0], 0.5);
         assert_relative_eq!(breadths[1], 1.0);
         assert_relative_eq!(breadths[CENTER_VOICE], 1.0);
@@ -359,8 +359,8 @@ mod tests {
     }
 
     #[test]
-    fn sequential_breadth_full_far_voice() {
-        let breadths = distribute_sequential_breadth(1.0);
+    fn breadth_around_center_full_far_voice() {
+        let breadths = distribute_breadth_around_center(1.0);
         assert_relative_eq!(breadths[0], 1.0);
         assert_relative_eq!(breadths[1], 1.0);
         assert_relative_eq!(breadths[CENTER_VOICE], 1.0);
