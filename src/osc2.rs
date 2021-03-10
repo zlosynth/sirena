@@ -8,7 +8,7 @@ pub const WAVETABLES_LEN: usize = circular_wavetable_oscillator::MAX_WAVETABLES;
 const VOICES_LEN: usize = 5;
 const CENTER_VOICE: usize = 2;
 
-const BREADTHS: [[f32; VOICES_LEN]; 5] = [
+const BREADTHS: [[f32; VOICES_LEN]; 36] = [
     // start on the center voice
     [0.0, 0.0, 1.0, 0.0, 0.0],
     // extend around center
@@ -17,6 +17,42 @@ const BREADTHS: [[f32; VOICES_LEN]; 5] = [
     // stick around edges
     [1.0, 1.0, 0.0, 1.0, 1.0],
     [1.0, 0.0, 0.0, 0.0, 1.0],
+    // single voice
+    [0.0, 0.0, 0.0, 0.0, 1.0],
+    [0.0, 0.0, 0.0, 1.0, 0.0],
+    [0.0, 0.0, 1.0, 0.0, 0.0],
+    [0.0, 1.0, 0.0, 0.0, 0.0],
+    [1.0, 0.0, 0.0, 0.0, 0.0],
+    // two voices
+    [0.0, 0.0, 0.0, 1.0, 1.0],
+    [0.0, 0.0, 1.0, 0.0, 1.0],
+    [0.0, 0.0, 1.0, 1.0, 0.0],
+    [0.0, 1.0, 0.0, 0.0, 1.0],
+    [0.0, 1.0, 0.0, 1.0, 0.0],
+    [0.0, 1.0, 1.0, 0.0, 0.0],
+    [1.0, 0.0, 0.0, 0.0, 1.0],
+    [1.0, 0.0, 0.0, 1.0, 0.0],
+    [1.0, 0.0, 1.0, 0.0, 0.0],
+    [1.0, 1.0, 0.0, 0.0, 0.0],
+    // three voices
+    [0.0, 0.0, 1.0, 1.0, 1.0],
+    [0.0, 1.0, 0.0, 1.0, 1.0],
+    [0.0, 1.0, 1.0, 0.0, 1.0],
+    [0.0, 1.0, 1.0, 1.0, 0.0],
+    [0.0, 1.0, 1.0, 1.0, 1.0],
+    [1.0, 0.0, 0.0, 1.0, 1.0],
+    [1.0, 0.0, 1.0, 0.0, 1.0],
+    [1.0, 0.0, 1.0, 1.0, 0.0],
+    [1.0, 1.0, 0.0, 0.0, 1.0],
+    [1.0, 1.0, 0.0, 1.0, 0.0],
+    [1.0, 1.0, 1.0, 0.0, 0.0],
+    // four voices
+    [1.0, 0.0, 1.0, 1.0, 1.0],
+    [1.0, 1.0, 0.0, 1.0, 1.0],
+    [1.0, 1.0, 1.0, 0.0, 1.0],
+    [1.0, 1.0, 1.0, 1.0, 0.0],
+    // all voices
+    [1.0, 1.0, 1.0, 1.0, 1.0],
 ];
 
 pub struct Osc2<'a> {
@@ -153,11 +189,11 @@ fn distribute_breadth(breadths: &[[f32; VOICES_LEN]], breadth: f32) -> [f32; VOI
     let xfade = breadth.fract();
 
     [
-        xfade::log(breadths_a[0], breadths_b[0], xfade),
-        xfade::log(breadths_a[1], breadths_b[1], xfade),
-        xfade::log(breadths_a[2], breadths_b[2], xfade),
-        xfade::log(breadths_a[3], breadths_b[3], xfade),
-        xfade::log(breadths_a[4], breadths_b[4], xfade),
+        xfade::lin(breadths_a[0], breadths_b[0], xfade),
+        xfade::lin(breadths_a[1], breadths_b[1], xfade),
+        xfade::lin(breadths_a[2], breadths_b[2], xfade),
+        xfade::lin(breadths_a[3], breadths_b[3], xfade),
+        xfade::lin(breadths_a[4], breadths_b[4], xfade),
     ]
 }
 
@@ -353,13 +389,13 @@ mod tests {
         assert_breadths(breadths, 0.0, 0.0, 1.0, 0.0, 0.0);
 
         let breadths = distribute_breadth(&COMBINATIONS, 0.5);
-        assert_breadths(breadths, 0.0, 0.2596373, 1.0, 0.2596373, 0.0);
+        assert_breadths(breadths, 0.0, 0.5, 1.0, 0.5, 0.0);
 
         let breadths = distribute_breadth(&COMBINATIONS, 1.0);
         assert_breadths(breadths, 0.0, 1.0, 1.0, 1.0, 0.0);
 
         let breadths = distribute_breadth(&COMBINATIONS, 1.5);
-        assert_breadths(breadths, 0.2596373, 0.2596373, 0.2596373, 0.2596373, 0.0);
+        assert_breadths(breadths, 0.5, 0.5, 0.5, 0.5, 0.0);
 
         let breadths = distribute_breadth(&COMBINATIONS, 2.0);
         assert_breadths(breadths, 1.0, 0.0, 0.0, 0.0, 0.0);
