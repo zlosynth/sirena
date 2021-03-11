@@ -10,19 +10,24 @@ extern crate approx;
 #[macro_use]
 extern crate lazy_static;
 
-pub mod all_pass_filter;
-pub mod comb_filter;
-pub mod delay;
 pub mod osc1;
 pub mod osc2;
-pub mod ring_buffer;
-mod signal;
+pub mod signal;
 pub mod state_variable_filter;
 pub mod taper;
-mod tone;
+pub mod tone;
 pub mod wavetable_oscillator;
 pub mod xfade;
 
 #[cfg(feature = "std")]
+pub mod all_pass_filter;
+#[cfg(feature = "std")]
+pub mod comb_filter;
+#[cfg(feature = "std")]
+pub mod delay;
+#[cfg(feature = "std")]
 pub mod noise;
+#[cfg(feature = "std")]
+pub mod ring_buffer;
+#[cfg(feature = "std")]
 pub mod spectral_analysis;
