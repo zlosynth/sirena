@@ -141,6 +141,13 @@ impl<'a> Osc2<'a> {
         self.voices[CENTER_VOICE].oscillator.wavetable()
     }
 
+    pub fn reset_phase(&mut self) -> &mut Self {
+        self.voices.iter_mut().for_each(|v| {
+            v.oscillator.reset_phase();
+        });
+        self
+    }
+
     pub fn populate(&mut self, buffer: &mut [f32]) {
         self.voices[CENTER_VOICE].oscillator.populate(buffer);
 
@@ -283,6 +290,23 @@ mod tests {
         let mut osc2 = Osc2::new(wavetables(), SAMPLE_RATE);
         osc2.set_breadth(0.5);
         assert_eq!(osc2.breadth(), 0.5);
+    }
+
+    #[test]
+    fn reset_phase() {
+        let mut osc2 = Osc2::new(wavetables(), SAMPLE_RATE);
+        osc2.set_frequency(440.0);
+
+        let mut signal_a = [0.0; 20];
+        osc2.populate(&mut signal_a);
+
+        osc2.reset_phase();
+        let mut signal_b = [0.0; 20];
+        osc2.populate(&mut signal_b);
+
+        for i in 0..20 {
+            assert_relative_eq!(signal_a[i], signal_b[i]);
+        }
     }
 
     #[test]

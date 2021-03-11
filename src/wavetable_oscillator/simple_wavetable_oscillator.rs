@@ -62,6 +62,11 @@ impl<'a> Oscillator for SimpleWavetableOscillator<'a> {
         self.amplitude
     }
 
+    fn reset_phase(&mut self) -> &mut Self {
+        self.phase = 0.0;
+        self
+    }
+
     fn add(&mut self, buffer: &mut [f32]) {
         self.fill(buffer, FillMethod::Add);
     }
@@ -142,5 +147,11 @@ mod tests {
     fn get_amplitude() {
         let mut wavetable_oscillator = SimpleWavetableOscillator::new(&SINE_WAVETABLE, SAMPLE_RATE);
         tests::get_amplitude(&mut wavetable_oscillator);
+    }
+
+    #[test]
+    fn reset_phase() {
+        let mut wavetable_oscillator = SimpleWavetableOscillator::new(&SINE_WAVETABLE, SAMPLE_RATE);
+        tests::reset_phase(&mut wavetable_oscillator);
     }
 }

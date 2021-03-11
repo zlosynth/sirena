@@ -117,6 +117,11 @@ impl<'a> Oscillator for CircularWavetableOscillator<'a> {
         self.amplitude
     }
 
+    fn reset_phase(&mut self) -> &mut Self {
+        self.phase = 0.0;
+        self
+    }
+
     fn add(&mut self, buffer: &mut [f32]) {
         self.fill(buffer, FillMethod::Add);
     }
@@ -215,6 +220,13 @@ mod tests {
         let mut wavetable_oscillator =
             CircularWavetableOscillator::new([&SINE_WAVETABLE; MAX_WAVETABLES], SAMPLE_RATE);
         tests::get_amplitude(&mut wavetable_oscillator);
+    }
+
+    #[test]
+    fn reset_phase() {
+        let mut wavetable_oscillator =
+            CircularWavetableOscillator::new([&SINE_WAVETABLE; MAX_WAVETABLES], SAMPLE_RATE);
+        tests::reset_phase(&mut wavetable_oscillator);
     }
 
     #[test]

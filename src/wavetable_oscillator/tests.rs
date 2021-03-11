@@ -120,3 +120,16 @@ fn check_note_for_aliasing(oscillator: &mut impl Oscillator, frequency: f32) {
     let lowest_peak = analysis.lowest_peak(0.04);
     assert_abs_diff_eq!(lowest_peak, frequency, epsilon = 1.0);
 }
+
+pub fn reset_phase(oscillator: &mut impl Oscillator) {
+    let mut signal_a = [0.0; 20];
+    oscillator.populate(&mut signal_a);
+
+    oscillator.reset_phase();
+    let mut signal_b = [0.0; 20];
+    oscillator.populate(&mut signal_b);
+
+    for i in 0..20 {
+        assert_relative_eq!(signal_a[i], signal_b[i]);
+    }
+}
