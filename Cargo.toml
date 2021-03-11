@@ -16,6 +16,7 @@ std = ["rand", "rustfft"]
 [dependencies]
 rustfft = { version = "5.0", optional = true }
 rand = { version = "0.8", optional = true }
+micromath = "1.1"
 
 [dev-dependencies]
 approx = "0.4"

@@ -1,3 +1,6 @@
+#[allow(unused_imports)]
+use micromath::F32Ext;
+
 use super::consts::VOICES_LEN;
 use crate::xfade;
 

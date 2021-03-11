@@ -1,3 +1,6 @@
+#[allow(unused_imports)]
+use micromath::F32Ext;
+
 const LOG: [f32; 21] = [
     0.0,
     0.019996643,

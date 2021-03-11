@@ -1,4 +1,6 @@
 use core::f32::consts::PI;
+#[allow(unused_imports)]
+use micromath::F32Ext;
 
 use crate::signal;
 

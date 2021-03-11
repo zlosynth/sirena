@@ -1,3 +1,6 @@
+#[allow(unused_imports)]
+use micromath::F32Ext;
+
 use super::consts::OVERSAMPLED_WAVETABLE_LENGTH;
 use super::waveshapes::sine;
 use crate::signal;

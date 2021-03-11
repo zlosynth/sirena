@@ -1,3 +1,6 @@
+#[allow(unused_imports)]
+use micromath::F32Ext;
+
 pub fn detune_frequency(frequency: f32, amount: f32) -> f32 {
     frequency * f32::powf(2.0, amount / 12.0)
 }

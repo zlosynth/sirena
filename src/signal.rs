@@ -1,3 +1,6 @@
+#[allow(unused_imports)]
+use micromath::F32Ext;
+
 pub fn normalize(data: &mut [f32]) {
     let ratio = normalization_ratio(data);
     for x in data.iter_mut() {

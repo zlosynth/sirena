@@ -1,3 +1,6 @@
+#[allow(unused_imports)]
+use micromath::F32Ext;
+
 use super::oscillator::Oscillator;
 use super::wavetable::{BandWavetable, Wavetable};
 use crate::xfade;
