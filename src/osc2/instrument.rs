@@ -1,59 +1,12 @@
-use crate::tone;
+use super::breadth;
+use super::detune;
 use crate::wavetable_oscillator::circular_wavetable_oscillator;
 use crate::wavetable_oscillator::{CircularWavetableOscillator, Oscillator, Wavetable};
-use crate::xfade;
 
 pub const WAVETABLES_LEN: usize = circular_wavetable_oscillator::MAX_WAVETABLES;
 
 const VOICES_LEN: usize = 5;
 const CENTER_VOICE: usize = 2;
-
-const BREADTHS: [[f32; VOICES_LEN]; 36] = [
-    // start on the center voice
-    [0.0, 0.0, 1.0, 0.0, 0.0],
-    // extend around center
-    [0.0, 1.0, 1.0, 1.0, 0.0],
-    [1.0, 1.0, 1.0, 1.0, 1.0],
-    // stick around edges
-    [1.0, 1.0, 0.0, 1.0, 1.0],
-    [1.0, 0.0, 0.0, 0.0, 1.0],
-    // single voice
-    [0.0, 0.0, 0.0, 0.0, 1.0],
-    [0.0, 0.0, 0.0, 1.0, 0.0],
-    [0.0, 0.0, 1.0, 0.0, 0.0],
-    [0.0, 1.0, 0.0, 0.0, 0.0],
-    [1.0, 0.0, 0.0, 0.0, 0.0],
-    // two voices
-    [0.0, 0.0, 0.0, 1.0, 1.0],
-    [0.0, 0.0, 1.0, 0.0, 1.0],
-    [0.0, 0.0, 1.0, 1.0, 0.0],
-    [0.0, 1.0, 0.0, 0.0, 1.0],
-    [0.0, 1.0, 0.0, 1.0, 0.0],
-    [0.0, 1.0, 1.0, 0.0, 0.0],
-    [1.0, 0.0, 0.0, 0.0, 1.0],
-    [1.0, 0.0, 0.0, 1.0, 0.0],
-    [1.0, 0.0, 1.0, 0.0, 0.0],
-    [1.0, 1.0, 0.0, 0.0, 0.0],
-    // three voices
-    [0.0, 0.0, 1.0, 1.0, 1.0],
-    [0.0, 1.0, 0.0, 1.0, 1.0],
-    [0.0, 1.0, 1.0, 0.0, 1.0],
-    [0.0, 1.0, 1.0, 1.0, 0.0],
-    [0.0, 1.0, 1.0, 1.0, 1.0],
-    [1.0, 0.0, 0.0, 1.0, 1.0],
-    [1.0, 0.0, 1.0, 0.0, 1.0],
-    [1.0, 0.0, 1.0, 1.0, 0.0],
-    [1.0, 1.0, 0.0, 0.0, 1.0],
-    [1.0, 1.0, 0.0, 1.0, 0.0],
-    [1.0, 1.0, 1.0, 0.0, 0.0],
-    // four voices
-    [1.0, 0.0, 1.0, 1.0, 1.0],
-    [1.0, 1.0, 0.0, 1.0, 1.0],
-    [1.0, 1.0, 1.0, 0.0, 1.0],
-    [1.0, 1.0, 1.0, 1.0, 0.0],
-    // all voices
-    [1.0, 1.0, 1.0, 1.0, 1.0],
-];
 
 pub struct Osc2<'a> {
     detune: f32,
@@ -104,7 +57,7 @@ impl<'a> Osc2<'a> {
     }
 
     fn tune_voices(&mut self) {
-        let detunes = distribute_detune(self.frequency, self.detune);
+        let detunes = detune::distribute(self.frequency, self.detune);
         self.voices.iter_mut().enumerate().for_each(|(i, v)| {
             v.oscillator.set_frequency(detunes[i]);
         });
@@ -122,7 +75,7 @@ impl<'a> Osc2<'a> {
     }
 
     fn amplify_voices(&mut self) {
-        let breadths = distribute_breadth(&BREADTHS, self.breadth);
+        let breadths = breadth::distribute(self.breadth);
 
         self.voices.iter_mut().enumerate().for_each(|(i, v)| {
             v.oscillator.set_amplitude(breadths[i]);
@@ -172,38 +125,6 @@ fn calculate_total_amplitude(amplitudes: &[f32]) -> f32 {
     }
 }
 
-fn distribute_detune(frequency: f32, detune: f32) -> [f32; VOICES_LEN] {
-    [
-        tone::detune_frequency(frequency, detune),
-        tone::detune_frequency(frequency, -detune / 2.0),
-        frequency,
-        tone::detune_frequency(frequency, detune / 2.0),
-        tone::detune_frequency(frequency, -detune),
-    ]
-}
-
-fn distribute_breadth(breadths: &[[f32; VOICES_LEN]], breadth: f32) -> [f32; VOICES_LEN] {
-    let breadths_a = {
-        let index_a = (breadth as usize).min(breadths.len() - 1);
-        breadths[index_a]
-    };
-
-    let breadths_b = {
-        let index_b = (breadth as usize + 1).min(breadths.len() - 1);
-        breadths[index_b]
-    };
-
-    let xfade = breadth.fract();
-
-    [
-        xfade::lin(breadths_a[0], breadths_b[0], xfade),
-        xfade::lin(breadths_a[1], breadths_b[1], xfade),
-        xfade::lin(breadths_a[2], breadths_b[2], xfade),
-        xfade::lin(breadths_a[3], breadths_b[3], xfade),
-        xfade::lin(breadths_a[4], breadths_b[4], xfade),
-    ]
-}
-
 struct Voice<'a> {
     oscillator: CircularWavetableOscillator<'a>,
 }
@@ -220,6 +141,7 @@ impl<'a> Voice<'a> {
 mod tests {
     use super::*;
     use crate::spectral_analysis::SpectralAnalysis;
+    use crate::tone;
     use crate::wavetable_oscillator::{pulse, saw, sine, triangle};
     use proptest::prelude::*;
 
@@ -310,24 +232,6 @@ mod tests {
     }
 
     #[test]
-    fn equal_detune_distribution() {
-        const G4: f32 = 391.995;
-        const G_SHARP_4: f32 = 415.305;
-        const A4: f32 = 440.0;
-        const A_SHARP_4: f32 = 466.164;
-        const B4: f32 = 493.883;
-
-        let detune = 2.0;
-        let detuned = distribute_detune(A4, detune);
-
-        assert_relative_eq!(detuned[0], B4, epsilon = 0.001);
-        assert_relative_eq!(detuned[1], G_SHARP_4, epsilon = 0.001);
-        assert_relative_eq!(detuned[CENTER_VOICE], A4, epsilon = 0.001);
-        assert_relative_eq!(detuned[3], A_SHARP_4, epsilon = 0.001);
-        assert_relative_eq!(detuned[4], G4, epsilon = 0.001);
-    }
-
-    #[test]
     fn detuned_voices_full_breadth() {
         let mut osc2 = Osc2::new(wavetables(), SAMPLE_RATE);
         osc2.set_frequency(1000.0).set_detune(2.0).set_breadth(2.0);
@@ -399,38 +303,6 @@ mod tests {
             lowest_expected,
             lowest_peak
         );
-    }
-
-    #[test]
-    fn breadth_based_on_combinations() {
-        const COMBINATIONS: [[f32; 5]; 3] = [
-            [0.0, 0.0, 1.0, 0.0, 0.0],
-            [0.0, 1.0, 1.0, 1.0, 0.0],
-            [1.0, 0.0, 0.0, 0.0, 0.0],
-        ];
-
-        let breadths = distribute_breadth(&COMBINATIONS, 0.0);
-        assert_breadths(breadths, 0.0, 0.0, 1.0, 0.0, 0.0);
-
-        let breadths = distribute_breadth(&COMBINATIONS, 0.5);
-        assert_breadths(breadths, 0.0, 0.5, 1.0, 0.5, 0.0);
-
-        let breadths = distribute_breadth(&COMBINATIONS, 1.0);
-        assert_breadths(breadths, 0.0, 1.0, 1.0, 1.0, 0.0);
-
-        let breadths = distribute_breadth(&COMBINATIONS, 1.5);
-        assert_breadths(breadths, 0.5, 0.5, 0.5, 0.5, 0.0);
-
-        let breadths = distribute_breadth(&COMBINATIONS, 2.0);
-        assert_breadths(breadths, 1.0, 0.0, 0.0, 0.0, 0.0);
-    }
-
-    fn assert_breadths(breadths: [f32; VOICES_LEN], b1: f32, b2: f32, b3: f32, b4: f32, b5: f32) {
-        assert_relative_eq!(breadths[0], b1);
-        assert_relative_eq!(breadths[1], b2);
-        assert_relative_eq!(breadths[CENTER_VOICE], b3);
-        assert_relative_eq!(breadths[3], b4);
-        assert_relative_eq!(breadths[4], b5);
     }
 
     #[test]
