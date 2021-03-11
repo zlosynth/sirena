@@ -333,7 +333,7 @@ mod tests {
                 frequency in 0.0f32..24000.0,
                 detune in -13.0f32..13.0,
                 wavetable in -16.0f32..16.0,
-                breadth in 0.0f32..1.0,
+                breadth in 0.0f32..36.0,
             )
             -> Osc2Config
         {
