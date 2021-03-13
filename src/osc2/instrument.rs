@@ -56,13 +56,6 @@ impl<'a> Osc2<'a> {
         self.detune
     }
 
-    fn tune_voices(&mut self) {
-        let detunes = detune::distribute(self.frequency, self.detune);
-        self.voices.iter_mut().enumerate().for_each(|(i, v)| {
-            v.set_frequency(detunes[i]);
-        });
-    }
-
     pub fn set_breadth(&mut self, breadth: f32) -> &mut Self {
         assert!(breadth >= 0.0);
         self.breadth = breadth;
@@ -72,16 +65,6 @@ impl<'a> Osc2<'a> {
 
     pub fn breadth(&self) -> f32 {
         self.breadth
-    }
-
-    fn amplify_voices(&mut self) {
-        let breadths = breadth::distribute(self.breadth);
-
-        self.voices.iter_mut().enumerate().for_each(|(i, v)| {
-            v.oscillator.set_amplitude(breadths[i]);
-        });
-
-        self.total_amplitude = calculate_total_amplitude(&breadths);
     }
 
     pub fn set_wavetable(&mut self, wavetable: f32) {
@@ -113,6 +96,23 @@ impl<'a> Osc2<'a> {
         for x in buffer.iter_mut() {
             *x /= self.total_amplitude;
         }
+    }
+
+    fn amplify_voices(&mut self) {
+        let breadths = breadth::distribute(self.breadth);
+
+        self.voices.iter_mut().enumerate().for_each(|(i, v)| {
+            v.oscillator.set_amplitude(breadths[i]);
+        });
+
+        self.total_amplitude = calculate_total_amplitude(&breadths);
+    }
+
+    fn tune_voices(&mut self) {
+        let detunes = detune::distribute(self.frequency, self.detune);
+        self.voices.iter_mut().enumerate().for_each(|(i, v)| {
+            v.set_frequency(detunes[i]);
+        });
     }
 }
 
