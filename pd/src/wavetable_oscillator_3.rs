@@ -120,7 +120,7 @@ pub unsafe extern "C" fn setup() {
         class,
         receiver = WavetableOscillator3,
         dummy_offset = offset_of!(WavetableOscillator3 => signal_dummy),
-        number_of_inlets = 0,
+        number_of_inlets = 1,
         number_of_outlets = 1,
         callback = perform
     );

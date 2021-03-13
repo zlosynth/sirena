@@ -98,8 +98,8 @@ pub unsafe extern "C" fn setup() {
         class,
         receiver = Osc2,
         dummy_offset = offset_of!(Osc2 => signal_dummy),
-        number_of_inlets = 0,
-        number_of_outlets = 1,
+        number_of_inlets = 1,
+        number_of_outlets = 2,
         callback = perform
     );
 

@@ -83,7 +83,7 @@ pub unsafe extern "C" fn setup() {
         class,
         receiver = Osc1,
         dummy_offset = offset_of!(Osc1 => signal_dummy),
-        number_of_inlets = 0,
+        number_of_inlets = 1,
         number_of_outlets = 1,
         callback = perform
     );

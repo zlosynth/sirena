@@ -10,6 +10,8 @@ macro_rules! register_dsp_method {
         register_dsp_method($class);
 
         unsafe fn register_dsp_method(class: *mut pd_sys::_class) {
+            assert!($inlets >= 1, "number of inlets must be set to >= 1, pure data always register one inlet, even when it's not used");
+
             pd_sys::class_addmethod(
                 class,
                 Some(std::mem::transmute::<
@@ -72,7 +74,7 @@ macro_rules! register_dsp_method {
                 let reserved = 1;
                 let receiver = 1;
                 let number_of_frames = 1;
-                let inlets = $inlets;
+                let inlets = $inlets.min(1);
                 let outlets = $outlets;
                 reserved + receiver + number_of_frames + inlets + outlets
             };
