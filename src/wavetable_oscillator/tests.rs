@@ -1,4 +1,4 @@
-use super::oscillator::Oscillator;
+use super::oscillator::{Oscillator, StereoOscillator};
 use crate::spectral_analysis::SpectralAnalysis;
 
 pub const SAMPLE_RATE: u32 = 44100;
@@ -47,6 +47,12 @@ pub fn get_frequency(oscillator: &mut impl Oscillator) {
     oscillator.set_frequency(110.0);
 
     assert_eq!(oscillator.frequency(), 110.0);
+}
+
+pub fn get_pan(oscillator: &mut impl StereoOscillator) {
+    oscillator.set_pan(0.6);
+
+    assert_eq!(oscillator.pan(), 0.6);
 }
 
 pub fn set_sample_rate(
@@ -131,5 +137,32 @@ pub fn reset_phase(oscillator: &mut impl Oscillator) {
 
     for i in 0..20 {
         assert_relative_eq!(signal_a[i], signal_b[i]);
+    }
+}
+
+pub fn stereo_panning(oscillator: &mut impl StereoOscillator) {
+    let mut signal_left = [0.0; 20];
+    let mut signal_right = [0.0; 20];
+    let mut signal = [&mut signal_left[..], &mut signal_right[..]];
+
+    oscillator.set_pan(-1.0).set_frequency(1.0);
+    oscillator.populate_stereo(&mut signal[..]);
+    for i in 0..20 {
+        assert!(signal[0][i] != signal[1][i]);
+        assert_relative_eq!(signal[1][i], 0.0);
+    }
+
+    oscillator.set_pan(1.0).set_frequency(1.0);
+    oscillator.populate_stereo(&mut signal[..]);
+    for i in 0..20 {
+        assert!(signal[0][i] != signal[1][i]);
+        assert_relative_eq!(signal[0][i], 0.0);
+    }
+
+    oscillator.set_pan(0.0).set_frequency(1.0);
+    oscillator.populate_stereo(&mut signal[..]);
+    for i in 0..20 {
+        assert_relative_eq!(signal[0][i], signal[1][i]);
+        assert!(signal[0][i] != 0.0);
     }
 }

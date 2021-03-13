@@ -9,3 +9,12 @@ pub trait Oscillator {
     fn populate(&mut self, buffer: &mut [f32]);
     fn dry(&mut self, buffer: &mut [f32]);
 }
+
+pub trait StereoOscillator: Oscillator {
+    fn set_pan(&mut self, pan: f32) -> &mut Self;
+    fn pan(&self) -> f32;
+
+    fn add_stereo(&mut self, buffer: &mut [&mut [f32]]);
+    fn populate_stereo(&mut self, buffer: &mut [&mut [f32]]);
+    fn dry_stereo(&mut self, buffer: &mut [&mut [f32]]);
+}

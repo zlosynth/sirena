@@ -1,7 +1,7 @@
 #[allow(unused_imports)]
 use micromath::F32Ext;
 
-use super::oscillator::Oscillator;
+use super::oscillator::{Oscillator, StereoOscillator};
 use super::wavetable::{BandWavetable, Wavetable};
 use crate::xfade;
 
@@ -13,6 +13,7 @@ pub struct CircularWavetableOscillator<'a> {
     amplitude: f32,
     wavetable: f32,
     phase: f32,
+    pan: f32,
     wavetables: [&'a Wavetable; MAX_WAVETABLES],
 }
 
@@ -24,11 +25,12 @@ impl<'a> CircularWavetableOscillator<'a> {
             amplitude: 1.0,
             wavetable: 0.0,
             phase: 0.0,
+            pan: 0.0,
             wavetables,
         }
     }
 
-    fn fill(&mut self, buffer: &mut [f32], method: FillMethod) {
+    fn fill(&mut self, buffers: &mut [&mut [f32]], method: FillMethod, channels: Channels) {
         let wavetable_a_index = self.wavetable as usize;
         let wavetable_b_index = calculate_next_wavetable_index(wavetable_a_index);
         let xfade = self.wavetable.fract();
@@ -38,7 +40,7 @@ impl<'a> CircularWavetableOscillator<'a> {
 
         let interval_in_samples = self.frequency / self.sample_rate as f32;
 
-        for x in buffer.iter_mut() {
+        for i in 0..buffers[0].len() {
             match method {
                 FillMethod::Overwrite => {
                     let value = mix_and_read_wavetables(
@@ -47,7 +49,15 @@ impl<'a> CircularWavetableOscillator<'a> {
                         xfade,
                         self.phase,
                     );
-                    *x = value * self.amplitude;
+                    match channels {
+                        Mono => {
+                            buffers[0][i] = value * self.amplitude;
+                        }
+                        Stereo => {
+                            buffers[0][i] = value * self.amplitude * (1.0 - self.pan);
+                            buffers[1][i] = value * self.amplitude * self.pan;
+                        }
+                    }
                 }
                 FillMethod::Add => {
                     let value = mix_and_read_wavetables(
@@ -56,7 +66,15 @@ impl<'a> CircularWavetableOscillator<'a> {
                         xfade,
                         self.phase,
                     );
-                    *x += value * self.amplitude;
+                    match channels {
+                        Mono => {
+                            buffers[0][i] += value * self.amplitude;
+                        }
+                        Stereo => {
+                            buffers[0][i] += value * self.amplitude * (1.0 - self.pan);
+                            buffers[1][i] += value * self.amplitude * self.pan;
+                        }
+                    }
                 }
                 FillMethod::Dry => (),
             }
@@ -75,6 +93,12 @@ impl<'a> CircularWavetableOscillator<'a> {
         self.wavetable
     }
 }
+
+enum Channels {
+    Mono,
+    Stereo,
+}
+use Channels::*;
 
 fn calculate_next_wavetable_index(wavetable_index: usize) -> usize {
     if wavetable_index == MAX_WAVETABLES - 1 {
@@ -126,15 +150,38 @@ impl<'a> Oscillator for CircularWavetableOscillator<'a> {
     }
 
     fn add(&mut self, buffer: &mut [f32]) {
-        self.fill(buffer, FillMethod::Add);
+        self.fill(&mut [buffer], FillMethod::Add, Mono);
     }
 
     fn populate(&mut self, buffer: &mut [f32]) {
-        self.fill(buffer, FillMethod::Overwrite);
+        self.fill(&mut [buffer], FillMethod::Overwrite, Mono);
     }
 
     fn dry(&mut self, buffer: &mut [f32]) {
-        self.fill(buffer, FillMethod::Dry);
+        self.fill(&mut [buffer], FillMethod::Dry, Mono);
+    }
+}
+
+impl<'a> StereoOscillator for CircularWavetableOscillator<'a> {
+    fn set_pan(&mut self, pan: f32) -> &mut Self {
+        self.pan = (pan + 1.0) / 2.0;
+        self
+    }
+
+    fn pan(&self) -> f32 {
+        self.pan * 2.0 - 1.0
+    }
+
+    fn add_stereo(&mut self, buffer: &mut [&mut [f32]]) {
+        self.fill(buffer, FillMethod::Add, Stereo);
+    }
+
+    fn populate_stereo(&mut self, buffer: &mut [&mut [f32]]) {
+        self.fill(buffer, FillMethod::Overwrite, Stereo);
+    }
+
+    fn dry_stereo(&mut self, buffer: &mut [&mut [f32]]) {
+        self.fill(buffer, FillMethod::Dry, Stereo);
     }
 }
 
@@ -187,6 +234,13 @@ mod tests {
     }
 
     #[test]
+    fn get_pan() {
+        let mut wavetable_oscillator =
+            CircularWavetableOscillator::new([&SINE_WAVETABLE; MAX_WAVETABLES], SAMPLE_RATE);
+        tests::get_pan(&mut wavetable_oscillator);
+    }
+
+    #[test]
     fn set_sample_rate() {
         let mut wavetable_oscillator_a =
             CircularWavetableOscillator::new([&SINE_WAVETABLE; MAX_WAVETABLES], 1000);
@@ -230,6 +284,13 @@ mod tests {
         let mut wavetable_oscillator =
             CircularWavetableOscillator::new([&SINE_WAVETABLE; MAX_WAVETABLES], SAMPLE_RATE);
         tests::reset_phase(&mut wavetable_oscillator);
+    }
+
+    #[test]
+    fn stereo_panning() {
+        let mut wavetable_oscillator =
+            CircularWavetableOscillator::new([&SINE_WAVETABLE; MAX_WAVETABLES], SAMPLE_RATE);
+        tests::stereo_panning(&mut wavetable_oscillator);
     }
 
     #[test]
