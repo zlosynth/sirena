@@ -1,6 +1,7 @@
 use criterion::{black_box, criterion_group, criterion_main, Criterion};
 
 use sirena::osc1::Osc1;
+use sirena::osc2::{Osc2, WAVETABLES_LEN};
 use sirena::signal;
 use sirena::taper;
 use sirena::tone;
@@ -23,6 +24,15 @@ fn criterion_benchmark(c: &mut Criterion) {
             .set_detune(2.0);
         let mut buffer = [0.0; 64];
         b.iter(|| osc1_play(black_box(&mut osc1), black_box(&mut buffer)));
+    });
+
+    c.bench_function("osc2", |b| {
+        const SAMPLE_RATE: u32 = 48000;
+        let wavetable = Wavetable::new(saw(), SAMPLE_RATE);
+        let mut osc2 = Osc2::new([&wavetable; WAVETABLES_LEN], SAMPLE_RATE);
+        osc2.set_frequency(440.0).set_breadth(2.0).set_detune(2.0);
+        let mut buffer = [0.0; 64];
+        b.iter(|| osc2.populate(black_box(&mut buffer)));
     });
 
     c.bench_function("log_taper", |b| {
