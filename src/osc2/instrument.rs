@@ -69,7 +69,7 @@ impl<'a> Osc2<'a> {
 
     pub fn set_wavetable(&mut self, wavetable: f32) {
         self.voices.iter_mut().for_each(|v| {
-            v.oscillator.set_wavetable(wavetable);
+            v.set_wavetable(wavetable);
         });
     }
 
@@ -79,7 +79,7 @@ impl<'a> Osc2<'a> {
 
     pub fn reset_phase(&mut self) -> &mut Self {
         self.voices.iter_mut().for_each(|v| {
-            v.oscillator.reset_phase();
+            v.reset_phase();
         });
         self
     }
@@ -102,7 +102,7 @@ impl<'a> Osc2<'a> {
         let breadths = breadth::distribute(self.breadth);
 
         self.voices.iter_mut().enumerate().for_each(|(i, v)| {
-            v.oscillator.set_amplitude(breadths[i]);
+            v.set_amplitude(breadths[i]);
         });
 
         self.total_amplitude = calculate_total_amplitude(&breadths);
@@ -138,6 +138,21 @@ impl<'a> Voice<'a> {
 
     pub fn set_frequency(&mut self, frequency: f32) -> &mut Self {
         self.oscillator.set_frequency(frequency);
+        self
+    }
+
+    pub fn set_amplitude(&mut self, amplitude: f32) -> &mut Self {
+        self.oscillator.set_amplitude(amplitude);
+        self
+    }
+
+    pub fn set_wavetable(&mut self, wavetable: f32) -> &mut Self {
+        self.oscillator.set_wavetable(wavetable);
+        self
+    }
+
+    pub fn reset_phase(&mut self) -> &mut Self {
+        self.oscillator.reset_phase();
         self
     }
 }
