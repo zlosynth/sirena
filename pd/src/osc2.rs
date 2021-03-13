@@ -62,8 +62,8 @@ unsafe extern "C" fn set_wavetable(osc2: *mut Osc2, value: pd_sys::t_float) {
     (*osc2).osc2_module.set_wavetable(value);
 }
 
-unsafe extern "C" fn set_pan_width(osc2: *mut Osc2, value: pd_sys::t_float) {
-    (*osc2).osc2_module.set_pan_width(value);
+unsafe extern "C" fn set_pan_combiantion(osc2: *mut Osc2, value: pd_sys::t_float) {
+    (*osc2).osc2_module.set_pan_combiantion(value);
 }
 
 unsafe extern "C" fn reset_phase(osc2: *mut Osc2) {
@@ -114,7 +114,7 @@ pub unsafe extern "C" fn setup() {
     register_set_detune_method(class);
     register_set_breadth_method(class);
     register_set_wavetable_method(class);
-    register_set_pan_width_method(class);
+    register_set_pan_combiantion_method(class);
     register_reset_phase_method(class);
 }
 
@@ -186,13 +186,13 @@ unsafe fn register_set_wavetable_method(class: *mut pd_sys::_class) {
     );
 }
 
-unsafe fn register_set_pan_width_method(class: *mut pd_sys::_class) {
+unsafe fn register_set_pan_combiantion_method(class: *mut pd_sys::_class) {
     pd_sys::class_addmethod(
         class,
         Some(std::mem::transmute::<
             unsafe extern "C" fn(*mut Osc2, pd_sys::t_float),
             _,
-        >(set_pan_width)),
+        >(set_pan_combiantion)),
         pd_sys::gensym(cstr::cstr("p").as_ptr()),
         pd_sys::t_atomtype::A_FLOAT,
         0,

@@ -15,7 +15,7 @@ pub struct Osc2<'a> {
     detune: f32,
     frequency: f32,
     breadth: f32,
-    pan_width: f32,
+    pan_combiantion: f32,
     total_amplitude: f32,
     voices: [Voice<'a>; VOICES_LEN],
 }
@@ -26,7 +26,7 @@ impl<'a> Osc2<'a> {
             detune: 0.0,
             frequency: 0.0,
             breadth: 0.0,
-            pan_width: 0.0,
+            pan_combiantion: 0.0,
             total_amplitude: 0.0,
             voices: [
                 Voice::new(wavetables, sample_rate),
@@ -38,7 +38,7 @@ impl<'a> Osc2<'a> {
         };
         osc2.tune_voices();
         osc2.amplify_voices();
-        osc2.set_pan_width(0.0);
+        osc2.set_pan_combiantion(0.0);
         osc2
     }
 
@@ -75,17 +75,17 @@ impl<'a> Osc2<'a> {
         self.breadth
     }
 
-    pub fn set_pan_width(&mut self, pan_width: f32) -> &mut Self {
-        self.pan_width = pan_width;
-        let pans = pan::distribute(self.pan_width);
+    pub fn set_pan_combiantion(&mut self, pan_combiantion: f32) -> &mut Self {
+        self.pan_combiantion = pan_combiantion;
+        let pans = pan::distribute(self.pan_combiantion);
         for (i, voice) in self.voices.iter_mut().enumerate() {
             voice.oscillator.set_pan(pans[i]);
         }
         self
     }
 
-    pub fn pan_width(&self) -> f32 {
-        self.pan_width
+    pub fn pan_combiantion(&self) -> f32 {
+        self.pan_combiantion
     }
 
     pub fn set_wavetable(&mut self, wavetable: f32) {
@@ -249,10 +249,10 @@ mod tests {
     }
 
     #[test]
-    fn set_pan_width() {
+    fn set_pan_combiantion() {
         let mut osc2 = Osc2::new(wavetables(), SAMPLE_RATE);
-        osc2.set_pan_width(0.5);
-        assert_eq!(osc2.pan_width(), 0.5);
+        osc2.set_pan_combiantion(0.5);
+        assert_eq!(osc2.pan_combiantion(), 0.5);
     }
 
     #[test]
@@ -371,9 +371,9 @@ mod tests {
     }
 
     #[test]
-    fn zero_pan_width() {
+    fn zero_pan_combiantion() {
         let mut osc2 = Osc2::new(wavetables(), SAMPLE_RATE);
-        osc2.set_frequency(440.0).set_pan_width(0.0);
+        osc2.set_frequency(440.0).set_pan_combiantion(0.0);
 
         let mut signal_a_left = [0.0; 20];
         let mut signal_a_right = [0.0; 20];
