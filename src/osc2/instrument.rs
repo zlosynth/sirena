@@ -59,7 +59,7 @@ impl<'a> Osc2<'a> {
     fn tune_voices(&mut self) {
         let detunes = detune::distribute(self.frequency, self.detune);
         self.voices.iter_mut().enumerate().for_each(|(i, v)| {
-            v.oscillator.set_frequency(detunes[i]);
+            v.set_frequency(detunes[i]);
         });
     }
 
@@ -134,6 +134,11 @@ impl<'a> Voice<'a> {
         Self {
             oscillator: CircularWavetableOscillator::new(wavetables, sample_rate),
         }
+    }
+
+    pub fn set_frequency(&mut self, frequency: f32) -> &mut Self {
+        self.oscillator.set_frequency(frequency);
+        self
     }
 }
 
