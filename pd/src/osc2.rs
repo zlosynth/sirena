@@ -32,6 +32,8 @@ lazy_static! {
 struct Osc2<'a> {
     pd_obj: pd_sys::t_object,
     osc2_module: sirena::osc2::Osc2<'a>,
+    out1_outlet: *mut pd_sys::_outlet,
+    out2_outlet: *mut pd_sys::_outlet,
     signal_dummy: f32,
 }
 
@@ -41,7 +43,7 @@ fn perform(
     _inlets: &[&mut [pd_sys::t_float]],
     outlets: &mut [&mut [pd_sys::t_float]],
 ) {
-    osc2.osc2_module.populate(&mut outlets[0]);
+    osc2.osc2_module.populate(&mut outlets[0..=1]);
 }
 
 unsafe extern "C" fn set_frequency(osc2: *mut Osc2, value: pd_sys::t_float) {
@@ -58,6 +60,10 @@ unsafe extern "C" fn set_breadth(osc2: *mut Osc2, value: pd_sys::t_float) {
 
 unsafe extern "C" fn set_wavetable(osc2: *mut Osc2, value: pd_sys::t_float) {
     (*osc2).osc2_module.set_wavetable(value);
+}
+
+unsafe extern "C" fn set_pan_width(osc2: *mut Osc2, value: pd_sys::t_float) {
+    (*osc2).osc2_module.set_pan_width(value);
 }
 
 unsafe extern "C" fn reset_phase(osc2: *mut Osc2) {
@@ -84,7 +90,8 @@ unsafe extern "C" fn new() -> *mut c_void {
 
     (*osc2).osc2_module = osc2_module;
 
-    pd_sys::outlet_new(&mut (*osc2).pd_obj, &mut pd_sys::s_signal);
+    (*osc2).out1_outlet = pd_sys::outlet_new(&mut (*osc2).pd_obj, &mut pd_sys::s_signal);
+    (*osc2).out2_outlet = pd_sys::outlet_new(&mut (*osc2).pd_obj, &mut pd_sys::s_signal);
 
     osc2 as *mut c_void
 }
@@ -107,6 +114,7 @@ pub unsafe extern "C" fn setup() {
     register_set_detune_method(class);
     register_set_breadth_method(class);
     register_set_wavetable_method(class);
+    register_set_pan_width_method(class);
     register_reset_phase_method(class);
 }
 
@@ -173,6 +181,19 @@ unsafe fn register_set_wavetable_method(class: *mut pd_sys::_class) {
             _,
         >(set_wavetable)),
         pd_sys::gensym(cstr::cstr("w").as_ptr()),
+        pd_sys::t_atomtype::A_FLOAT,
+        0,
+    );
+}
+
+unsafe fn register_set_pan_width_method(class: *mut pd_sys::_class) {
+    pd_sys::class_addmethod(
+        class,
+        Some(std::mem::transmute::<
+            unsafe extern "C" fn(*mut Osc2, pd_sys::t_float),
+            _,
+        >(set_pan_width)),
+        pd_sys::gensym(cstr::cstr("p").as_ptr()),
         pd_sys::t_atomtype::A_FLOAT,
         0,
     );

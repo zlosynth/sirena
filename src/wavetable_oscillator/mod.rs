@@ -10,7 +10,7 @@ pub mod xy0_wavetable_oscillator;
 mod tests;
 
 pub use circular_wavetable_oscillator::CircularWavetableOscillator;
-pub use oscillator::Oscillator;
+pub use oscillator::{Oscillator, StereoOscillator};
 pub use simple_wavetable_oscillator::SimpleWavetableOscillator;
 pub use waveshapes::{digital_saw, pulse, saw, sine, triangle};
 pub use wavetable::Wavetable;

@@ -31,8 +31,14 @@ fn criterion_benchmark(c: &mut Criterion) {
         let wavetable = Wavetable::new(saw(), SAMPLE_RATE);
         let mut osc2 = Osc2::new([&wavetable; WAVETABLES_LEN], SAMPLE_RATE);
         osc2.set_frequency(440.0).set_breadth(2.0).set_detune(2.0);
-        let mut buffer = [0.0; 64];
-        b.iter(|| osc2.populate(black_box(&mut buffer)));
+        let mut buffer_left = [0.0; 64];
+        let mut buffer_right = [0.0; 64];
+        b.iter(|| {
+            osc2.populate(black_box(&mut [
+                &mut buffer_left[..],
+                &mut buffer_right[..],
+            ]))
+        });
     });
 
     c.bench_function("log_taper", |b| {

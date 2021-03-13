@@ -1,7 +1,10 @@
 use super::breadth;
 use super::detune;
+use super::pan;
 use crate::wavetable_oscillator::circular_wavetable_oscillator;
-use crate::wavetable_oscillator::{CircularWavetableOscillator, Oscillator, Wavetable};
+use crate::wavetable_oscillator::{
+    CircularWavetableOscillator, Oscillator, StereoOscillator, Wavetable,
+};
 
 pub const WAVETABLES_LEN: usize = circular_wavetable_oscillator::MAX_WAVETABLES;
 
@@ -12,6 +15,7 @@ pub struct Osc2<'a> {
     detune: f32,
     frequency: f32,
     breadth: f32,
+    pan_width: f32,
     total_amplitude: f32,
     voices: [Voice<'a>; VOICES_LEN],
 }
@@ -22,6 +26,7 @@ impl<'a> Osc2<'a> {
             detune: 0.0,
             frequency: 0.0,
             breadth: 0.0,
+            pan_width: 0.0,
             total_amplitude: 0.0,
             voices: [
                 Voice::new(wavetables, sample_rate),
@@ -33,6 +38,7 @@ impl<'a> Osc2<'a> {
         };
         osc2.tune_voices();
         osc2.amplify_voices();
+        osc2.set_pan_width(0.0);
         osc2
     }
 
@@ -69,9 +75,22 @@ impl<'a> Osc2<'a> {
         self.breadth
     }
 
+    pub fn set_pan_width(&mut self, pan_width: f32) -> &mut Self {
+        self.pan_width = pan_width;
+        let pans = pan::distribute(self.pan_width);
+        for (i, voice) in self.voices.iter_mut().enumerate() {
+            voice.oscillator.set_pan(pans[i]);
+        }
+        self
+    }
+
+    pub fn pan_width(&self) -> f32 {
+        self.pan_width
+    }
+
     pub fn set_wavetable(&mut self, wavetable: f32) {
         self.voices.iter_mut().for_each(|v| {
-            v.set_wavetable(wavetable);
+            v.oscillator.set_wavetable(wavetable);
         });
     }
 
@@ -81,29 +100,33 @@ impl<'a> Osc2<'a> {
 
     pub fn reset_phase(&mut self) -> &mut Self {
         self.voices.iter_mut().for_each(|v| {
-            v.reset_phase();
+            v.oscillator.reset_phase();
         });
         self
     }
 
-    pub fn populate(&mut self, buffer: &mut [f32]) {
-        self.voices[CENTER_VOICE].oscillator.populate(buffer);
+    pub fn populate(&mut self, buffers: &mut [&mut [f32]]) {
+        self.voices[CENTER_VOICE]
+            .oscillator
+            .populate_stereo(buffers);
 
         for (i, voice) in self.voices.iter_mut().enumerate() {
             if i != CENTER_VOICE {
-                voice.oscillator.add(buffer);
+                voice.oscillator.add_stereo(buffers);
             }
         }
 
-        for x in buffer.iter_mut() {
-            *x /= self.total_amplitude;
+        for buffer in buffers.iter_mut() {
+            for x in buffer.iter_mut() {
+                *x /= self.total_amplitude;
+            }
         }
     }
 
     fn tune_voices(&mut self) {
         let detunes = detune::distribute(self.frequency, self.detune);
         self.voices.iter_mut().enumerate().for_each(|(i, v)| {
-            v.set_frequency(detunes[i]);
+            v.oscillator.set_frequency(detunes[i]);
         });
     }
 
@@ -111,11 +134,11 @@ impl<'a> Osc2<'a> {
         let mut breadths = breadth::distribute(self.breadth);
 
         self.voices.iter_mut().enumerate().for_each(|(i, v)| {
-            let frequency = v.frequency();
+            let frequency = v.oscillator.frequency();
             if frequency < 20.0 {
                 breadths[i] *= (frequency - 15.0).max(0.0) / 5.0;
             }
-            v.set_amplitude(breadths[i]);
+            v.oscillator.set_amplitude(breadths[i]);
         });
 
         self.total_amplitude = calculate_total_amplitude(&breadths);
@@ -140,30 +163,6 @@ impl<'a> Voice<'a> {
         Self {
             oscillator: CircularWavetableOscillator::new(wavetables, sample_rate),
         }
-    }
-
-    pub fn set_frequency(&mut self, frequency: f32) -> &mut Self {
-        self.oscillator.set_frequency(frequency);
-        self
-    }
-
-    pub fn frequency(&mut self) -> f32 {
-        self.oscillator.frequency()
-    }
-
-    pub fn set_amplitude(&mut self, amplitude: f32) -> &mut Self {
-        self.oscillator.set_amplitude(amplitude);
-        self
-    }
-
-    pub fn set_wavetable(&mut self, wavetable: f32) -> &mut Self {
-        self.oscillator.set_wavetable(wavetable);
-        self
-    }
-
-    pub fn reset_phase(&mut self) -> &mut Self {
-        self.oscillator.reset_phase();
-        self
     }
 }
 
@@ -207,10 +206,15 @@ mod tests {
         let mut osc2 = Osc2::new(wavetables(), SAMPLE_RATE);
         osc2.set_frequency(440.0);
 
-        let mut buffer = [0.0; 8];
-        osc2.populate(&mut buffer);
+        let mut buffer_left = [0.0; 8];
+        let mut buffer_right = [0.0; 8];
+        osc2.populate(&mut [&mut buffer_left[..], &mut buffer_right[..]]);
 
-        buffer
+        buffer_left
+            .iter()
+            .find(|x| **x > 0.0)
+            .expect("there must be at least one value over zero");
+        buffer_right
             .iter()
             .find(|x| **x > 0.0)
             .expect("there must be at least one value over zero");
@@ -245,19 +249,29 @@ mod tests {
     }
 
     #[test]
+    fn set_pan_width() {
+        let mut osc2 = Osc2::new(wavetables(), SAMPLE_RATE);
+        osc2.set_pan_width(0.5);
+        assert_eq!(osc2.pan_width(), 0.5);
+    }
+
+    #[test]
     fn reset_phase() {
         let mut osc2 = Osc2::new(wavetables(), SAMPLE_RATE);
         osc2.set_frequency(440.0);
 
-        let mut signal_a = [0.0; 20];
-        osc2.populate(&mut signal_a);
+        let mut signal_a_left = [0.0; 20];
+        let mut signal_a_right = [0.0; 20];
+        osc2.populate(&mut [&mut signal_a_left[..], &mut signal_a_right[..]]);
 
         osc2.reset_phase();
-        let mut signal_b = [0.0; 20];
-        osc2.populate(&mut signal_b);
+        let mut signal_b_left = [0.0; 20];
+        let mut signal_b_right = [0.0; 20];
+        osc2.populate(&mut [&mut signal_b_left[..], &mut signal_b_right[..]]);
 
         for i in 0..20 {
-            assert_relative_eq!(signal_a[i], signal_b[i]);
+            assert_relative_eq!(signal_a_left[i], signal_b_left[i]);
+            assert_relative_eq!(signal_a_right[i], signal_b_right[i]);
         }
     }
 
@@ -291,10 +305,11 @@ mod tests {
         let highest_frequency = osc2.frequency() * f32::powf(2.0, osc2.detune() / 12.0);
         let off_frequency = (lower_frequency + lowest_frequency) / 2.0;
 
-        let mut signal = [0.0; SAMPLE_RATE as usize];
-        osc2.populate(&mut signal);
+        let mut signal_left = [0.0; SAMPLE_RATE as usize];
+        let mut signal_right = [0.0; SAMPLE_RATE as usize];
+        osc2.populate(&mut [&mut signal_left[..], &mut signal_right[..]]);
 
-        let analysis = SpectralAnalysis::analyze(&signal, SAMPLE_RATE);
+        let analysis = SpectralAnalysis::analyze(&signal_left, SAMPLE_RATE);
 
         VoiceMagnitudes {
             center: analysis.magnitude(center_frequency),
@@ -320,10 +335,16 @@ mod tests {
     }
 
     fn assert_no_aliasing(mut osc2: Osc2, lowest_expected: f32) {
-        let mut buffer = [0.0; SAMPLE_RATE as usize];
-        osc2.populate(&mut buffer);
+        let mut buffer_left = [0.0; SAMPLE_RATE as usize];
+        let mut buffer_right = [0.0; SAMPLE_RATE as usize];
+        osc2.populate(&mut [&mut buffer_left[..], &mut buffer_right[..]]);
 
-        let mut analysis = SpectralAnalysis::analyze(&buffer, SAMPLE_RATE);
+        assert_no_aliasing_in_buffer(&buffer_left, lowest_expected, SAMPLE_RATE);
+        assert_no_aliasing_in_buffer(&buffer_right, lowest_expected, SAMPLE_RATE);
+    }
+
+    fn assert_no_aliasing_in_buffer(buffer: &[f32], lowest_expected: f32, sample_rate: u32) {
+        let mut analysis = SpectralAnalysis::analyze(&buffer, sample_rate);
         analysis.trash_range(0.0, 1.0);
 
         let lowest_peak = analysis.lowest_peak(0.04);
@@ -347,6 +368,20 @@ mod tests {
         let breadths = [2.0, 2.0, 1.0, 2.0, 2.0];
         let amplitude = calculate_total_amplitude(&breadths);
         assert_relative_eq!(amplitude, VOICES_LEN as f32);
+    }
+
+    #[test]
+    fn zero_pan_width() {
+        let mut osc2 = Osc2::new(wavetables(), SAMPLE_RATE);
+        osc2.set_frequency(440.0).set_pan_width(0.0);
+
+        let mut signal_a_left = [0.0; 20];
+        let mut signal_a_right = [0.0; 20];
+        osc2.populate(&mut [&mut signal_a_left[..], &mut signal_a_right[..]]);
+
+        for i in 0..signal_a_left.len() {
+            assert_relative_eq!(signal_a_left[i], signal_a_right[i]);
+        }
     }
 
     #[derive(Debug)]
@@ -387,10 +422,14 @@ mod tests {
                 .set_breadth(config.breadth)
                 .set_wavetable(config.wavetable);
 
-            let mut buffer = [0.0; SAMPLE_RATE as usize];
-            osc2.populate(&mut buffer);
+            let mut buffer_right = [0.0; SAMPLE_RATE as usize];
+            let mut buffer_left = [0.0; SAMPLE_RATE as usize];
+            osc2.populate(&mut [&mut buffer_left[..], &mut buffer_right[..]]);
 
-            prop_assert!(buffer
+            prop_assert!(buffer_left
+                .iter()
+                .find(|x| **x > 1.0).is_none());
+            prop_assert!(buffer_right
                 .iter()
                 .find(|x| **x > 1.0).is_none());
         }
