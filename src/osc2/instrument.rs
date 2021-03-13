@@ -39,6 +39,7 @@ impl<'a> Osc2<'a> {
     pub fn set_frequency(&mut self, frequency: f32) -> &mut Self {
         self.frequency = frequency;
         self.tune_voices();
+        self.amplify_voices();
         self
     }
 
@@ -49,6 +50,7 @@ impl<'a> Osc2<'a> {
     pub fn set_detune(&mut self, detune: f32) -> &mut Self {
         self.detune = detune;
         self.tune_voices();
+        self.amplify_voices();
         self
     }
 
@@ -98,21 +100,25 @@ impl<'a> Osc2<'a> {
         }
     }
 
-    fn amplify_voices(&mut self) {
-        let breadths = breadth::distribute(self.breadth);
-
-        self.voices.iter_mut().enumerate().for_each(|(i, v)| {
-            v.set_amplitude(breadths[i]);
-        });
-
-        self.total_amplitude = calculate_total_amplitude(&breadths);
-    }
-
     fn tune_voices(&mut self) {
         let detunes = detune::distribute(self.frequency, self.detune);
         self.voices.iter_mut().enumerate().for_each(|(i, v)| {
             v.set_frequency(detunes[i]);
         });
+    }
+
+    fn amplify_voices(&mut self) {
+        let mut breadths = breadth::distribute(self.breadth);
+
+        self.voices.iter_mut().enumerate().for_each(|(i, v)| {
+            let frequency = v.frequency();
+            if frequency < 20.0 {
+                breadths[i] *= (frequency - 15.0).max(0.0) / 5.0;
+            }
+            v.set_amplitude(breadths[i]);
+        });
+
+        self.total_amplitude = calculate_total_amplitude(&breadths);
     }
 }
 
@@ -139,6 +145,10 @@ impl<'a> Voice<'a> {
     pub fn set_frequency(&mut self, frequency: f32) -> &mut Self {
         self.oscillator.set_frequency(frequency);
         self
+    }
+
+    pub fn frequency(&mut self) -> f32 {
+        self.oscillator.frequency()
     }
 
     pub fn set_amplitude(&mut self, amplitude: f32) -> &mut Self {
@@ -350,7 +360,7 @@ mod tests {
     prop_compose! {
         fn arbitrary_config()
             (
-                frequency in 0.0f32..24000.0,
+                frequency in 11.0f32..24000.0,
                 detune in -13.0f32..13.0,
                 wavetable in -16.0f32..16.0,
                 breadth in 0.0f32..36.0,
