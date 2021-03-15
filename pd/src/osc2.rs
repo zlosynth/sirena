@@ -111,10 +111,11 @@ pub unsafe extern "C" fn setup() {
     );
 
     register_set_frequency_method(class);
-    register_set_detune_method(class);
-    register_set_breadth_method(class);
-    register_set_wavetable_method(class);
-    register_set_pan_combiantion_method(class);
+    register_float_method(class, "d", set_detune);
+    register_float_method(class, "b", set_breadth);
+    register_float_method(class, "w", set_wavetable);
+    register_float_method(class, "p", set_pan_combiantion);
+    register_float_method(class, "p", set_pan_combiantion);
     register_reset_phase_method(class);
 }
 
@@ -147,53 +148,18 @@ unsafe fn register_set_frequency_method(class: *mut pd_sys::_class) {
     );
 }
 
-unsafe fn register_set_detune_method(class: *mut pd_sys::_class) {
+unsafe fn register_float_method(
+    class: *mut pd_sys::_class,
+    symbol: &str,
+    method: unsafe extern "C" fn(*mut Osc2, pd_sys::t_float),
+) {
     pd_sys::class_addmethod(
         class,
         Some(std::mem::transmute::<
             unsafe extern "C" fn(*mut Osc2, pd_sys::t_float),
             _,
-        >(set_detune)),
-        pd_sys::gensym(cstr::cstr("d").as_ptr()),
-        pd_sys::t_atomtype::A_FLOAT,
-        0,
-    );
-}
-
-unsafe fn register_set_breadth_method(class: *mut pd_sys::_class) {
-    pd_sys::class_addmethod(
-        class,
-        Some(std::mem::transmute::<
-            unsafe extern "C" fn(*mut Osc2, pd_sys::t_float),
-            _,
-        >(set_breadth)),
-        pd_sys::gensym(cstr::cstr("b").as_ptr()),
-        pd_sys::t_atomtype::A_FLOAT,
-        0,
-    );
-}
-
-unsafe fn register_set_wavetable_method(class: *mut pd_sys::_class) {
-    pd_sys::class_addmethod(
-        class,
-        Some(std::mem::transmute::<
-            unsafe extern "C" fn(*mut Osc2, pd_sys::t_float),
-            _,
-        >(set_wavetable)),
-        pd_sys::gensym(cstr::cstr("w").as_ptr()),
-        pd_sys::t_atomtype::A_FLOAT,
-        0,
-    );
-}
-
-unsafe fn register_set_pan_combiantion_method(class: *mut pd_sys::_class) {
-    pd_sys::class_addmethod(
-        class,
-        Some(std::mem::transmute::<
-            unsafe extern "C" fn(*mut Osc2, pd_sys::t_float),
-            _,
-        >(set_pan_combiantion)),
-        pd_sys::gensym(cstr::cstr("p").as_ptr()),
+        >(method)),
+        pd_sys::gensym(cstr::cstr(symbol).as_ptr()),
         pd_sys::t_atomtype::A_FLOAT,
         0,
     );
