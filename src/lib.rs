@@ -10,6 +10,7 @@ extern crate approx;
 #[macro_use]
 extern crate lazy_static;
 
+pub mod interpolation;
 pub mod osc1;
 pub mod osc2;
 pub mod signal;
