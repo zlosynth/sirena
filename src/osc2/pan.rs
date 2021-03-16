@@ -4,7 +4,7 @@ use micromath::F32Ext;
 use super::consts::VOICES_LEN;
 use crate::xfade;
 
-const PANS: [[f32; VOICES_LEN]; 6] = [
+const PANS: [[f32; VOICES_LEN]; 7] = [
     [0.0, 0.0, 0.0, 0.0, 0.0],
     [-1.0, -0.5, 0.0, 0.5, 1.0],
     [0.5, -1.0, 0.0, 1.0, -0.5],
