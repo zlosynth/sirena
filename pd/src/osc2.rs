@@ -29,9 +29,9 @@ lazy_static! {
 }
 
 #[repr(C)]
-struct Osc2<'a> {
+struct Osc2<'a, 'b> {
     pd_obj: pd_sys::t_object,
-    osc2_module: sirena::osc2::Osc2<'a>,
+    osc2_module: sirena::osc2::Osc2<'a, 'b>,
     out1_outlet: *mut pd_sys::_outlet,
     out2_outlet: *mut pd_sys::_outlet,
     signal_dummy: f32,
@@ -66,8 +66,16 @@ unsafe extern "C" fn set_wavetable_spread(osc2: *mut Osc2, value: pd_sys::t_floa
     (*osc2).osc2_module.set_wavetable_spread(value);
 }
 
-unsafe extern "C" fn set_pan_combiantion(osc2: *mut Osc2, value: pd_sys::t_float) {
-    (*osc2).osc2_module.set_pan_combiantion(value);
+unsafe extern "C" fn set_pan_combination(osc2: *mut Osc2, value: pd_sys::t_float) {
+    (*osc2).osc2_module.set_pan_combination(value);
+}
+
+unsafe extern "C" fn set_fm_multiple(osc2: *mut Osc2, value: pd_sys::t_float) {
+    (*osc2).osc2_module.set_fm_multiple(value);
+}
+
+unsafe extern "C" fn set_fm_intensity(osc2: *mut Osc2, value: pd_sys::t_float) {
+    (*osc2).osc2_module.set_fm_intensity(value);
 }
 
 unsafe extern "C" fn reset_phase(osc2: *mut Osc2) {
@@ -89,6 +97,7 @@ unsafe extern "C" fn new() -> *mut c_void {
             &WAVETABLE_C,
             &WAVETABLE_D,
         ],
+        &WAVETABLE_A,
         sample_rate,
     );
 
@@ -119,7 +128,9 @@ pub unsafe extern "C" fn setup() {
     register_float_method(class, "b", set_breadth);
     register_float_method(class, "w", set_wavetable);
     register_float_method(class, "ws", set_wavetable_spread);
-    register_float_method(class, "p", set_pan_combiantion);
+    register_float_method(class, "p", set_pan_combination);
+    register_float_method(class, "fm", set_fm_multiple);
+    register_float_method(class, "fmi", set_fm_intensity);
     register_reset_phase_method(class);
 }
 

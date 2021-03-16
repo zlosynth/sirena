@@ -12,40 +12,44 @@ pub const WAVETABLES_LEN: usize = circular_wavetable_oscillator::MAX_WAVETABLES;
 const VOICES_LEN: usize = 5;
 const CENTER_VOICE: usize = 2;
 
-pub struct Osc2<'a> {
+pub struct Osc2<'a, 'b> {
     detune: f32,
     frequency: f32,
     breadth: f32,
-    pan_combiantion: f32,
+    pan_combination: f32,
     wavetable: f32,
     wavetable_spread: f32,
     total_amplitude: f32,
-    voices: [Voice<'a, 'a>; VOICES_LEN],
+    voices: [Voice<'a, 'b>; VOICES_LEN],
 }
 
 // TODO: Pass FM wavetable from the outside
-impl<'a> Osc2<'a> {
-    pub fn new(wavetables: [&'a Wavetable; WAVETABLES_LEN], sample_rate: u32) -> Self {
+impl<'a, 'b> Osc2<'a, 'b> {
+    pub fn new(
+        wavetables: [&'a Wavetable; WAVETABLES_LEN],
+        fm_wavetable: &'b Wavetable,
+        sample_rate: u32,
+    ) -> Self {
         let mut osc2 = Self {
             detune: 0.0,
             frequency: 0.0,
             breadth: 0.0,
-            pan_combiantion: 0.0,
+            pan_combination: 0.0,
             wavetable: 0.0,
             wavetable_spread: 0.0,
             total_amplitude: 0.0,
             voices: [
-                Voice::new(wavetables, wavetables[0], sample_rate),
-                Voice::new(wavetables, wavetables[0], sample_rate),
-                Voice::new(wavetables, wavetables[0], sample_rate),
-                Voice::new(wavetables, wavetables[0], sample_rate),
-                Voice::new(wavetables, wavetables[0], sample_rate),
+                Voice::new(wavetables, fm_wavetable, sample_rate),
+                Voice::new(wavetables, fm_wavetable, sample_rate),
+                Voice::new(wavetables, fm_wavetable, sample_rate),
+                Voice::new(wavetables, fm_wavetable, sample_rate),
+                Voice::new(wavetables, fm_wavetable, sample_rate),
             ],
         };
         osc2.tune_voices();
         osc2.amplify_voices();
         osc2.shape_voices();
-        osc2.set_pan_combiantion(0.0);
+        osc2.set_pan_combination(0.0);
         osc2
     }
 
@@ -82,17 +86,17 @@ impl<'a> Osc2<'a> {
         self.breadth
     }
 
-    pub fn set_pan_combiantion(&mut self, pan_combiantion: f32) -> &mut Self {
-        self.pan_combiantion = pan_combiantion;
-        let pans = pan::distribute(self.pan_combiantion);
+    pub fn set_pan_combination(&mut self, pan_combination: f32) -> &mut Self {
+        self.pan_combination = pan_combination;
+        let pans = pan::distribute(self.pan_combination);
         for (i, voice) in self.voices.iter_mut().enumerate() {
             voice.oscillator.set_pan(pans[i]);
         }
         self
     }
 
-    pub fn pan_combiantion(&self) -> f32 {
-        self.pan_combiantion
+    pub fn pan_combination(&self) -> f32 {
+        self.pan_combination
     }
 
     pub fn set_wavetable(&mut self, wavetable: f32) -> &mut Self {
@@ -113,6 +117,20 @@ impl<'a> Osc2<'a> {
 
     pub fn wavetable_spread(&self) -> f32 {
         self.wavetable_spread
+    }
+
+    pub fn set_fm_multiple(&mut self, multiple: f32) -> &mut Self {
+        self.voices.iter_mut().for_each(|v| {
+            v.oscillator.set_fm_multiple(multiple);
+        });
+        self
+    }
+
+    pub fn set_fm_intensity(&mut self, intensity: f32) -> &mut Self {
+        self.voices.iter_mut().for_each(|v| {
+            v.oscillator.set_fm_intensity(intensity);
+        });
+        self
     }
 
     pub fn reset_phase(&mut self) -> &mut Self {
@@ -226,12 +244,12 @@ mod tests {
 
     #[test]
     fn initialize() {
-        let _osc2 = Osc2::new(wavetables(), SAMPLE_RATE);
+        let _osc2 = Osc2::new(wavetables(), &SINE_WAVETABLE, SAMPLE_RATE);
     }
 
     #[test]
     fn populate_buffer() {
-        let mut osc2 = Osc2::new(wavetables(), SAMPLE_RATE);
+        let mut osc2 = Osc2::new(wavetables(), &SINE_WAVETABLE, SAMPLE_RATE);
         osc2.set_frequency(440.0);
 
         let mut buffer_left = [0.0; 8];
@@ -250,49 +268,49 @@ mod tests {
 
     #[test]
     fn set_frequency() {
-        let mut osc2 = Osc2::new(wavetables(), SAMPLE_RATE);
+        let mut osc2 = Osc2::new(wavetables(), &SINE_WAVETABLE, SAMPLE_RATE);
         osc2.set_frequency(880.0);
         assert_eq!(osc2.frequency(), 880.0);
     }
 
     #[test]
     fn set_wavetable() {
-        let mut osc2 = Osc2::new(wavetables(), SAMPLE_RATE);
+        let mut osc2 = Osc2::new(wavetables(), &SINE_WAVETABLE, SAMPLE_RATE);
         osc2.set_wavetable(2.1);
         assert_eq!(osc2.wavetable(), 2.1);
     }
 
     #[test]
     fn set_wavetable_spread() {
-        let mut osc2 = Osc2::new(wavetables(), SAMPLE_RATE);
+        let mut osc2 = Osc2::new(wavetables(), &SINE_WAVETABLE, SAMPLE_RATE);
         osc2.set_wavetable_spread(0.1);
         assert_eq!(osc2.wavetable_spread(), 0.1);
     }
 
     #[test]
     fn set_detune() {
-        let mut osc2 = Osc2::new(wavetables(), SAMPLE_RATE);
+        let mut osc2 = Osc2::new(wavetables(), &SINE_WAVETABLE, SAMPLE_RATE);
         osc2.set_detune(2.0);
         assert_eq!(osc2.detune(), 2.0);
     }
 
     #[test]
     fn set_breadth() {
-        let mut osc2 = Osc2::new(wavetables(), SAMPLE_RATE);
+        let mut osc2 = Osc2::new(wavetables(), &SINE_WAVETABLE, SAMPLE_RATE);
         osc2.set_breadth(0.5);
         assert_eq!(osc2.breadth(), 0.5);
     }
 
     #[test]
-    fn set_pan_combiantion() {
-        let mut osc2 = Osc2::new(wavetables(), SAMPLE_RATE);
-        osc2.set_pan_combiantion(0.5);
-        assert_eq!(osc2.pan_combiantion(), 0.5);
+    fn set_pan_combination() {
+        let mut osc2 = Osc2::new(wavetables(), &SINE_WAVETABLE, SAMPLE_RATE);
+        osc2.set_pan_combination(0.5);
+        assert_eq!(osc2.pan_combination(), 0.5);
     }
 
     #[test]
     fn reset_phase() {
-        let mut osc2 = Osc2::new(wavetables(), SAMPLE_RATE);
+        let mut osc2 = Osc2::new(wavetables(), &SINE_WAVETABLE, SAMPLE_RATE);
         osc2.set_frequency(440.0);
 
         let mut signal_a_left = [0.0; 20];
@@ -312,7 +330,7 @@ mod tests {
 
     #[test]
     fn detuned_voices_full_breadth() {
-        let mut osc2 = Osc2::new(wavetables(), SAMPLE_RATE);
+        let mut osc2 = Osc2::new(wavetables(), &SINE_WAVETABLE, SAMPLE_RATE);
         osc2.set_frequency(1000.0).set_detune(2.0).set_breadth(2.0);
 
         let magnitudes = voice_magnitudes_linear_detune(&mut osc2);
@@ -361,7 +379,7 @@ mod tests {
         const FREQUENCY: f32 = 23400.0;
         const DETUNE: f32 = 7.0;
 
-        let mut osc2 = Osc2::new(wavetables(), SAMPLE_RATE);
+        let mut osc2 = Osc2::new(wavetables(), &SINE_WAVETABLE, SAMPLE_RATE);
         osc2.set_frequency(FREQUENCY).set_detune(DETUNE);
 
         let lowest_expected = tone::detune_frequency(FREQUENCY, -DETUNE);
@@ -406,9 +424,9 @@ mod tests {
     }
 
     #[test]
-    fn zero_pan_combiantion() {
-        let mut osc2 = Osc2::new(wavetables(), SAMPLE_RATE);
-        osc2.set_frequency(440.0).set_pan_combiantion(0.0);
+    fn zero_pan_combination() {
+        let mut osc2 = Osc2::new(wavetables(), &SINE_WAVETABLE, SAMPLE_RATE);
+        osc2.set_frequency(440.0).set_pan_combination(0.0);
 
         let mut signal_a_left = [0.0; 20];
         let mut signal_a_right = [0.0; 20];
@@ -450,7 +468,7 @@ mod tests {
         #[test]
         #[ignore] // too slow for regular execution
         fn no_clipping(config in arbitrary_config()) {
-            let mut osc2 = Osc2::new(wavetables(), SAMPLE_RATE);
+        let mut osc2 = Osc2::new(wavetables(), &SINE_WAVETABLE, SAMPLE_RATE);
             osc2
                 .set_frequency(config.frequency)
                 .set_detune(config.detune)
@@ -472,7 +490,7 @@ mod tests {
         #[test]
         #[ignore] // too slow for regular execution
         fn no_aliasing(config in arbitrary_config()) {
-            let mut osc2 = Osc2::new(wavetables(), SAMPLE_RATE);
+        let mut osc2 = Osc2::new(wavetables(), &SINE_WAVETABLE, SAMPLE_RATE);
             osc2
                 .set_frequency(config.frequency)
                 .set_detune(config.detune)

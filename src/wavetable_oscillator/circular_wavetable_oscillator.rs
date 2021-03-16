@@ -3,8 +3,8 @@ use micromath::F32Ext;
 
 use super::oscillator::{Oscillator, StereoOscillator};
 use super::wavetable::{BandWavetable, Wavetable};
-use crate::xfade;
 use crate::tone;
+use crate::xfade;
 
 pub const MAX_WAVETABLES: usize = 8;
 

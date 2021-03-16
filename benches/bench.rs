@@ -29,7 +29,7 @@ fn criterion_benchmark(c: &mut Criterion) {
     c.bench_function("osc2", |b| {
         const SAMPLE_RATE: u32 = 48000;
         let wavetable = Wavetable::new(saw(), SAMPLE_RATE);
-        let mut osc2 = Osc2::new([&wavetable; WAVETABLES_LEN], SAMPLE_RATE);
+        let mut osc2 = Osc2::new([&wavetable; WAVETABLES_LEN], &wavetable, SAMPLE_RATE);
         osc2.set_frequency(440.0).set_breadth(2.0).set_detune(2.0);
         let mut buffer_left = [0.0; 64];
         let mut buffer_right = [0.0; 64];
