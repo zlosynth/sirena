@@ -1,3 +1,6 @@
+#[allow(unused_imports)]
+use micromath::F32Ext;
+
 use super::consts::VOICES_LEN;
 
 pub fn distribute(center: f32, radius: f32) -> [f32; VOICES_LEN] {
