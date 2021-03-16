@@ -50,9 +50,9 @@ lazy_static! {
 }
 
 #[repr(C)]
-struct WavetableOscillator3<'a> {
+struct WavetableOscillator3<'a, 'b> {
     pd_obj: pd_sys::t_object,
-    oscillator_module: sirena::wavetable_oscillator::CircularWavetableOscillator<'a>,
+    oscillator_module: sirena::wavetable_oscillator::CircularWavetableOscillator<'a, 'b>,
     signal_dummy: f32,
 }
 
@@ -85,6 +85,24 @@ unsafe extern "C" fn set_wavetable(
         .set_wavetable(value);
 }
 
+unsafe extern "C" fn set_fm_multiple(
+    wavetable_oscillator: *mut WavetableOscillator3,
+    value: pd_sys::t_float,
+) {
+    (*wavetable_oscillator)
+        .oscillator_module
+        .set_fm_multiple(value);
+}
+
+unsafe extern "C" fn set_fm_intensity(
+    wavetable_oscillator: *mut WavetableOscillator3,
+    value: pd_sys::t_float,
+) {
+    (*wavetable_oscillator)
+        .oscillator_module
+        .set_fm_intensity(value);
+}
+
 unsafe extern "C" fn new(initial_frequency: pd_sys::t_float) -> *mut c_void {
     let wavetable_oscillator =
         pd_sys::pd_new(WAVETABLE_OSCILLATOR_2_CLASS.unwrap()) as *mut WavetableOscillator3;
@@ -101,6 +119,7 @@ unsafe extern "C" fn new(initial_frequency: pd_sys::t_float) -> *mut c_void {
             &WAVETABLE_G,
             &WAVETABLE_H,
         ],
+        &WAVETABLE_A,
         sample_rate,
     );
     oscillator.set_frequency(initial_frequency);
@@ -127,6 +146,8 @@ pub unsafe extern "C" fn setup() {
 
     register_set_frequency_method(class);
     register_set_wavetable_method(class);
+    register_set_fm_multiple_method(class);
+    register_set_fm_intensity_method(class);
 }
 
 unsafe fn create_class() -> *mut pd_sys::_class {
@@ -167,6 +188,32 @@ unsafe fn register_set_wavetable_method(class: *mut pd_sys::_class) {
             _,
         >(set_wavetable)),
         pd_sys::gensym(cstr::cstr("w").as_ptr()),
+        pd_sys::t_atomtype::A_FLOAT,
+        0,
+    );
+}
+
+unsafe fn register_set_fm_multiple_method(class: *mut pd_sys::_class) {
+    pd_sys::class_addmethod(
+        class,
+        Some(std::mem::transmute::<
+            unsafe extern "C" fn(*mut WavetableOscillator3, pd_sys::t_float),
+            _,
+        >(set_fm_multiple)),
+        pd_sys::gensym(cstr::cstr("fm").as_ptr()),
+        pd_sys::t_atomtype::A_FLOAT,
+        0,
+    );
+}
+
+unsafe fn register_set_fm_intensity_method(class: *mut pd_sys::_class) {
+    pd_sys::class_addmethod(
+        class,
+        Some(std::mem::transmute::<
+            unsafe extern "C" fn(*mut WavetableOscillator3, pd_sys::t_float),
+            _,
+        >(set_fm_intensity)),
+        pd_sys::gensym(cstr::cstr("fmi").as_ptr()),
         pd_sys::t_atomtype::A_FLOAT,
         0,
     );

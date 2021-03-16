@@ -4,10 +4,11 @@ use micromath::F32Ext;
 use super::oscillator::{Oscillator, StereoOscillator};
 use super::wavetable::{BandWavetable, Wavetable};
 use crate::xfade;
+use crate::tone;
 
 pub const MAX_WAVETABLES: usize = 8;
 
-pub struct CircularWavetableOscillator<'a> {
+pub struct CircularWavetableOscillator<'a, 'b> {
     sample_rate: u32,
     frequency: f32,
     amplitude: f32,
@@ -15,10 +16,18 @@ pub struct CircularWavetableOscillator<'a> {
     phase: f32,
     pan: f32,
     wavetables: [&'a Wavetable; MAX_WAVETABLES],
+    fm_multiple: f32,
+    fm_intensity: f32,
+    fm_phase: f32,
+    fm_wavetable: &'b Wavetable,
 }
 
-impl<'a> CircularWavetableOscillator<'a> {
-    pub fn new(wavetables: [&'a Wavetable; MAX_WAVETABLES], sample_rate: u32) -> Self {
+impl<'a, 'b> CircularWavetableOscillator<'a, 'b> {
+    pub fn new(
+        wavetables: [&'a Wavetable; MAX_WAVETABLES],
+        fm_wavetable: &'b Wavetable,
+        sample_rate: u32,
+    ) -> Self {
         Self {
             sample_rate,
             frequency: 440.0,
@@ -27,6 +36,10 @@ impl<'a> CircularWavetableOscillator<'a> {
             phase: 0.0,
             pan: 0.0,
             wavetables,
+            fm_multiple: 0.0,
+            fm_intensity: 0.0,
+            fm_phase: 0.0,
+            fm_wavetable,
         }
     }
 
@@ -38,9 +51,13 @@ impl<'a> CircularWavetableOscillator<'a> {
         let band_wavetable_a = self.wavetables[wavetable_a_index].band(self.frequency);
         let band_wavetable_b = self.wavetables[wavetable_b_index].band(self.frequency);
 
-        let interval_in_samples = self.frequency / self.sample_rate as f32;
+        let fm_band_wavetable = self.fm_wavetable.band(self.frequency * self.fm_multiple);
+        let fm_interval_in_samples = (self.fm_multiple * self.frequency) / self.sample_rate as f32;
 
         for i in 0..buffers[0].len() {
+            let modulation = fm_band_wavetable.read(self.fm_phase) * self.fm_intensity;
+            let frequency = tone::detune_frequency(self.frequency, modulation);
+            let interval_in_samples = frequency / self.sample_rate as f32;
             match method {
                 FillMethod::Overwrite => {
                     let value = mix_and_read_wavetables(
@@ -81,6 +98,9 @@ impl<'a> CircularWavetableOscillator<'a> {
 
             self.phase += interval_in_samples;
             self.phase %= 1.0;
+
+            self.fm_phase += fm_interval_in_samples;
+            self.fm_phase %= 1.0;
         }
     }
 
@@ -91,6 +111,24 @@ impl<'a> CircularWavetableOscillator<'a> {
 
     pub fn wavetable(&self) -> f32 {
         self.wavetable
+    }
+
+    pub fn set_fm_multiple(&mut self, fm_multiple: f32) -> &mut Self {
+        self.fm_multiple = fm_multiple;
+        self
+    }
+
+    pub fn fm_multiple(&self) -> f32 {
+        self.fm_multiple
+    }
+
+    pub fn set_fm_intensity(&mut self, fm_intensity: f32) -> &mut Self {
+        self.fm_intensity = fm_intensity;
+        self
+    }
+
+    pub fn fm_intensity(&self) -> f32 {
+        self.fm_intensity
     }
 }
 
@@ -125,7 +163,7 @@ enum FillMethod {
     Dry,
 }
 
-impl<'a> Oscillator for CircularWavetableOscillator<'a> {
+impl<'a, 'b> Oscillator for CircularWavetableOscillator<'a, 'b> {
     fn set_frequency(&mut self, frequency: f32) -> &mut Self {
         self.frequency = frequency;
         self
@@ -162,7 +200,7 @@ impl<'a> Oscillator for CircularWavetableOscillator<'a> {
     }
 }
 
-impl<'a> StereoOscillator for CircularWavetableOscillator<'a> {
+impl<'a, 'b> StereoOscillator for CircularWavetableOscillator<'a, 'b> {
     fn set_pan(&mut self, pan: f32) -> &mut Self {
         self.pan = (pan + 1.0) / 2.0;
         self
@@ -199,61 +237,91 @@ mod tests {
 
     #[test]
     fn initialize() {
-        let _wavetable_oscillator =
-            CircularWavetableOscillator::new([&SINE_WAVETABLE; MAX_WAVETABLES], SAMPLE_RATE);
+        let _wavetable_oscillator = CircularWavetableOscillator::new(
+            [&SINE_WAVETABLE; MAX_WAVETABLES],
+            &SINE_WAVETABLE,
+            SAMPLE_RATE,
+        );
     }
 
     #[test]
     fn get_first_sample() {
-        let mut wavetable_oscillator =
-            CircularWavetableOscillator::new([&SINE_WAVETABLE; MAX_WAVETABLES], SAMPLE_RATE);
+        let mut wavetable_oscillator = CircularWavetableOscillator::new(
+            [&SINE_WAVETABLE; MAX_WAVETABLES],
+            &SINE_WAVETABLE,
+            SAMPLE_RATE,
+        );
         tests::get_first_sample(&mut wavetable_oscillator);
     }
 
     #[test]
     fn get_multiple_samples() {
-        let mut wavetable_oscillator =
-            CircularWavetableOscillator::new([&SINE_WAVETABLE; MAX_WAVETABLES], SAMPLE_RATE);
+        let mut wavetable_oscillator = CircularWavetableOscillator::new(
+            [&SINE_WAVETABLE; MAX_WAVETABLES],
+            &SINE_WAVETABLE,
+            SAMPLE_RATE,
+        );
         tests::get_multiple_samples(&mut wavetable_oscillator);
     }
 
     #[test]
     fn set_frequency() {
-        let mut wavetable_oscillator_a =
-            CircularWavetableOscillator::new([&SINE_WAVETABLE; MAX_WAVETABLES], SAMPLE_RATE);
-        let mut wavetable_oscillator_b =
-            CircularWavetableOscillator::new([&SINE_WAVETABLE; MAX_WAVETABLES], SAMPLE_RATE);
+        let mut wavetable_oscillator_a = CircularWavetableOscillator::new(
+            [&SINE_WAVETABLE; MAX_WAVETABLES],
+            &SINE_WAVETABLE,
+            SAMPLE_RATE,
+        );
+        let mut wavetable_oscillator_b = CircularWavetableOscillator::new(
+            [&SINE_WAVETABLE; MAX_WAVETABLES],
+            &SINE_WAVETABLE,
+            SAMPLE_RATE,
+        );
         tests::set_frequency(&mut wavetable_oscillator_a, &mut wavetable_oscillator_b);
     }
 
     #[test]
     fn get_frequency() {
-        let mut wavetable_oscillator =
-            CircularWavetableOscillator::new([&SINE_WAVETABLE; MAX_WAVETABLES], SAMPLE_RATE);
+        let mut wavetable_oscillator = CircularWavetableOscillator::new(
+            [&SINE_WAVETABLE; MAX_WAVETABLES],
+            &SINE_WAVETABLE,
+            SAMPLE_RATE,
+        );
         tests::get_frequency(&mut wavetable_oscillator);
     }
 
     #[test]
     fn get_pan() {
-        let mut wavetable_oscillator =
-            CircularWavetableOscillator::new([&SINE_WAVETABLE; MAX_WAVETABLES], SAMPLE_RATE);
+        let mut wavetable_oscillator = CircularWavetableOscillator::new(
+            [&SINE_WAVETABLE; MAX_WAVETABLES],
+            &SINE_WAVETABLE,
+            SAMPLE_RATE,
+        );
         tests::get_pan(&mut wavetable_oscillator);
     }
 
     #[test]
     fn set_sample_rate() {
-        let mut wavetable_oscillator_a =
-            CircularWavetableOscillator::new([&SINE_WAVETABLE; MAX_WAVETABLES], 1000);
-        let mut wavetable_oscillator_b =
-            CircularWavetableOscillator::new([&SINE_WAVETABLE; MAX_WAVETABLES], 1100);
+        let mut wavetable_oscillator_a = CircularWavetableOscillator::new(
+            [&SINE_WAVETABLE; MAX_WAVETABLES],
+            &SINE_WAVETABLE,
+            1000,
+        );
+        let mut wavetable_oscillator_b = CircularWavetableOscillator::new(
+            [&SINE_WAVETABLE; MAX_WAVETABLES],
+            &SINE_WAVETABLE,
+            1100,
+        );
         tests::set_sample_rate(&mut wavetable_oscillator_a, &mut wavetable_oscillator_b);
     }
 
     #[test]
     #[ignore] // too slow for regular execution
     fn check_all_notes_for_aliasing() {
-        let mut wavetable_oscillator =
-            CircularWavetableOscillator::new([&SAW_WAVETABLE; MAX_WAVETABLES], SAMPLE_RATE);
+        let mut wavetable_oscillator = CircularWavetableOscillator::new(
+            [&SINE_WAVETABLE; MAX_WAVETABLES],
+            &SINE_WAVETABLE,
+            SAMPLE_RATE,
+        );
 
         wavetable_oscillator.set_wavetable(0.0);
         tests::check_all_fifths_for_aliasing(&mut wavetable_oscillator);
@@ -267,29 +335,41 @@ mod tests {
 
     #[test]
     fn set_amplitude() {
-        let mut wavetable_oscillator =
-            CircularWavetableOscillator::new([&SINE_WAVETABLE; MAX_WAVETABLES], SAMPLE_RATE);
+        let mut wavetable_oscillator = CircularWavetableOscillator::new(
+            [&SINE_WAVETABLE; MAX_WAVETABLES],
+            &SINE_WAVETABLE,
+            SAMPLE_RATE,
+        );
         tests::set_amplitude(&mut wavetable_oscillator);
     }
 
     #[test]
     fn get_amplitude() {
-        let mut wavetable_oscillator =
-            CircularWavetableOscillator::new([&SINE_WAVETABLE; MAX_WAVETABLES], SAMPLE_RATE);
+        let mut wavetable_oscillator = CircularWavetableOscillator::new(
+            [&SINE_WAVETABLE; MAX_WAVETABLES],
+            &SINE_WAVETABLE,
+            SAMPLE_RATE,
+        );
         tests::get_amplitude(&mut wavetable_oscillator);
     }
 
     #[test]
     fn reset_phase() {
-        let mut wavetable_oscillator =
-            CircularWavetableOscillator::new([&SINE_WAVETABLE; MAX_WAVETABLES], SAMPLE_RATE);
+        let mut wavetable_oscillator = CircularWavetableOscillator::new(
+            [&SINE_WAVETABLE; MAX_WAVETABLES],
+            &SINE_WAVETABLE,
+            SAMPLE_RATE,
+        );
         tests::reset_phase(&mut wavetable_oscillator);
     }
 
     #[test]
     fn stereo_panning() {
-        let mut wavetable_oscillator =
-            CircularWavetableOscillator::new([&SINE_WAVETABLE; MAX_WAVETABLES], SAMPLE_RATE);
+        let mut wavetable_oscillator = CircularWavetableOscillator::new(
+            [&SINE_WAVETABLE; MAX_WAVETABLES],
+            &SINE_WAVETABLE,
+            SAMPLE_RATE,
+        );
         tests::stereo_panning(&mut wavetable_oscillator);
     }
 
@@ -306,6 +386,7 @@ mod tests {
                 &SAW_WAVETABLE,
                 &SAW_WAVETABLE,
             ],
+            &SINE_WAVETABLE,
             SAMPLE_RATE,
         );
         wavetable_oscillator.set_frequency(1.0);
@@ -335,8 +416,11 @@ mod tests {
 
     #[test]
     fn get_wavetable() {
-        let mut wavetable_oscillator =
-            CircularWavetableOscillator::new([&SINE_WAVETABLE; MAX_WAVETABLES], SAMPLE_RATE);
+        let mut wavetable_oscillator = CircularWavetableOscillator::new(
+            [&SINE_WAVETABLE; MAX_WAVETABLES],
+            &SINE_WAVETABLE,
+            SAMPLE_RATE,
+        );
         assert!(3.0 < MAX_WAVETABLES as f32, "invalid test parameter");
         wavetable_oscillator.set_wavetable(3.0);
         assert_relative_eq!(wavetable_oscillator.wavetable(), 3.0);
@@ -344,8 +428,11 @@ mod tests {
 
     #[test]
     fn roll_over_top_wavetable() {
-        let mut wavetable_oscillator =
-            CircularWavetableOscillator::new([&SINE_WAVETABLE; MAX_WAVETABLES], SAMPLE_RATE);
+        let mut wavetable_oscillator = CircularWavetableOscillator::new(
+            [&SINE_WAVETABLE; MAX_WAVETABLES],
+            &SINE_WAVETABLE,
+            SAMPLE_RATE,
+        );
         let set_wavetable = MAX_WAVETABLES as f32 + 1.0;
         let expected_wavetable = 1.0;
         wavetable_oscillator.set_wavetable(set_wavetable);
@@ -354,8 +441,11 @@ mod tests {
 
     #[test]
     fn check_bellow_bottom_wavetable() {
-        let mut wavetable_oscillator =
-            CircularWavetableOscillator::new([&SINE_WAVETABLE; MAX_WAVETABLES], SAMPLE_RATE);
+        let mut wavetable_oscillator = CircularWavetableOscillator::new(
+            [&SINE_WAVETABLE; MAX_WAVETABLES],
+            &SINE_WAVETABLE,
+            SAMPLE_RATE,
+        );
         let set_wavetable = -1.0;
         let expected_wavetable = MAX_WAVETABLES as f32 - 1.0;
         wavetable_oscillator.set_wavetable(set_wavetable);
@@ -375,6 +465,7 @@ mod tests {
                 &SAW_WAVETABLE,
                 &SAW_WAVETABLE,
             ],
+            &SINE_WAVETABLE,
             SAMPLE_RATE,
         );
         wavetable_oscillator.set_frequency(1.0);
@@ -398,6 +489,7 @@ mod tests {
                 &SAW_WAVETABLE,
                 &TRIANGLE_WAVETABLE,
             ],
+            &SINE_WAVETABLE,
             SAMPLE_RATE,
         );
         wavetable_oscillator.set_frequency(1.0);
@@ -447,5 +539,27 @@ mod tests {
         let expected =
             band_wavetable_a.read(phase) * (1.0 - xfade) + band_wavetable_b.read(phase) * xfade;
         assert_relative_eq!(value, expected);
+    }
+
+    #[test]
+    fn set_fm_multiple() {
+        let mut wavetable_oscillator = CircularWavetableOscillator::new(
+            [&SINE_WAVETABLE; MAX_WAVETABLES],
+            &SINE_WAVETABLE,
+            SAMPLE_RATE,
+        );
+        wavetable_oscillator.set_fm_multiple(0.01);
+        assert_relative_eq!(wavetable_oscillator.fm_multiple(), 0.01);
+    }
+
+    #[test]
+    fn set_fm_intensity() {
+        let mut wavetable_oscillator = CircularWavetableOscillator::new(
+            [&SINE_WAVETABLE; MAX_WAVETABLES],
+            &SINE_WAVETABLE,
+            SAMPLE_RATE,
+        );
+        wavetable_oscillator.set_fm_intensity(0.1);
+        assert_relative_eq!(wavetable_oscillator.fm_intensity(), 0.1);
     }
 }

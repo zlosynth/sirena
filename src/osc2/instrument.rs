@@ -20,9 +20,10 @@ pub struct Osc2<'a> {
     wavetable: f32,
     wavetable_spread: f32,
     total_amplitude: f32,
-    voices: [Voice<'a>; VOICES_LEN],
+    voices: [Voice<'a, 'a>; VOICES_LEN],
 }
 
+// TODO: Pass FM wavetable from the outside
 impl<'a> Osc2<'a> {
     pub fn new(wavetables: [&'a Wavetable; WAVETABLES_LEN], sample_rate: u32) -> Self {
         let mut osc2 = Self {
@@ -34,11 +35,11 @@ impl<'a> Osc2<'a> {
             wavetable_spread: 0.0,
             total_amplitude: 0.0,
             voices: [
-                Voice::new(wavetables, sample_rate),
-                Voice::new(wavetables, sample_rate),
-                Voice::new(wavetables, sample_rate),
-                Voice::new(wavetables, sample_rate),
-                Voice::new(wavetables, sample_rate),
+                Voice::new(wavetables, wavetables[0], sample_rate),
+                Voice::new(wavetables, wavetables[0], sample_rate),
+                Voice::new(wavetables, wavetables[0], sample_rate),
+                Voice::new(wavetables, wavetables[0], sample_rate),
+                Voice::new(wavetables, wavetables[0], sample_rate),
             ],
         };
         osc2.tune_voices();
@@ -177,14 +178,18 @@ fn calculate_total_amplitude(amplitudes: &[f32]) -> f32 {
     }
 }
 
-struct Voice<'a> {
-    oscillator: CircularWavetableOscillator<'a>,
+struct Voice<'a, 'b> {
+    oscillator: CircularWavetableOscillator<'a, 'b>,
 }
 
-impl<'a> Voice<'a> {
-    pub fn new(wavetables: [&'a Wavetable; WAVETABLES_LEN], sample_rate: u32) -> Self {
+impl<'a, 'b> Voice<'a, 'b> {
+    pub fn new(
+        wavetables: [&'a Wavetable; WAVETABLES_LEN],
+        fm_wavetable: &'b Wavetable,
+        sample_rate: u32,
+    ) -> Self {
         Self {
-            oscillator: CircularWavetableOscillator::new(wavetables, sample_rate),
+            oscillator: CircularWavetableOscillator::new(wavetables, fm_wavetable, sample_rate),
         }
     }
 }
