@@ -2,6 +2,8 @@
 
 Audio signal processing primitives, instruments and Pure Data externals.
 
+The API is experimental and should not be expected to be stable.
+
 ## Development
 
 ``` sh
