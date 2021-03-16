@@ -62,6 +62,10 @@ unsafe extern "C" fn set_wavetable(osc2: *mut Osc2, value: pd_sys::t_float) {
     (*osc2).osc2_module.set_wavetable(value);
 }
 
+unsafe extern "C" fn set_wavetable_spread(osc2: *mut Osc2, value: pd_sys::t_float) {
+    (*osc2).osc2_module.set_wavetable_spread(value);
+}
+
 unsafe extern "C" fn set_pan_combiantion(osc2: *mut Osc2, value: pd_sys::t_float) {
     (*osc2).osc2_module.set_pan_combiantion(value);
 }
@@ -114,7 +118,7 @@ pub unsafe extern "C" fn setup() {
     register_float_method(class, "d", set_detune);
     register_float_method(class, "b", set_breadth);
     register_float_method(class, "w", set_wavetable);
-    register_float_method(class, "p", set_pan_combiantion);
+    register_float_method(class, "ws", set_wavetable_spread);
     register_float_method(class, "p", set_pan_combiantion);
     register_reset_phase_method(class);
 }

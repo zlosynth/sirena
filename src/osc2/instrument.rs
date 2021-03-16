@@ -1,6 +1,7 @@
 use super::breadth;
 use super::detune;
 use super::pan;
+use super::wave;
 use crate::wavetable_oscillator::circular_wavetable_oscillator;
 use crate::wavetable_oscillator::{
     CircularWavetableOscillator, Oscillator, StereoOscillator, Wavetable,
@@ -16,6 +17,8 @@ pub struct Osc2<'a> {
     frequency: f32,
     breadth: f32,
     pan_combiantion: f32,
+    wavetable: f32,
+    wavetable_spread: f32,
     total_amplitude: f32,
     voices: [Voice<'a>; VOICES_LEN],
 }
@@ -27,6 +30,8 @@ impl<'a> Osc2<'a> {
             frequency: 0.0,
             breadth: 0.0,
             pan_combiantion: 0.0,
+            wavetable: 0.0,
+            wavetable_spread: 0.0,
             total_amplitude: 0.0,
             voices: [
                 Voice::new(wavetables, sample_rate),
@@ -38,6 +43,7 @@ impl<'a> Osc2<'a> {
         };
         osc2.tune_voices();
         osc2.amplify_voices();
+        osc2.shape_voices();
         osc2.set_pan_combiantion(0.0);
         osc2
     }
@@ -88,14 +94,24 @@ impl<'a> Osc2<'a> {
         self.pan_combiantion
     }
 
-    pub fn set_wavetable(&mut self, wavetable: f32) {
-        self.voices.iter_mut().for_each(|v| {
-            v.oscillator.set_wavetable(wavetable);
-        });
+    pub fn set_wavetable(&mut self, wavetable: f32) -> &mut Self {
+        self.wavetable = wavetable;
+        self.shape_voices();
+        self
     }
 
     pub fn wavetable(&self) -> f32 {
-        self.voices[CENTER_VOICE].oscillator.wavetable()
+        self.wavetable
+    }
+
+    pub fn set_wavetable_spread(&mut self, spread: f32) -> &mut Self {
+        self.wavetable_spread = spread;
+        self.shape_voices();
+        self
+    }
+
+    pub fn wavetable_spread(&self) -> f32 {
+        self.wavetable_spread
     }
 
     pub fn reset_phase(&mut self) -> &mut Self {
@@ -142,6 +158,13 @@ impl<'a> Osc2<'a> {
         });
 
         self.total_amplitude = calculate_total_amplitude(&breadths);
+    }
+
+    fn shape_voices(&mut self) {
+        let waves = wave::distribute(self.wavetable, self.wavetable_spread);
+        self.voices.iter_mut().enumerate().for_each(|(i, v)| {
+            v.oscillator.set_wavetable(waves[i]);
+        });
     }
 }
 
@@ -232,6 +255,13 @@ mod tests {
         let mut osc2 = Osc2::new(wavetables(), SAMPLE_RATE);
         osc2.set_wavetable(2.1);
         assert_eq!(osc2.wavetable(), 2.1);
+    }
+
+    #[test]
+    fn set_wavetable_spread() {
+        let mut osc2 = Osc2::new(wavetables(), SAMPLE_RATE);
+        osc2.set_wavetable_spread(0.1);
+        assert_eq!(osc2.wavetable_spread(), 0.1);
     }
 
     #[test]
