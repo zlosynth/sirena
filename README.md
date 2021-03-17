@@ -1,8 +1,10 @@
 # Sirena
 
-Audio signal processing primitives, instruments and Pure Data externals.
+Audio signal processing playground, primitives, instruments and Pure Data
+externals.
 
-The API is experimental and should not be expected to be stable.
+The goal is to allow fast prototyping. The API is experimental and should not be
+expected to be stable.
 
 ## Development
 
