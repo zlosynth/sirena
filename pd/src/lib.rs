@@ -11,6 +11,7 @@ extern crate lazy_static;
 mod wrapper;
 
 pub mod all_pass_filter;
+pub mod bitcrusher;
 pub mod comb_filter;
 pub mod counter;
 pub mod delay;
@@ -61,6 +62,7 @@ pub unsafe extern "C" fn sirena_setup() {
     state_variable_filter::setup();
     osc1::setup();
     osc2::setup();
+    bitcrusher::setup();
 }
 
 unsafe fn create_class() -> *mut pd_sys::_class {
