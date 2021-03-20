@@ -1,6 +1,6 @@
 pub struct Bitcrusher {
     rate: u32,
-    resolution_mask: u32,
+    resolution_multiple: f32,
     last_sampled: f32,
     since_sample: u32,
 }
@@ -9,7 +9,7 @@ impl Bitcrusher {
     pub fn new() -> Self {
         Self {
             rate: 1,
-            resolution_mask: 0xffffffff,
+            resolution_multiple: 1.0,
             last_sampled: 0.0,
             since_sample: 0,
         }
@@ -21,16 +21,19 @@ impl Bitcrusher {
         self
     }
 
-    pub fn set_resolution(&mut self, resolution: u32) -> &mut Self {
-        assert!((1..=23).contains(&resolution));
-        self.resolution_mask = 0xffffffff - u32::pow(2, 23 - resolution) + 1;
+    pub fn set_resolution(&mut self, resolution: i32) -> &mut Self {
+        assert!((1..=24).contains(&resolution));
+        self.resolution_multiple = f32::powi(2.0, resolution as i32);
         self
     }
 
     pub fn process(&mut self, buffer: &mut [f32]) {
         buffer.iter_mut().for_each(|x| {
             if self.since_sample == 0 {
-                self.last_sampled = f32::from_bits(x.to_bits() & self.resolution_mask);
+                let multiplied = *x * self.resolution_multiple;
+                let truncated = multiplied.trunc();
+                let divided = truncated / self.resolution_multiple;
+                self.last_sampled = divided;
             }
 
             *x = self.last_sampled;
@@ -53,9 +56,9 @@ mod tests {
     #[test]
     fn leave_incact() {
         let mut bitcrusher = Bitcrusher::new();
-        bitcrusher.set_rate(1).set_resolution(23);
+        bitcrusher.set_rate(1).set_resolution(24);
 
-        let mut buffer = [10.0, 0.000000000000000000000000000000000000000000357];
+        let mut buffer = [10.0, 0.123456];
         let original_buffer = buffer;
 
         bitcrusher.process(&mut buffer);
@@ -67,7 +70,7 @@ mod tests {
     #[should_panic]
     fn resolution_over_range() {
         let mut bitcrusher = Bitcrusher::new();
-        bitcrusher.set_resolution(24);
+        bitcrusher.set_resolution(25);
     }
 
     #[test]
@@ -85,18 +88,15 @@ mod tests {
     }
 
     #[test]
-    fn lower_resolution_by_one_bit() {
+    fn lower_resolution_to_5_bits() {
         let mut bitcrusher = Bitcrusher::new();
-        bitcrusher.set_rate(1).set_resolution(22);
+        bitcrusher.set_rate(1).set_resolution(5);
 
-        let mut buffer = [10.0, 0.000000000000000000000000000000000000000000357];
+        let mut buffer = [10.0, 0.123456];
 
         bitcrusher.process(&mut buffer);
 
-        assert_eq!(
-            buffer,
-            [10.0, 0.000000000000000000000000000000000000000000356]
-        );
+        assert_eq!(buffer, [10.0, 0.09375]);
     }
 
     #[test]

@@ -31,7 +31,7 @@ unsafe extern "C" fn set_rate(bitcrusher: *mut Bitcrusher, value: pd_sys::t_floa
 unsafe extern "C" fn set_resolution(bitcrusher: *mut Bitcrusher, value: pd_sys::t_float) {
     (*bitcrusher)
         .bitcrusher_module
-        .set_resolution((value as u32).max(1).min(24));
+        .set_resolution((value as i32).max(1).min(24));
 }
 
 unsafe extern "C" fn new() -> *mut c_void {
