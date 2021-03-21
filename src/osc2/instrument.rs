@@ -387,6 +387,22 @@ mod tests {
         assert_no_aliasing(osc2, lowest_expected);
     }
 
+    #[test]
+    fn no_aliasing_of_high_detuned_voices_with_sine_and_voices_over_limits() {
+        const FREQUENCY: f32 = 18200.0;
+        const DETUNE: f32 = 12.0;
+        const BREADTH: f32 = 10.0;
+
+        let mut osc2 = Osc2::new(wavetables(), &SINE_WAVETABLE, SAMPLE_RATE);
+        osc2.set_frequency(FREQUENCY)
+            .set_detune(DETUNE)
+            .set_breadth(BREADTH);
+
+        let lowest_expected = tone::detune_frequency(FREQUENCY, -DETUNE);
+
+        assert_no_aliasing(osc2, lowest_expected);
+    }
+
     fn assert_no_aliasing(mut osc2: Osc2, lowest_expected: f32) {
         let mut buffer_left = [0.0; SAMPLE_RATE as usize];
         let mut buffer_right = [0.0; SAMPLE_RATE as usize];
@@ -401,6 +417,10 @@ mod tests {
         analysis.trash_range(0.0, 1.0);
 
         let lowest_peak = analysis.lowest_peak(0.04);
+        if relative_eq!(lowest_peak, 0.0) {
+            return;
+        }
+
         assert!(
             lowest_peak >= lowest_expected - 1.0,
             "expected >= {}, obtained {}",
