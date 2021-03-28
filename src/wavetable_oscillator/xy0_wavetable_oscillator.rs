@@ -4,7 +4,7 @@ use micromath::F32Ext;
 use super::oscillator::Oscillator;
 use super::wavetable::Wavetable;
 
-pub struct XY0WavetableOscillator<'a> {
+pub struct Xy0WavetableOscillator<'a> {
     wavetable_0: &'a Wavetable,
     wavetable_x: &'a Wavetable,
     wavetable_y: &'a Wavetable,
@@ -16,7 +16,7 @@ pub struct XY0WavetableOscillator<'a> {
     y: f32,
 }
 
-impl<'a> XY0WavetableOscillator<'a> {
+impl<'a> Xy0WavetableOscillator<'a> {
     pub fn new(
         wavetable_0: &'a Wavetable,
         wavetable_x: &'a Wavetable,
@@ -75,7 +75,7 @@ impl<'a> XY0WavetableOscillator<'a> {
     }
 }
 
-impl<'a> Oscillator for XY0WavetableOscillator<'a> {
+impl<'a> Oscillator for Xy0WavetableOscillator<'a> {
     fn set_frequency(&mut self, frequency: f32) -> &mut Self {
         self.frequency = frequency;
         self
@@ -130,12 +130,12 @@ mod tests {
         static ref SAW_WAVETABLE: Wavetable = Wavetable::new(digital_saw(), SAMPLE_RATE);
     }
 
-    fn wavetable_oscillator() -> XY0WavetableOscillator<'static> {
+    fn wavetable_oscillator() -> Xy0WavetableOscillator<'static> {
         wavetable_oscillator_with_sample_rate(SAMPLE_RATE)
     }
 
-    fn wavetable_oscillator_with_sample_rate(sample_rate: u32) -> XY0WavetableOscillator<'static> {
-        let mut wavetable_oscillator = XY0WavetableOscillator::new(
+    fn wavetable_oscillator_with_sample_rate(sample_rate: u32) -> Xy0WavetableOscillator<'static> {
+        let mut wavetable_oscillator = Xy0WavetableOscillator::new(
             &SINE_WAVETABLE,
             &TRIANGLE_WAVETABLE,
             &SAW_WAVETABLE,

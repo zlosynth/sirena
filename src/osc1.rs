@@ -1,5 +1,5 @@
 use crate::tone;
-use crate::wavetable_oscillator::{Oscillator, Wavetable, XY0WavetableOscillator};
+use crate::wavetable_oscillator::{Oscillator, Wavetable, Xy0WavetableOscillator};
 
 const MAX_VOICES: u32 = 7;
 
@@ -96,7 +96,7 @@ impl<'a> Osc1<'a> {
 }
 
 struct Voice<'a> {
-    pub oscillator: XY0WavetableOscillator<'a>,
+    pub oscillator: Xy0WavetableOscillator<'a>,
 }
 
 impl<'a> Voice<'a> {
@@ -107,7 +107,7 @@ impl<'a> Voice<'a> {
         sample_rate: u32,
     ) -> Self {
         Self {
-            oscillator: XY0WavetableOscillator::new(
+            oscillator: Xy0WavetableOscillator::new(
                 wavetable_a,
                 wavetable_b,
                 wavetable_c,

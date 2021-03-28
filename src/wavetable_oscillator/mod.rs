@@ -14,4 +14,4 @@ pub use oscillator::{Oscillator, StereoOscillator};
 pub use simple_wavetable_oscillator::SimpleWavetableOscillator;
 pub use waveshapes::{digital_saw, pulse, saw, sine, triangle};
 pub use wavetable::Wavetable;
-pub use xy0_wavetable_oscillator::XY0WavetableOscillator;
+pub use xy0_wavetable_oscillator::Xy0WavetableOscillator;
