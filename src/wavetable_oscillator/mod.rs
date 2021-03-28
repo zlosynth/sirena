@@ -7,7 +7,7 @@ pub mod wavetable;
 pub mod xy0_wavetable_oscillator;
 
 #[cfg(test)]
-mod tests;
+pub mod tests;
 
 pub use circular_wavetable_oscillator::CircularWavetableOscillator;
 pub use oscillator::{Oscillator, StereoOscillator};
