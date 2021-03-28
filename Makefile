@@ -13,6 +13,7 @@ lint:
 check:
 	cargo check --all
 	cargo check --benches --all
+	cargo check --no-default-features
 
 .PHONY: test
 test:

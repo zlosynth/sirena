@@ -1,3 +1,6 @@
+#[allow(unused_imports)]
+use micromath::F32Ext;
+
 pub struct Bitcrusher {
     rate: u32,
     resolution_multiple: f32,

@@ -1,3 +1,6 @@
+#[allow(unused_imports)]
+use micromath::F32Ext;
+
 pub fn linear(data: &[f32], position: f32) -> f32 {
     let index = position as usize;
     let remainder = position.fract();
