@@ -13,7 +13,7 @@ with the project.
 
 # License
 
-Software of Achordion is distributed under the terms of the General Public
+Software of Sirena is distributed under the terms of the General Public
 License version 3. See [LICENSE](LICENSE) for details.
 
 # Changelog
