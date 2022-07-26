@@ -1,10 +1,11 @@
 # Sirena
 
-Audio signal processing playground, primitives, instruments and Pure Data
-externals.
+Digital audio signal processing primitives.
 
-The goal is to allow fast prototyping. The API is experimental and should not be
-expected to be stable.
+## Razor
+
+* `#[no_std]`, targetted for embedded systems.
+* Each primitive must have two or more users.
 
 ## Development
 
