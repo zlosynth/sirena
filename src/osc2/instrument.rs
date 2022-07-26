@@ -413,7 +413,7 @@ mod tests {
     }
 
     fn assert_no_aliasing_in_buffer(buffer: &[f32], lowest_expected: f32, sample_rate: u32) {
-        let mut analysis = SpectralAnalysis::analyze(&buffer, sample_rate);
+        let mut analysis = SpectralAnalysis::analyze(buffer, sample_rate);
         analysis.trash_range(0.0, 1.0);
 
         let lowest_peak = analysis.lowest_peak(0.04);
@@ -499,12 +499,10 @@ mod tests {
             let mut buffer_left = [0.0; SAMPLE_RATE as usize];
             osc2.populate(&mut [&mut buffer_left[..], &mut buffer_right[..]]);
 
-            prop_assert!(buffer_left
-                .iter()
-                .find(|x| **x > 1.0).is_none());
-            prop_assert!(buffer_right
-                .iter()
-                .find(|x| **x > 1.0).is_none());
+            prop_assert!(!buffer_left
+                .iter().any(|x| *x > 1.0));
+            prop_assert!(!buffer_right
+                .iter().any(|x| *x > 1.0));
         }
 
         #[test]

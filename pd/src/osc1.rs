@@ -36,7 +36,7 @@ fn perform(
     _inlets: &[&mut [pd_sys::t_float]],
     outlets: &mut [&mut [pd_sys::t_float]],
 ) {
-    osc1.osc1_module.populate(&mut outlets[0]);
+    osc1.osc1_module.populate(outlets[0]);
 }
 
 unsafe extern "C" fn set_frequency(osc1: *mut Osc1, value: pd_sys::t_float) {

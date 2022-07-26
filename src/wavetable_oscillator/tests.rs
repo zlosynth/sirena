@@ -103,13 +103,12 @@ pub fn get_amplitude(oscillator: &mut impl Oscillator) {
 }
 
 pub fn check_all_fifths_for_aliasing(oscillator: &mut impl Oscillator) {
-    let notes: Vec<_> = (1..)
+    let notes = (1..)
         .step_by(5)
         .map(|i| 27.5 * f32::powf(2.0, i as f32 / 12.0))
-        .take_while(|x| *x < 22000.0)
-        .collect();
+        .take_while(|x| *x < 22000.0);
 
-    for note in notes.into_iter() {
+    for note in notes {
         check_note_for_aliasing(oscillator, note);
     }
 }

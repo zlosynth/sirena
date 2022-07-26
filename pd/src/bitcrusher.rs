@@ -18,7 +18,7 @@ fn perform(
     inlets: &[&mut [pd_sys::t_float]],
     outlets: &mut [&mut [pd_sys::t_float]],
 ) {
-    outlets[0].copy_from_slice(&inlets[0]);
+    outlets[0].copy_from_slice(inlets[0]);
     bitcrusher.bitcrusher_module.process(outlets[0]);
 }
 

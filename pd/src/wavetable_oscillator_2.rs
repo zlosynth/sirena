@@ -37,9 +37,7 @@ fn perform(
     _inlets: &[&mut [pd_sys::t_float]],
     outlets: &mut [&mut [pd_sys::t_float]],
 ) {
-    wavetable_oscillator
-        .oscillator_module
-        .populate(&mut outlets[0]);
+    wavetable_oscillator.oscillator_module.populate(outlets[0]);
 }
 
 unsafe extern "C" fn set_frequency(

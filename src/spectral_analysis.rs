@@ -8,7 +8,7 @@ pub struct SpectralAnalysis {
 
 impl SpectralAnalysis {
     pub fn analyze(signal: &[f32], sample_rate: u32) -> Self {
-        let magnitude = fft_magnitude(&signal);
+        let magnitude = fft_magnitude(signal);
         let bins_length = f32::ceil(signal.len() as f32 / 2.0) as usize;
         let bins: Vec<f32> = magnitude.iter().take(bins_length).copied().collect();
         let bin_width = sample_rate as f32 / signal.len() as f32;
@@ -120,8 +120,8 @@ mod tests {
 
         let magnitude = fft_magnitude(&signal);
 
-        for i in 0..magnitude.len() {
-            assert_relative_eq!(magnitude[i], 1.0);
+        for m in magnitude {
+            assert_relative_eq!(m, 1.0);
         }
     }
 
