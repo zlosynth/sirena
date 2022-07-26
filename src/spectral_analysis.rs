@@ -1,16 +1,17 @@
-use rustfft::num_complex::Complex32;
-use rustfft::FftPlanner;
+use heapless::Vec;
+
+const N: usize = 1024;
 
 pub struct SpectralAnalysis {
-    bins: Vec<f32>,
+    bins: Vec<f32, N>,
     bin_width: f32,
 }
 
 impl SpectralAnalysis {
-    pub fn analyze(signal: &[f32], sample_rate: u32) -> Self {
+    pub fn analyze(signal: &[f32; N], sample_rate: u32) -> Self {
         let magnitude = fft_magnitude(signal);
         let bins_length = f32::ceil(signal.len() as f32 / 2.0) as usize;
-        let bins: Vec<f32> = magnitude.iter().take(bins_length).copied().collect();
+        let bins: Vec<f32, N> = magnitude.iter().take(bins_length).copied().collect();
         let bin_width = sample_rate as f32 / signal.len() as f32;
         Self { bins, bin_width }
     }
@@ -77,7 +78,8 @@ fn lowest_peak_index(data: &[f32], relative_treshold: f32) -> usize {
 
     let treshold_finder = data.iter().enumerate();
     let peak_finder = treshold_finder.skip_while(|(_, x)| **x < treshold);
-    let peak_index = {
+
+    {
         let mut index = 0;
         let mut current_peak = 0.0;
         for (i, x) in peak_finder {
@@ -89,53 +91,45 @@ fn lowest_peak_index(data: &[f32], relative_treshold: f32) -> usize {
             }
         }
         index
-    };
-
-    peak_index
+    }
 }
 
-fn fft_magnitude(signal: &[f32]) -> Vec<f32> {
+fn fft_magnitude(signal: &[f32; N]) -> Vec<f32, N> {
     if signal.is_empty() {
         return Vec::new();
     }
 
-    let mut planner = FftPlanner::new();
-    let fft = planner.plan_fft_forward(signal.len());
+    let mut signal = *signal;
+    let spectrum = microfft::real::rfft_1024(&mut signal);
+    spectrum[0].im = 0.0;
 
-    let mut complex_buffer: Vec<_> = signal.iter().map(|x| Complex32::new(*x, 0.0)).collect();
-    fft.process(&mut complex_buffer);
+    let amplitudes: Vec<_, N> = spectrum.iter().map(|c| c.norm_sqr()).collect();
 
-    complex_buffer.iter().map(|x| x.norm()).collect()
+    amplitudes
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::noise;
-    use std::f32::consts::PI;
+    use crate::white_noise::WhiteNoise;
+    use core::f32::consts::PI;
 
     #[test]
     fn fft_magnitude_check() {
-        let signal = [1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0];
+        let mut signal = [0.0; N];
+        signal[0] = 1.0;
 
         let magnitude = fft_magnitude(&signal);
 
-        for m in magnitude {
-            assert_relative_eq!(m, 1.0);
+        for i in 0..magnitude.len() {
+            assert_relative_eq!(magnitude[i], 1.0);
         }
-    }
-
-    #[test]
-    fn fft_magnitude_check_empty_signal() {
-        let magnitude = fft_magnitude(&[]);
-
-        assert_eq!(magnitude.len(), 0);
     }
 
     #[test]
     fn initialize_analyzer() {
         const SAMPLE_RATE: u32 = 44100;
-        let _analysis = SpectralAnalysis::analyze(&[1.0, 0.0], SAMPLE_RATE);
+        let _analysis = SpectralAnalysis::analyze(&[1.0; N], SAMPLE_RATE);
     }
 
     fn write_sine(buffer: &mut [f32], frequency: f32, sample_rate: u32) {
@@ -149,8 +143,7 @@ mod tests {
         const SAMPLE_RATE: u32 = 11;
         let frequency = 3.0;
         let signal = {
-            const LENGTH_IN_SECONDS: u32 = 3;
-            let mut signal = [0.0; (SAMPLE_RATE * LENGTH_IN_SECONDS) as usize];
+            let mut signal = [0.0; N];
             write_sine(&mut signal, frequency, SAMPLE_RATE);
             signal
         };
@@ -169,8 +162,7 @@ mod tests {
         let ringing_frequency = 3.0;
         let silent_frequency = 1.0;
         let signal = {
-            const LENGTH_IN_SECONDS: u32 = 3;
-            let mut signal = [0.0; (SAMPLE_RATE * LENGTH_IN_SECONDS) as usize];
+            let mut signal = [0.0; N];
             write_sine(&mut signal, ringing_frequency, SAMPLE_RATE);
             signal
         };
@@ -188,7 +180,8 @@ mod tests {
     #[test]
     fn analyze_mean_magnitude_with_bottom_over_the_range() {
         const SAMPLE_RATE: u32 = 3;
-        let signal = [1.0, 0.0, 0.0, 0.0, 0.0, 0.0];
+        let mut signal = [0.0; N];
+        signal[0] = 1.0;
 
         let analysis = SpectralAnalysis::analyze(&signal, SAMPLE_RATE);
         let mean_magnitude = analysis.mean_magnitude(20.0, 21.0);
@@ -199,7 +192,8 @@ mod tests {
     #[test]
     fn analyze_mean_magnitude_with_top_over_the_range() {
         const SAMPLE_RATE: u32 = 3;
-        let signal = [1.0, 0.0, 0.0, 0.0, 0.0, 0.0];
+        let mut signal = [0.0; N];
+        signal[0] = 1.0;
 
         let analysis = SpectralAnalysis::analyze(&signal, SAMPLE_RATE);
         let mean_magnitude = analysis.mean_magnitude(1.0, 21.0);
@@ -211,9 +205,8 @@ mod tests {
     fn analyze_mean_magnitude_of_white_noise() {
         const SAMPLE_RATE: u32 = 1200;
 
-        const SIGNAL_LENGTH_IN_SECONDS: u32 = 1;
-        let mut signal = [0.0; SAMPLE_RATE as usize * SIGNAL_LENGTH_IN_SECONDS as usize];
-        noise::white_noise(&mut signal);
+        let mut signal = [0.0; N];
+        WhiteNoise::new().populate(&mut signal);
 
         let analysis = SpectralAnalysis::analyze(&signal, SAMPLE_RATE);
         let low_mean_magnitude = analysis.mean_magnitude(0.0, 200.0);
@@ -237,7 +230,7 @@ mod tests {
         const SAMPLE_RATE: u32 = 1000;
         let frequency = 29.0;
         let signal = {
-            let mut signal = [0.0; SAMPLE_RATE as usize];
+            let mut signal = [0.0; N];
             write_sine(&mut signal, frequency, SAMPLE_RATE);
             signal
         };
@@ -250,27 +243,33 @@ mod tests {
         let treshold = low_magnitude / center_magnitude;
 
         let lowest_peak = analysis.lowest_peak(treshold);
-        assert_relative_eq!(lowest_peak, frequency);
+        assert_relative_eq!(lowest_peak, frequency, epsilon = 0.3);
     }
 
     #[test]
     fn find_lowest_peak_index_without_slope() {
-        let data = [0.0, 0.0, 0.0, 9.0, 0.0, 10.0];
+        let mut data = [0.0; N];
+        data[N / 2] = 9.0;
+        data[3 * N / 4] = 10.0;
         let peak_index = lowest_peak_index(&data, 0.5);
-        assert_eq!(peak_index, 3);
+        assert_eq!(peak_index, N / 2);
     }
 
     #[test]
     fn find_lowest_peak_index_with_slope() {
-        let data = [0.0, 3.0, 6.0, 9.0, 0.0, 10.0];
+        let mut data = [0.0; N];
+        data[N / 2 - 2] = 3.0;
+        data[N / 2 - 1] = 6.0;
+        data[N / 2] = 9.0;
+        data[3 * N / 4] = 10.0;
         let peak_index = lowest_peak_index(&data, 0.5);
-        assert_eq!(peak_index, 3);
+        assert_eq!(peak_index, N / 2);
     }
 
     #[test]
     #[should_panic]
     fn panic_lowest_peak_index_treshold_below_zero() {
-        let data = [0.0, 1.0];
+        let data = [0.0; N];
         let _peak_index = lowest_peak_index(&data, -1.0);
     }
 
@@ -285,9 +284,8 @@ mod tests {
     fn trash_records() {
         const SAMPLE_RATE: u32 = 100;
 
-        const SIGNAL_LENGTH_IN_SECONDS: u32 = 1;
-        let mut signal = [0.0; SAMPLE_RATE as usize * SIGNAL_LENGTH_IN_SECONDS as usize];
-        noise::white_noise(&mut signal);
+        let mut signal = [0.0; N];
+        WhiteNoise::new().populate(&mut signal);
 
         let mut analysis = SpectralAnalysis::analyze(&signal, SAMPLE_RATE);
         analysis.trash_range(0.0, 50.0);
@@ -300,7 +298,7 @@ mod tests {
     #[should_panic]
     fn trash_panics_when_bottom_is_below_zero() {
         const SAMPLE_RATE: u32 = 100;
-        let signal = [0.0; 10];
+        let signal = [0.0; N];
 
         let mut analysis = SpectralAnalysis::analyze(&signal, SAMPLE_RATE);
 
@@ -311,7 +309,7 @@ mod tests {
     #[should_panic]
     fn trash_panics_when_bottom_is_above_top() {
         const SAMPLE_RATE: u32 = 100;
-        let signal = [0.0; 10];
+        let signal = [0.0; N];
 
         let mut analysis = SpectralAnalysis::analyze(&signal, SAMPLE_RATE);
 

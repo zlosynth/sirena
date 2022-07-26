@@ -5,28 +5,16 @@
 extern crate field_offset;
 
 #[macro_use]
-extern crate lazy_static;
-
-#[macro_use]
 mod wrapper;
 
-pub mod all_pass_filter;
 pub mod bitcrusher;
-pub mod comb_filter;
 pub mod counter;
-pub mod delay;
-pub mod osc1;
-pub mod osc2;
 pub mod state_variable_filter;
-pub mod wavetable_oscillator;
-pub mod wavetable_oscillator_2;
-pub mod wavetable_oscillator_3;
 pub mod xfade;
 
 mod cstr;
 mod log;
 mod numbers;
-mod time;
 
 use std::os::raw::c_void;
 
@@ -53,15 +41,7 @@ pub unsafe extern "C" fn sirena_setup() {
 
     counter::counter_setup();
     xfade::xfade_setup();
-    delay::delay_setup();
-    comb_filter::setup();
-    all_pass_filter::setup();
-    wavetable_oscillator::setup();
-    wavetable_oscillator_2::setup();
-    wavetable_oscillator_3::setup();
     state_variable_filter::setup();
-    osc1::setup();
-    osc2::setup();
     bitcrusher::setup();
 }
 

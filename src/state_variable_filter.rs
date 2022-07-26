@@ -1,7 +1,10 @@
-use core::f32::consts::PI;
 #[allow(unused_imports)]
 use micromath::F32Ext;
 
+use core::f32::consts::PI;
+
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
+#[derive(Debug)]
 pub struct StateVariableFilter {
     sample_rate: u32,
     bandform: Bandform,
@@ -68,7 +71,7 @@ impl StateVariableFilter {
     //      |                                                                      |
     //      +----------------------------------------------------------------------+
     //
-    fn tick(&mut self, value: f32) -> f32 {
+    pub fn tick(&mut self, value: f32) -> f32 {
         let sum_3 = self.delay_1 * self.f + self.delay_2;
         let sum_1 = value - sum_3 - self.delay_1 * self.q;
         let sum_2 = sum_1 * self.f + self.delay_1;
@@ -78,6 +81,7 @@ impl StateVariableFilter {
             HighPass => sum_1,
             BandPass => sum_2,
             BandReject => {
+                #[allow(clippy::let_and_return)]
                 let sum_4 = sum_1 + sum_3;
                 sum_4
             }
@@ -90,6 +94,8 @@ impl StateVariableFilter {
     }
 }
 
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
+#[derive(Debug)]
 pub enum Bandform {
     LowPass,
     HighPass,
@@ -102,8 +108,8 @@ pub use Bandform::*;
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::noise;
     use crate::spectral_analysis::SpectralAnalysis;
+    use crate::white_noise::WhiteNoise;
 
     #[test]
     fn initialize_filter() {
@@ -113,11 +119,10 @@ mod tests {
 
     #[test]
     fn low_pass() {
-        const SAMPLE_RATE: u32 = 1200;
+        const SAMPLE_RATE: u32 = 1024;
 
-        const SIGNAL_LENGTH_IN_SECONDS: u32 = 1;
-        let mut signal = [0.0; SAMPLE_RATE as usize * SIGNAL_LENGTH_IN_SECONDS as usize];
-        noise::white_noise(&mut signal);
+        let mut signal = [0.0; 1024];
+        WhiteNoise::new().populate(&mut signal);
 
         let mut filter = StateVariableFilter::new(SAMPLE_RATE);
         filter.set_bandform(LowPass).set_frequency(100.0);
@@ -132,11 +137,10 @@ mod tests {
 
     #[test]
     fn high_pass() {
-        const SAMPLE_RATE: u32 = 1200;
+        const SAMPLE_RATE: u32 = 1024;
 
-        const SIGNAL_LENGTH_IN_SECONDS: u32 = 1;
-        let mut signal = [0.0; SAMPLE_RATE as usize * SIGNAL_LENGTH_IN_SECONDS as usize];
-        noise::white_noise(&mut signal);
+        let mut signal = [0.0; 1024];
+        WhiteNoise::new().populate(&mut signal);
 
         let mut filter = StateVariableFilter::new(SAMPLE_RATE);
         filter.set_bandform(HighPass).set_frequency(100.0);
@@ -151,11 +155,10 @@ mod tests {
 
     #[test]
     fn band_pass() {
-        const SAMPLE_RATE: u32 = 2400;
+        const SAMPLE_RATE: u32 = 1024;
 
-        const SIGNAL_LENGTH_IN_SECONDS: u32 = 1;
-        let mut signal = [0.0; SAMPLE_RATE as usize * SIGNAL_LENGTH_IN_SECONDS as usize];
-        noise::white_noise(&mut signal);
+        let mut signal = [0.0; 1024];
+        WhiteNoise::new().populate(&mut signal);
 
         let mut filter = StateVariableFilter::new(SAMPLE_RATE);
         filter
@@ -169,21 +172,16 @@ mod tests {
         let center_mean_magnitude = analysis.mean_magnitude(250.0, 350.0);
         let high_mean_magnitude = analysis.mean_magnitude(400.0, 600.0);
 
-        dbg!(low_mean_magnitude);
-        dbg!(center_mean_magnitude);
-        dbg!(high_mean_magnitude);
-
         assert!(center_mean_magnitude / low_mean_magnitude > 3.0);
         assert!(center_mean_magnitude / high_mean_magnitude > 3.0);
     }
 
     #[test]
     fn band_reject() {
-        const SAMPLE_RATE: u32 = 2400;
+        const SAMPLE_RATE: u32 = 1024;
 
-        const SIGNAL_LENGTH_IN_SECONDS: u32 = 1;
-        let mut signal = [0.0; SAMPLE_RATE as usize * SIGNAL_LENGTH_IN_SECONDS as usize];
-        noise::white_noise(&mut signal);
+        let mut signal = [0.0; 1024];
+        WhiteNoise::new().populate(&mut signal);
 
         let mut filter = StateVariableFilter::new(SAMPLE_RATE);
         filter
@@ -197,28 +195,23 @@ mod tests {
         let center_mean_magnitude = analysis.mean_magnitude(250.0, 350.0);
         let high_mean_magnitude = analysis.mean_magnitude(400.0, 600.0);
 
-        dbg!(low_mean_magnitude);
-        dbg!(center_mean_magnitude);
-        dbg!(high_mean_magnitude);
-
         assert!(low_mean_magnitude / center_mean_magnitude > 2.0);
         assert!(high_mean_magnitude / center_mean_magnitude > 2.0);
     }
 
     #[test]
     fn dry_pass_does_not_change_signal() {
-        const SAMPLE_RATE: u32 = 1200;
+        const SAMPLE_RATE: u32 = 1024;
 
-        const SIGNAL_LENGTH_IN_SECONDS: u32 = 1;
-        let mut signal = [0.0; SAMPLE_RATE as usize * SIGNAL_LENGTH_IN_SECONDS as usize];
-        noise::white_noise(&mut signal);
+        let mut signal = [0.0; 1024];
+        WhiteNoise::new().populate(&mut signal);
 
         let analysis = SpectralAnalysis::analyze(&signal, SAMPLE_RATE);
         let original_mean_magnitude = analysis.mean_magnitude(0.0, 200.0);
 
         let mut filter = StateVariableFilter::new(SAMPLE_RATE);
         filter.set_bandform(LowPass).set_frequency(100.0);
-        filter.pass(&signal);
+        filter.pass(&mut signal);
 
         let analysis = SpectralAnalysis::analyze(&signal, SAMPLE_RATE);
         let updated_mean_magnitude = analysis.mean_magnitude(0.0, 200.0);
