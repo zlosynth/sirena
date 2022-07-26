@@ -27,11 +27,6 @@ features = ["maxn-1024"]
 name = "bench"
 harness = false
 
-[workspace]
-members = [
-  "pd",
-]
-
 [profile.release]
 lto = true
 panic = "abort"
