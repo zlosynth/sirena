@@ -7,29 +7,21 @@ Digital audio signal processing primitives.
 * `#[no_std]`, targetted for embedded systems.
 * Each primitive must have two or more users.
 
-## Development
+# Development
 
-``` sh
-# run formatting, linter and unit tests
-make
+See [DEVELOPMENT.md](DEVELOPMENT.md) to find some basic commands to interact
+with the project.
 
-# run slow tests too
-make SLOW=1
+# License
 
-# run benchmark
-cargo bench --bench bench
+Software of Achordion is distributed under the terms of the General Public
+License version 3. See [LICENSE](LICENSE) for details.
 
-# profiling example
-rm -f target/release/deps/bench-*
-rm -f callgrind.out.*
-RUSTFLAGS="-g" cargo bench --bench bench --no-run
-BENCH=$(find target/release/deps -type f -executable -name 'bench-*')
-TEST=osc2
-valgrind \
-    --tool=callgrind \
-    --dump-instr=yes \
-    --collect-jumps=yes \
-    --simulate-cache=yes \
-    ${BENCH} --bench --profile-time 10 ${TEST}
-kcachegrind callgrind.out.*
-```
+# Changelog
+
+Read the [CHANGELOG.md](CHANGELOG.md) to learn about changes introduced in each
+release.
+
+# Versioning
+
+The project adheres to [Semantic Versioning](https://semver.org/).
