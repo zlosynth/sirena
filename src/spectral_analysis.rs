@@ -111,8 +111,8 @@ fn fft_magnitude(signal: &[f32; N]) -> Vec<f32, N> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::white_noise::WhiteNoise;
     use core::f32::consts::PI;
+    use rand::Rng;
 
     #[test]
     fn fft_magnitude_check() {
@@ -206,7 +206,10 @@ mod tests {
         const SAMPLE_RATE: u32 = 1200;
 
         let mut signal = [0.0; N];
-        WhiteNoise::new().populate(&mut signal);
+        let mut rng = rand::thread_rng();
+        signal
+            .iter_mut()
+            .for_each(|x| *x = rng.gen_range(-1.0..=1.0));
 
         let analysis = SpectralAnalysis::analyze(&signal, SAMPLE_RATE);
         let low_mean_magnitude = analysis.mean_magnitude(0.0, 200.0);
@@ -285,7 +288,10 @@ mod tests {
         const SAMPLE_RATE: u32 = 100;
 
         let mut signal = [0.0; N];
-        WhiteNoise::new().populate(&mut signal);
+        let mut rng = rand::thread_rng();
+        signal
+            .iter_mut()
+            .for_each(|x| *x = rng.gen_range(-1.0..=1.0));
 
         let mut analysis = SpectralAnalysis::analyze(&signal, SAMPLE_RATE);
         analysis.trash_range(0.0, 50.0);

@@ -10,7 +10,6 @@ documentation = "https://docs.rs/sirena"
 readme = "README.md"
 
 [dependencies]
-rand = "0.8"
 micromath = "1.1"
 
 [dependencies.defmt]
@@ -18,6 +17,7 @@ version  = "0.3"
 optional = true
 
 [dev-dependencies]
+rand = "0.8"
 approx = "0.4"
 criterion = "0.3"
 heapless = "0.7"

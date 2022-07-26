@@ -109,7 +109,7 @@ pub use Bandform::*;
 mod tests {
     use super::*;
     use crate::spectral_analysis::SpectralAnalysis;
-    use crate::white_noise::WhiteNoise;
+    use rand::Rng;
 
     #[test]
     fn initialize_filter() {
@@ -122,7 +122,10 @@ mod tests {
         const SAMPLE_RATE: u32 = 1024;
 
         let mut signal = [0.0; 1024];
-        WhiteNoise::new().populate(&mut signal);
+        let mut rng = rand::thread_rng();
+        signal
+            .iter_mut()
+            .for_each(|x| *x = rng.gen_range(-1.0..=1.0));
 
         let mut filter = StateVariableFilter::new(SAMPLE_RATE);
         filter.set_bandform(LowPass).set_frequency(100.0);
@@ -140,7 +143,10 @@ mod tests {
         const SAMPLE_RATE: u32 = 1024;
 
         let mut signal = [0.0; 1024];
-        WhiteNoise::new().populate(&mut signal);
+        let mut rng = rand::thread_rng();
+        signal
+            .iter_mut()
+            .for_each(|x| *x = rng.gen_range(-1.0..=1.0));
 
         let mut filter = StateVariableFilter::new(SAMPLE_RATE);
         filter.set_bandform(HighPass).set_frequency(100.0);
@@ -158,7 +164,10 @@ mod tests {
         const SAMPLE_RATE: u32 = 1024;
 
         let mut signal = [0.0; 1024];
-        WhiteNoise::new().populate(&mut signal);
+        let mut rng = rand::thread_rng();
+        signal
+            .iter_mut()
+            .for_each(|x| *x = rng.gen_range(-1.0..=1.0));
 
         let mut filter = StateVariableFilter::new(SAMPLE_RATE);
         filter
@@ -181,7 +190,10 @@ mod tests {
         const SAMPLE_RATE: u32 = 1024;
 
         let mut signal = [0.0; 1024];
-        WhiteNoise::new().populate(&mut signal);
+        let mut rng = rand::thread_rng();
+        signal
+            .iter_mut()
+            .for_each(|x| *x = rng.gen_range(-1.0..=1.0));
 
         let mut filter = StateVariableFilter::new(SAMPLE_RATE);
         filter
@@ -204,7 +216,10 @@ mod tests {
         const SAMPLE_RATE: u32 = 1024;
 
         let mut signal = [0.0; 1024];
-        WhiteNoise::new().populate(&mut signal);
+        let mut rng = rand::thread_rng();
+        signal
+            .iter_mut()
+            .for_each(|x| *x = rng.gen_range(-1.0..=1.0));
 
         let analysis = SpectralAnalysis::analyze(&signal, SAMPLE_RATE);
         let original_mean_magnitude = analysis.mean_magnitude(0.0, 200.0);
