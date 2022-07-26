@@ -1,3 +1,5 @@
+use micromath::F32Ext;
+
 use heapless::Vec;
 
 const N: usize = 1024;
