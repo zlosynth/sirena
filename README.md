@@ -5,7 +5,6 @@ Digital audio signal processing primitives.
 ## Razor
 
 * `#[no_std]`, targetted for embedded systems.
-* Each primitive must have two or more users.
 
 # Development
 

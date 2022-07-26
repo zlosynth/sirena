@@ -1,7 +1,7 @@
 use rand::Rng;
 
 pub struct WhiteNoise {
-    rng: rand::prelude::ThreadRng,
+    rng: rand::prelude::Thread,
 }
 
 impl Default for WhiteNoise {

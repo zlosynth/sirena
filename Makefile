@@ -7,17 +7,16 @@ format:
 
 .PHONY: lint
 lint:
-	cargo clippy --all
+	cargo clippy --all --features defmt
 
 .PHONY: check
 check:
-	cargo check --all
+	cargo check --all --features defmt
 	cargo check --benches --all
-	cargo check --no-default-features
 
 .PHONY: test
 test:
-	cargo test --all
+	cargo test --all --features defmt
 ifdef SLOW
-	cargo test --all -- --ignored
+	cargo test --all --features defmt -- --ignored
 endif
