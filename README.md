@@ -2,7 +2,7 @@
 
 Digital audio signal processing primitives.
 
-## Razor
+# Razor
 
 * `#[no_std]`, targetted for embedded systems.
 
