@@ -1,8 +1,11 @@
+//! State variable filter can be used as low/high/band pass or band reject.
+
 #[allow(unused_imports)]
 use micromath::F32Ext;
 
 use core::f32::consts::PI;
 
+/// Yields filtered signal.
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
 #[derive(Debug)]
 pub struct StateVariableFilter {

@@ -1,3 +1,10 @@
+//! Use spectral analysis to measure harmonic spectrum of the input signal.
+//!
+//! # Warning
+//!
+//! This is not meant for real-time DSP but rather for testing of other
+//! components.
+
 #[allow(unused_imports)]
 use micromath::F32Ext;
 
@@ -5,6 +12,7 @@ use heapless::Vec;
 
 const N: usize = 1024;
 
+/// Analyze harmonic spectrum of given signal.
 pub struct SpectralAnalysis {
     bins: Vec<f32, N>,
     bin_width: f32,
