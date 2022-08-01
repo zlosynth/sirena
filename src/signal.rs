@@ -10,6 +10,35 @@ const EQUILIBRIUM: f32 = 0.0;
 pub trait Signal {
     fn next(&mut self) -> f32;
 
+    /// Borrows a Signal rather than consuming it.
+    ///
+    /// This is useful to allow applying signal adaptors while still retaining ownership of the
+    /// original signal.
+    ///
+    /// # Example
+    ///
+    /// ```rust
+    /// # #[macro_use]
+    /// # extern crate approx;
+    /// # fn main() {
+    /// use sirena::signal::{self, Signal};
+    /// let frames = [0.1, 0.2, 0.3, 0.4, 0.5];
+    /// let mut signal = signal::from_iter(frames);
+    /// assert_relative_eq!(signal.next(), 0.1);
+    /// let mut sub_signal: Vec<_> = signal.by_ref().take(2).collect();
+    /// assert_relative_eq!(sub_signal[0], 0.2);
+    /// assert_relative_eq!(sub_signal[1], 0.3);
+    /// assert_relative_eq!(signal.next(), 0.4);
+    /// assert_relative_eq!(signal.next(), 0.5);
+    /// # }
+    /// ```
+    fn by_ref(&mut self) -> &mut Self
+    where
+        Self: Sized,
+    {
+        self
+    }
+
     /// Clips the amplitude of the signal to the given threshold amplitude.
     ///
     /// # Example
@@ -50,6 +79,16 @@ pub trait Signal {
         Self: Sized,
     {
         Take { signal: self, n }
+    }
+}
+
+impl<'a, S> Signal for &'a mut S
+where
+    S: Signal + ?Sized,
+{
+    #[inline]
+    fn next(&mut self) -> f32 {
+        (**self).next()
     }
 }
 
