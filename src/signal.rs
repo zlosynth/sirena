@@ -4,7 +4,7 @@
 //! [dasp-signal](https://github.com/RustAudio/dasp) except this implementation
 //! supports `#[no_std]` on stable.
 
-const EQUILIBRIUM: f32 = 0.0;
+pub const EQUILIBRIUM: f32 = 0.0;
 
 /// Types that yield values of a PCM signal.
 pub trait Signal {
