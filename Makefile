@@ -12,6 +12,7 @@ lint:
 .PHONY: check
 check:
 	cargo check --all --features defmt
+	cargo check --all --features defmt --target thumbv7em-none-eabihf
 	cargo check --benches --all
 
 .PHONY: test

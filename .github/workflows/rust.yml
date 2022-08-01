@@ -16,17 +16,27 @@ jobs:
     steps:
       - run: sudo apt-get install libasound2-dev libportmidi-dev
       - uses: actions/checkout@v2
-      - uses: actions-rs/toolchain@v1
+      - name: Install x86 Rust toolchain
+        uses: actions-rs/toolchain@v1
         with:
+          target: x86_64-unknown-linux-gnu
           toolchain: stable
+          default: true
+          override: true
+      - name: Install ARM Rust toolchain
+        uses: actions-rs/toolchain@v1
+        with:
+          target: thumbv7em-none-eabihf
+          toolchain: stable
+          override: true
       - uses: actions-rs/cargo@v1
         with:
           command: build
-          args: --all
+          args: --all --features defmt
       - uses: actions-rs/cargo@v1
         with:
           command: build
-          args: --all --no-default-features
+          args: --all --features defmt --target thumbv7em-none-eabihf
 
   build-benches:
     name: Build Benches
