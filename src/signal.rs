@@ -11,6 +11,17 @@ pub trait Signal {
     fn next(&mut self) -> f32;
 
     /// Clips the amplitude of the signal to the given threshold amplitude.
+    ///
+    /// # Example
+    ///
+    /// ```rust
+    /// use sirena::signal::{self, Signal};
+    /// let frames = [0.5, 2.0, -2.0];
+    /// let mut signal = signal::from_iter(frames).clip_amp(1.0);
+    /// assert_eq!(signal.next(), 0.5);
+    /// assert_eq!(signal.next(), 1.0);
+    /// assert_eq!(signal.next(), -1.0);
+    /// ```
     fn clip_amp(self, threshold: f32) -> ClipAmp<Self>
     where
         Self: Sized,
@@ -19,6 +30,26 @@ pub trait Signal {
             signal: self,
             threshold,
         }
+    }
+
+    /// Converts the `Signal` into an `Iterator` that will yield the given
+    /// number frames before returning `None`.
+    ///
+    /// # Example
+    ///
+    /// ```rust
+    /// use sirena::signal::{self, Signal};
+    /// let frames = [0.1, 0.2, 0.3];
+    /// let mut signal = signal::from_iter(frames).take(2);
+    /// assert_eq!(signal.next(), Some(0.1));
+    /// assert_eq!(signal.next(), Some(0.2));
+    /// assert_eq!(signal.next(), None);
+    /// ```
+    fn take(self, n: usize) -> Take<Self>
+    where
+        Self: Sized,
+    {
+        Take { signal: self, n }
     }
 }
 
@@ -39,6 +70,32 @@ where
     #[inline]
     fn next(&mut self) -> f32 {
         self.signal.next().clamp(-self.threshold, self.threshold)
+    }
+}
+
+/// An iterator that yields `n` number of frames from the inner `signal`.
+#[derive(Clone)]
+pub struct Take<S>
+where
+    S: Signal,
+{
+    signal: S,
+    n: usize,
+}
+
+impl<S> Iterator for Take<S>
+where
+    S: Signal,
+{
+    type Item = f32;
+
+    #[inline]
+    fn next(&mut self) -> Option<f32> {
+        if self.n == 0 {
+            return None;
+        }
+        self.n -= 1;
+        Some(self.signal.next())
     }
 }
 
@@ -75,45 +132,5 @@ where
             }
             None => EQUILIBRIUM,
         }
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    struct StableSignal(f32);
-
-    impl Signal for StableSignal {
-        fn next(&mut self) -> f32 {
-            self.0
-        }
-    }
-
-    #[test]
-    fn given_stable_signal_it_yields_expected_value() {
-        let mut signal = StableSignal(1.0);
-        assert_relative_eq!(signal.next(), 1.0);
-        assert_relative_eq!(signal.next(), 1.0);
-    }
-
-    #[test]
-    fn given_clip_amp_when_signal_is_with_limit_it_stays_intact() {
-        let mut signal = StableSignal(0.5).clip_amp(1.0);
-        assert_relative_eq!(signal.next(), 0.5);
-    }
-
-    #[test]
-    fn given_clip_amp_when_signal_is_outside_limit_it_gets_clipped() {
-        let mut signal = StableSignal(2.0).clip_amp(1.0);
-        assert_relative_eq!(signal.next(), 1.0);
-    }
-
-    #[test]
-    fn given_from_iter_when_called_on_an_iterator_it_returns_signal() {
-        let array = [0.0, 1.0, 2.0];
-        let mut signal = from_iter(array.into_iter());
-        assert_relative_eq!(signal.next(), 0.0);
-        assert_relative_eq!(signal.next(), 1.0);
     }
 }
