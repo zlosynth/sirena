@@ -1,5 +1,3 @@
-use super::from_iterator::FromIterator;
-
 /// Types that yield values of a PCM signal.
 pub trait Signal {
     /// Read the next sample of given signal.
@@ -57,14 +55,4 @@ where
     fn next(&mut self) -> f32 {
         (**self).next()
     }
-}
-
-/// Create a new `Signal` from the given `Frame`-yielding `Iterator`.
-pub fn from_iter<I>(frames: I) -> FromIterator<I::IntoIter>
-where
-    I: IntoIterator<Item = f32>,
-{
-    let mut iter = frames.into_iter();
-    let next = iter.next();
-    FromIterator { iter, next }
 }

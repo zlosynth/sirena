@@ -11,7 +11,8 @@ mod sine;
 mod take;
 
 pub use clip_amp::SignalClipAmp;
-pub use signal_trait::{from_iter, Signal};
+pub use from_iterator::from_iter;
+pub use signal_trait::Signal;
 pub use sine::sine;
 pub use take::SignalTake;
 

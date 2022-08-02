@@ -31,8 +31,8 @@ pub struct Take<S>
 where
     S: Signal,
 {
-    pub(super) signal: S,
-    pub(super) n: usize,
+    signal: S,
+    n: usize,
 }
 
 impl<S> Iterator for Take<S>

@@ -33,8 +33,8 @@ pub struct ClipAmp<S>
 where
     S: Signal,
 {
-    pub(super) signal: S,
-    pub(super) threshold: f32,
+    signal: S,
+    threshold: f32,
 }
 
 impl<S> Signal for ClipAmp<S>
