@@ -1,6 +1,4 @@
-use super::clip_amp::ClipAmp;
 use super::from_iterator::FromIterator;
-use super::take::Take;
 
 /// Types that yield values of a PCM signal.
 pub trait Signal {
@@ -32,7 +30,7 @@ pub trait Signal {
     /// # #[macro_use]
     /// # extern crate approx;
     /// # fn main() {
-    /// use sirena::signal::{self, Signal};
+    /// use sirena::signal::{self, Signal, SignalTake};
     /// let frames = [0.1, 0.2, 0.3, 0.4, 0.5];
     /// let mut signal = signal::from_iter(frames);
     /// assert_relative_eq!(signal.next(), 0.1);
@@ -48,48 +46,6 @@ pub trait Signal {
         Self: Sized,
     {
         self
-    }
-
-    /// Clips the amplitude of the signal to the given threshold amplitude.
-    ///
-    /// # Example
-    ///
-    /// ```rust
-    /// use sirena::signal::{self, Signal};
-    /// let frames = [0.5, 2.0, -2.0];
-    /// let mut signal = signal::from_iter(frames).clip_amp(1.0);
-    /// assert_eq!(signal.next(), 0.5);
-    /// assert_eq!(signal.next(), 1.0);
-    /// assert_eq!(signal.next(), -1.0);
-    /// ```
-    fn clip_amp(self, threshold: f32) -> ClipAmp<Self>
-    where
-        Self: Sized,
-    {
-        ClipAmp {
-            signal: self,
-            threshold,
-        }
-    }
-
-    /// Converts the `Signal` into an `Iterator` that will yield the given
-    /// number frames before returning `None`.
-    ///
-    /// # Example
-    ///
-    /// ```rust
-    /// use sirena::signal::{self, Signal};
-    /// let frames = [0.1, 0.2, 0.3];
-    /// let mut signal = signal::from_iter(frames).take(2);
-    /// assert_eq!(signal.next(), Some(0.1));
-    /// assert_eq!(signal.next(), Some(0.2));
-    /// assert_eq!(signal.next(), None);
-    /// ```
-    fn take(self, n: usize) -> Take<Self>
-    where
-        Self: Sized,
-    {
-        Take { signal: self, n }
     }
 }
 

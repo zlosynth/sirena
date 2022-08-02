@@ -10,7 +10,7 @@ use super::Signal;
 /// # #[macro_use]
 /// # extern crate approx;
 /// # fn main() {
-/// // Generates a sine wave signal at 1hz to be sampled 4 times per second.
+/// // Generates a sine wave signal at 1 hz to be sampled 4 times per second.
 /// use sirena::signal::{self, Signal};
 /// let mut signal = signal::sine(4.0, 1.0);
 /// assert_eq!(signal.next(), 0.0);

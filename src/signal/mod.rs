@@ -10,7 +10,9 @@ mod signal_trait;
 mod sine;
 mod take;
 
+pub use clip_amp::SignalClipAmp;
 pub use signal_trait::{from_iter, Signal};
 pub use sine::sine;
+pub use take::SignalTake;
 
 pub const EQUILIBRIUM: f32 = 0.0;
