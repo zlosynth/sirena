@@ -1,13 +1,36 @@
 //! Use the Signal trait to abstract signal as infinite-iterator-like objects.
 //!
-//! This is based on the concepts presented in
-//! [dasp-signal](https://github.com/RustAudio/dasp) except this implementation
-//! supports `#[no_std]` on stable.
+//! This is based on [dasp-signal](https://github.com/RustAudio/dasp) except
+//! this implementation supports `#[no_std]` on stable and is concerned only
+//! about mono f32 frames.
+
+mod clip_amp;
+mod from_iterator;
+mod take;
+
+use clip_amp::ClipAmp;
+use from_iterator::FromIterator;
+use take::Take;
 
 pub const EQUILIBRIUM: f32 = 0.0;
 
 /// Types that yield values of a PCM signal.
 pub trait Signal {
+    /// Read the next sample of given signal.
+    ///
+    /// # Example
+    ///
+    /// ```rust
+    /// # #[macro_use]
+    /// # extern crate approx;
+    /// # fn main() {
+    /// use sirena::signal::{self, Signal};
+    /// let frames = [0.1, 0.2];
+    /// let mut signal = signal::from_iter(frames);
+    /// assert_relative_eq!(signal.next(), 0.1);
+    /// assert_relative_eq!(signal.next(), 0.2);
+    /// # }
+    /// ```
     fn next(&mut self) -> f32;
 
     /// Borrows a Signal rather than consuming it.
@@ -92,52 +115,6 @@ where
     }
 }
 
-/// Clips samples yielded by `signal` to the given threshold amplitude.
-#[derive(Clone)]
-pub struct ClipAmp<S>
-where
-    S: Signal,
-{
-    signal: S,
-    threshold: f32,
-}
-
-impl<S> Signal for ClipAmp<S>
-where
-    S: Signal,
-{
-    #[inline]
-    fn next(&mut self) -> f32 {
-        self.signal.next().clamp(-self.threshold, self.threshold)
-    }
-}
-
-/// An iterator that yields `n` number of frames from the inner `signal`.
-#[derive(Clone)]
-pub struct Take<S>
-where
-    S: Signal,
-{
-    signal: S,
-    n: usize,
-}
-
-impl<S> Iterator for Take<S>
-where
-    S: Signal,
-{
-    type Item = f32;
-
-    #[inline]
-    fn next(&mut self) -> Option<f32> {
-        if self.n == 0 {
-            return None;
-        }
-        self.n -= 1;
-        Some(self.signal.next())
-    }
-}
-
 /// Create a new `Signal` from the given `Frame`-yielding `Iterator`.
 pub fn from_iter<I>(frames: I) -> FromIterator<I::IntoIter>
 where
@@ -146,30 +123,4 @@ where
     let mut iter = frames.into_iter();
     let next = iter.next();
     FromIterator { iter, next }
-}
-
-/// A type that wraps an Iterator and provides a `Signal` implementation for it.
-#[derive(Clone)]
-pub struct FromIterator<I>
-where
-    I: Iterator,
-{
-    iter: I,
-    next: Option<I::Item>,
-}
-
-impl<I> Signal for FromIterator<I>
-where
-    I: Iterator<Item = f32>,
-{
-    #[inline]
-    fn next(&mut self) -> f32 {
-        match self.next.take() {
-            Some(frame) => {
-                self.next = self.iter.next();
-                frame
-            }
-            None => EQUILIBRIUM,
-        }
-    }
 }
