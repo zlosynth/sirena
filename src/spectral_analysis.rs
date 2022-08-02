@@ -58,6 +58,11 @@ impl SpectralAnalysis {
         self.frequency(peak_index)
     }
 
+    pub fn strongest_peak(&self) -> f32 {
+        let peak_index = strongest_peak_index(&self.bins);
+        self.frequency(peak_index)
+    }
+
     pub fn trash_range(&mut self, bottom_frequency: f32, top_frequency: f32) {
         assert!(bottom_frequency < top_frequency);
         assert!(bottom_frequency >= 0.0);
@@ -103,6 +108,22 @@ fn lowest_peak_index(data: &[f32], relative_treshold: f32) -> usize {
         }
         index
     }
+}
+
+fn strongest_peak_index(data: &[f32]) -> usize {
+    data.iter()
+        .enumerate()
+        .fold(
+            (0, 0.0),
+            |(max_i, max_x), (i, x)| {
+                if *x > max_x {
+                    (i, *x)
+                } else {
+                    (max_i, max_x)
+                }
+            },
+        )
+        .0
 }
 
 fn fft_magnitude(signal: &[f32; N]) -> Vec<f32, N> {
@@ -258,6 +279,15 @@ mod tests {
 
         let lowest_peak = analysis.lowest_peak(treshold);
         assert_relative_eq!(lowest_peak, frequency, epsilon = 0.3);
+    }
+
+    #[test]
+    fn find_strongest_peak_index() {
+        let mut data = [0.0; N];
+        data[N / 4] = 9.0;
+        data[N / 2] = 10.0;
+        let peak_index = strongest_peak_index(&data);
+        assert_eq!(peak_index, N / 2);
     }
 
     #[test]
