@@ -6,3 +6,4 @@ All notable changes to this project will be documented in this file.
 
 * Add spectral analysis module.
 * Add state variable filter.
+* Introduce signal abstraction and basic operations on it.
