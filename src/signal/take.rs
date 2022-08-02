@@ -1,7 +1,6 @@
-//! Take `n` samples of a signal.
-
 use super::Signal;
 
+/// Take `n` samples of a signal.
 pub trait SignalTake: Signal {
     /// Converts the `Signal` into an `Iterator` that will yield the given
     /// number frames before returning `None`.

@@ -1,7 +1,6 @@
-//! Clip sammples yielded by signal.
-
 use super::Signal;
 
+/// Clip samples yielded by signal.
 pub trait SignalClipAmp: Signal {
     /// Clips the amplitude of the signal to the given threshold amplitude.
     ///
