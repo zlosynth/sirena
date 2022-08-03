@@ -16,9 +16,9 @@ defmt = { version = "0.3", optional = true }
 libm = "0.2"
 
 [dependencies.microfft]
-version = "0.4"
+version = "0.5"
 default-features = false
-features = ["maxn-1024"]
+features = ["size-1024"]
 
 [dev-dependencies]
 rand = "0.8"
