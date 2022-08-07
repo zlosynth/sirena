@@ -5,12 +5,14 @@
 //! about mono f32 frames.
 
 mod clip_amp;
+mod constant;
 mod from_iterator;
 mod signal_trait;
 mod sine;
 mod take;
 
 pub use clip_amp::SignalClipAmp;
+pub use constant::constant;
 pub use from_iterator::from_iter;
 pub use signal_trait::Signal;
 pub use sine::sine;
