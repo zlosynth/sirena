@@ -7,6 +7,7 @@
 mod clip_amp;
 mod constant;
 mod from_iterator;
+mod mul_amp;
 mod signal_trait;
 mod sine;
 mod take;
@@ -14,6 +15,7 @@ mod take;
 pub use clip_amp::SignalClipAmp;
 pub use constant::constant;
 pub use from_iterator::from_iter;
+pub use mul_amp::SignalMulAmp;
 pub use signal_trait::Signal;
 pub use sine::sine;
 pub use take::SignalTake;
