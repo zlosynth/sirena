@@ -4,6 +4,8 @@ All notable changes to this project will be documented in this file.
 
 ## Unreleased
 
+* Move spectral analyzer behind a feature gate.
+
 ## 0.1.0
 
 * Add spectral analysis module.

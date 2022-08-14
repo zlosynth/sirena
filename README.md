@@ -5,8 +5,8 @@ Digital audio signal processing primitives. Components of the project include:
 * Signal abstraction used to abstract samples into infinite-iterator-like
   objects.
 * Ring buffer of arbitrary size.
-* Spectral analyzer.
 * State variable filter.
+* Spectral analyzer (feature gate `spectral_analyzer`).
 
 Documentation:
 
