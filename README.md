@@ -23,4 +23,5 @@ release.
 
 # Versioning
 
-The project adheres to [Semantic Versioning](https://semver.org/).
+The project adheres to [Semantic Versioning](https://semver.org/). Note that the
+API is unstable and should be expected to change.
