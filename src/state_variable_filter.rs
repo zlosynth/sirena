@@ -229,7 +229,7 @@ mod tests {
 
         let mut filter = StateVariableFilter::new(SAMPLE_RATE);
         filter.set_bandform(LowPass).set_frequency(100.0);
-        filter.pass(&mut signal);
+        filter.pass(&signal);
 
         let analysis = SpectralAnalysis::analyze(&signal, SAMPLE_RATE);
         let updated_mean_magnitude = analysis.mean_magnitude(0.0, 200.0);

@@ -1,0 +1,37 @@
+[tasks.dev]
+dependencies = ["format-toml", "format", "clippy", "check-arm", "build", "test"]
+
+[tasks.dev-slow]
+dependencies = ["dev"]
+run_task = { name = "test-slow" }
+
+[tasks.ci]
+dependencies = [
+  "print-env-flow",
+  "check-toml",
+  "check-format",
+  "clippy",
+  "check-arm",
+  "build",
+  "test",
+  "test-slow",
+]
+
+[tasks.check-toml]
+condition = { env_set = ["CARGO_MAKE_FORMAT_TOML_FILES"] }
+install_crate = { crate_name = "taplo-cli", binary = "taplo", test_arg = [
+  "--help",
+] }
+command = "taplo"
+args = ["format", "${CARGO_MAKE_FORMAT_TOML_FILES}", "--check"]
+
+[tasks.clippy]
+env = { CARGO_MAKE_CLIPPY_ARGS = "--tests --benches -- -D warnings -D clippy::all" }
+
+[tasks.check-arm]
+command = "cargo"
+args = ["check", "--all", "--target", "thumbv7em-none-eabihf"]
+
+[tasks.test-slow]
+env = { CARGO_MAKE_CARGO_BUILD_TEST_FLAGS = "--all --all-features -- --ignored" }
+run_task = { name = "test" }

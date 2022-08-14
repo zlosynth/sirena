@@ -1,17 +1,24 @@
 # Development
 
+This project utilizes [cargo make](https://github.com/sagiegurari/cargo-make).
+Start by installing it:
+
+```sh
+cargo install --force cargo-make
+```
+
 ## Formatting, linting, unit tests
 
 Run formatting, linter and unit tests:
 
 ```sh
-make
+cargo make dev
 
 # run slow tests too
-make SLOW=1
+cargo make dev-slow
 ```
 
-Read the Makefile to learn more.
+Read the Makefile.toml to learn more.
 
 ## Benchmark
 
