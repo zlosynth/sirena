@@ -1,21 +1,20 @@
 # Sirena
 
-Digital audio signal processing primitives.
-
-Components of the project include:
+Digital audio signal processing primitives. Components of the project include:
 
 * Signal abstraction used to abstract samples into infinite-iterator-like
-  objects. It also includes basic signal generators and trait allowing
-  implementation of custom signal processors.
-* Ring buffer of arbitrary size, allowing to read discrete or interpolated
-  samples.
-* Spectral analyzer, using FFT to measure harmonic spectrum of given signal.
-  Mostly meant for testing.
-* State variable filter, can be used for low/high/band pass or band reject.
+  objects.
+* Ring buffer of arbitrary size.
+* Spectral analyzer.
+* State variable filter.
 
-# Razor
+Documentation:
 
-* `#[no_std]`, targetted for embedded systems.
+* [API reference (docs.rs)](https://docs.rs/sirena)
+* [Repository (github.com)](https://github.com/zlosynth/sirena)
+* [Crate (crates.io)](https://crates.io/crates/sirena)
+
+The library is compatible with `#[no_std]` and targetted for embedded systems.
 
 # Development
 
