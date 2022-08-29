@@ -4,6 +4,8 @@ All notable changes to this project will be documented in this file.
 
 ## Unreleased
 
+* Introduce basic memory manager for distribution of memory.
+
 ## 0.1.0
 
 * Add spectral analysis module.

@@ -4,6 +4,7 @@
 #[macro_use]
 extern crate approx;
 
+pub mod memory_manager;
 pub mod signal;
 pub mod spectral_analysis;
 pub mod state_variable_filter;
