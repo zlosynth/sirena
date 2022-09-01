@@ -1,12 +1,12 @@
 [package]
 name = "sirena-cmsis-dsp-sys"
 description = "Low-level interfaces to the ARM CMSIS-DSP library"
-version = "0.1.0"
-authors = ["Sam Crow <scrow@eng.ucsd.edu>"]
-edition = "2018"
+version = "0.1.0"                                           # hack/release.sh
+authors = ["Petr Horáček <hrck@protonmail.com>"]
+edition = "2021"
+license = "GPL-3.0-or-later"
 build = "build.rs"
-license = "0BSD"
-repository = "https://github.com/samcrow/cmsis_dsp.rs"
+repository = "https://github.com/zlosynth/sirena"
 # The actual library files have the format arm_cortex[flags]_math
 links = "arm_cortex_math"
 
