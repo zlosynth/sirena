@@ -9,6 +9,9 @@ repository = "https://github.com/zlosynth/sirena"
 documentation = "https://docs.rs/sirena"
 readme = "README.md"
 
+[workspace]
+members = ["cmsis_dsp_sys"]
+
 [dependencies]
 micromath = "1.1"
 heapless = "0.7"

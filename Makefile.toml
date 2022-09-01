@@ -1,32 +1,48 @@
-[tasks.dev]
-dependencies = ["format-toml", "format", "clippy", "check-arm", "build", "test"]
+[env]
+CARGO_MAKE_EXTEND_WORKSPACE_MAKEFILE = true
 
-[tasks.dev-slow]
-dependencies = ["dev"]
-run_task = { name = "test-slow" }
+[tasks.dev]
+workspace = false
+dependencies = ["format-toml"]
+run_task = { name = "dev-workspace", fork = true }
+
+[tasks.dev-workspace]
+dependencies = ["format", "clippy", "build", "check-arm", "test"]
 
 [tasks.ci]
+workspace = false
+dependencies = ["print-env-flow", "check-toml"]
+run_task = { name = "ci-workspace", fork = true }
+
+[tasks.ci-workspace]
 dependencies = [
-  "print-env-flow",
-  "check-toml",
   "check-format",
   "clippy",
-  "check-arm",
   "build",
+  "check-arm",
   "test",
   "test-slow",
 ]
 
-[tasks.check-toml]
+# TODO: Drop this once https://github.com/sagiegurari/cargo-make/pull/697 is merged
+[tasks.format-toml]
 condition = { env_set = ["CARGO_MAKE_FORMAT_TOML_FILES"] }
 install_crate = { crate_name = "taplo-cli", binary = "taplo", test_arg = [
   "--help",
 ] }
 command = "taplo"
-args = ["format", "${CARGO_MAKE_FORMAT_TOML_FILES}", "--check"]
+args = [
+  "format",
+  "${CARGO_MAKE_FORMAT_TOML_FILES}",
+  "@@split(CARGO_MAKE_FORMAT_TOML_ARGS, )",
+]
+
+[tasks.check-toml]
+env = { CARGO_MAKE_FORMAT_TOML_ARGS = "--check" }
+run_task = { name = "format-toml" }
 
 [tasks.clippy]
-env = { CARGO_MAKE_CLIPPY_ARGS = "--tests --benches -- -D warnings -D clippy::all" }
+env = { CARGO_MAKE_CLIPPY_ARGS = "--tests --benches -- -Dclippy::all -Dclippy::pedantic" }
 
 [tasks.check-arm]
 command = "cargo"
