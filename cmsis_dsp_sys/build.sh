@@ -50,4 +50,4 @@ make
 cp libCMSISDSP.a ${OUT_DIR}/libarm_cortexM7lfdp_math.a
 
 echo "cargo:rustc-link-search=${OUT_DIR}"
-echo "cargo:rustc-link-lib=libarm_cortexM7lfdp_math.a"
+echo "cargo:rustc-link-lib=arm_cortexM7lfdp_math"
