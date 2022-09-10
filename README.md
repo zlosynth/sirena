@@ -18,6 +18,17 @@ optimizations. The target platform can be selected using features:
 * Default: No optimizations.
 * `cortexm7lfdp`: Cortex-M7, double-precission FPU.
 
+# Embedded examples
+
+The `examples/` directory contains set of examples both for reference and for
+performance testing. These are targetted for the STM32H750 chip, available in
+[Daisy Seed](https://www.electro-smith.com/daisy/daisy) boards.
+
+```sh
+cd examples
+cargo run --bin abs_f32
+```
+
 # Development
 
 See [DEVELOPMENT.md](DEVELOPMENT.md) to find some basic commands to interact

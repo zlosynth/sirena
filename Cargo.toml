@@ -10,7 +10,7 @@ documentation = "https://docs.rs/sirena"
 readme = "README.md"
 
 [workspace]
-members = ["cmsis_dsp_sys"]
+members = ["cmsis_dsp_sys", "examples"]
 
 [dependencies]
 micromath = "1.1"
