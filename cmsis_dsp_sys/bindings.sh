@@ -9,4 +9,4 @@ bindgen c/cmsis_dsp_combined.h \
     --whitelist-var "^arm.*" \
     --blacklist-type "^__u?int\\d+_t" \
     --output src/bindings.rs  \
-    -- -IARM.CMSIS.5.7.0/CMSIS/DSP/Include -IARM.CMSIS.5.7.0/CMSIS/Include
+    -- -ICMSIS_5-5.9.0/CMSIS/Core/Include -ICMSIS-DSP-1.11.0/Include

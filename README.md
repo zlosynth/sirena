@@ -1,12 +1,6 @@
 # Sirena
 
-Digital audio signal processing primitives. Components of the project include:
-
-* Signal abstraction used to abstract samples into infinite-iterator-like
-  objects.
-* Ring buffer of arbitrary size.
-* Spectral analyzer.
-* State variable filter.
+Digital audio signal processing primitives.
 
 Documentation:
 
@@ -15,6 +9,14 @@ Documentation:
 * [Crate (crates.io)](https://crates.io/crates/sirena)
 
 The library is compatible with `#[no_std]` and targetted for embedded systems.
+
+# Target optimizations
+
+Some of the functions have multiple implementations with platform specific
+optimizations. The target platform can be selected using features:
+
+* Default: No optimizations.
+* `cortexm7lfdp`: Cortex-M7, double-precission FPU.
 
 # Development
 

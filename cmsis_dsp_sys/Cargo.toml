@@ -9,23 +9,3 @@ build = "build.rs"
 repository = "https://github.com/zlosynth/sirena"
 # The actual library files have the format arm_cortex[flags]_math
 links = "arm_cortex_math"
-
-[build-dependencies]
-ureq = "2.0.1"
-
-[build-dependencies.zip]
-version = "0.5.9"
-default-features = false
-features = ["deflate"]
-
-[features]
-# Target a Cortex-M7 core
-# If this feature is not enabled, the Cortex-M4 library will be used.
-cortex-m7 = []
-# Target a processor with a double-precision floating point unit (Cortex-M7 only)
-# If this feature is not enabled, the single-precision library will be used and double-precision floating point
-# operations will be emulated in software.
-double-precision-fpu = []
-# Target a Cortex-M33 processor with DSP instructions
-# If this feature is not enabled, the non-DSP library will be used.
-dsp-instructions = []
