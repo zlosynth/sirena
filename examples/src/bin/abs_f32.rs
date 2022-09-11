@@ -8,8 +8,12 @@ fn main() -> ! {
     defmt::println!("CMSIS abs_f32");
 
     let a = [1.0, -1.0];
+    defmt::println!("Before: {:?}", a);
+
     let mut b = [0.0; 2];
     sirena::cmsis::abs_f32(&a, &mut b);
+
+    defmt::println!("After: {:?}", b);
     assert_eq!(b[0], 1.0);
     assert_eq!(b[1], 1.0);
 

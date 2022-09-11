@@ -20,6 +20,11 @@ if ! [ -d CMSIS_5-5.9.0 ]; then
 fi
 
 cd CMSIS-DSP-1.11.0/Source
+
+if ! [ -f CMakeLists-original.txt ]; then
+    cp CMakeLists.txt CMakeLists-original.txt
+fi
+
 echo '
 set(CMAKE_SYSTEM_NAME Generic)
 set(CMAKE_SYSTEM_PROCESSOR arm)
@@ -40,10 +45,11 @@ set(CMAKE_RANLIB       ${TARGET_TRIPLET}gcc-ranlib)
 set(MCPU_FLAGS "-mthumb -mcpu=cortex-m7")
 set(VFP_FLAGS "-mfloat-abi=hard -mfpu=fpv5-d16") # Double-precission FPU
 set(OPT_FLAGS "-Ofast")
-' > CMakeLists-altered.txt
-cat CMakeLists.txt >> CMakeLists-altered.txt
+' > CMakeLists.txt
+cat CMakeLists-original.txt >> CMakeLists.txt
 
 cmake -DCMSISCORE=../../CMSIS_5-5.9.0/CMSIS/Core .
+make clean
 make
 
 # See https://github.com/samcrow/cmsis_dsp.rs
